@@ -1,0 +1,72 @@
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="row" *ngIf="page == 'send'">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header card-header-danger" style="text-align: center;">
+                        <h4 class="card-title">Send email</h4>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row">
+                                <button mat-raised-button type="button" class="btn btn-danger" id="submit-btn" (click)="this.addresses.push('');" style="margin-left:7px;cursor:pointer;">Add email address<i class="material-icons" style="margin-left: 7px;margin-right:auto;">add</i></button><br><br><br>
+                            </div>
+                            <div class="row" *ngFor="let address of addresses; index as i">
+                                <div class="col-md-11">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Email n° {{ i + 1 }}" [value]="address" (blur)="addresses[i] = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+                                <div class="col-md-1">
+                                    <i class="material-icons" style="margin-left: 7px;cursor:pointer;" (click)="remove(i);">close</i>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Object" type="text" [value]="this.email.object" (input)="email.object = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width" style="height: 180px;">
+                                        <textarea matInput rows="7" placeholder="Message" [value]="this.email.message" (input)="email.message= $event.target.value"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+
+                            <button mat-raised-button type="submit" class="btn btn-danger pull-right" id="submit-btn" (click)="sendEmail();">Send<i class="material-icons" style="margin-left: 7px;">send</i></button>
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="page == 'success'">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/success.jpg" alt="" style="width: 250px; margin-left:auto; margin-right:auto;"><br>
+                    <h3> Your email have been successfully sent </h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="this.page = 'send'">Send new email<i class="material-icons" style="margin-left: 7px;">send</i></button>
+
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="page == 'error'">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/error.PNG" alt="" style="width: 250px; margin-left:auto; margin-right:auto; border-radius:50%;"><br>
+                    <h3> An error has occurred during sending the email !</h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="this.page = 'send'">Resend email<i class="material-icons" style="margin-left: 7px;">send</i></button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

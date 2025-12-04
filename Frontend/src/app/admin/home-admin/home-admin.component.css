@@ -1,0 +1,10 @@
+i{
+    display: none;
+}
+
+a>i{
+    display: initial;
+}
+.actions:hover i{
+    display: block;
+}

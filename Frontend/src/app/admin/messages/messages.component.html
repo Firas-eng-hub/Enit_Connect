@@ -1,0 +1,29 @@
+<br><br><br>
+<div class="main-content">
+    <div class="container-fluid">
+
+        <div class="row" *ngFor="let message of messages">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <h4 ><b>Name : {{ message.name }}</b></h4>
+                    <h4 >Email : {{ message.email }}</h4>
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>{{ message.date }}</a>
+                </div>
+                <div class="card-body p-5 actions">
+                    <div class="row" style="direction: rtl;">
+                        <i style="cursor: pointer;" class="material-icons" (click)="deleteMessage(message.id)">delete_outline</i>
+                        <i style="cursor: pointer;" class="material-icons" (click)="reply(message.email)">reply</i>
+                    </div>
+                    <div class="mb-2">
+                        <i class=" text-primary"></i>
+                        <a style="font-size: 16px;">{{ message.message }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 *ngIf="this.empty" style="text-align: center;">
+            No messages !
+        </h3>
+    </div>
+</div>

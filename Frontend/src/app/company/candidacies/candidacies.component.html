@@ -1,0 +1,191 @@
+<div class="main-content">
+    <div class="container">
+        <div class="card mb-5 mb-xl-0">
+            <div class="card-header card-header-danger" style="text-align: left;">
+                <div class="row">
+                    <div class="col-md-4">
+
+                    </div>
+                    <div class="col-md-4" style="text-align: center;">
+                        <a style="font-size: 16px;" ><i class="material-icons">star</i><i class="material-icons">star</i><span style="margin-left: 10px; margin-right: 10px; font-weight: bold;">{{ offer.type }}</span><i class="material-icons">star</i><i class="material-icons">star</i></a>
+                    </div>
+                    <div class="col-md-4">
+                        
+                    </div>
+                </div>
+                
+                <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>{{ offer.start }} &#x2794; {{ offer.end }}</a>
+            </div>
+            <div class="card-body p-5 actions">
+                
+                <div class="row">
+                    <h4 ><b>{{ offer.title }}</b></h4>
+                </div>
+               
+                <div class="row">
+                    <div class="mb-2">
+                        <i class=" text-primary"></i>
+                        <a>{{ offer.content }}</a>
+                    </div>
+                </div>
+                <div class="row">
+                    
+                    <div class="col-md-1" *ngFor="let doc of offer.docs">
+                        <div class="row">
+                            <a href="{{ doc.link }}"><img src="../../../assets/img/{{ doc.name.split('.')[doc.name.split('.').length - 1] }}.png" alt="" srcset="" style="width: 80px; max-width: 80%;"><span style="color: black; font-weight: bold;">{{ doc.name }}</span></a>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
+        </div><br><br><br><br>
+            
+            
+
+        <div class="row" *ngFor="let n of candidacies; index as i">
+            <div class="card mb-5 mb-xl-0 card-profile">
+                <div class="card-header card-header-warning" style="text-align: left;">
+                    
+                    <div class="row">
+                        <div class="col-md 4">
+
+                        </div>
+                        <div class="col-md-4" style="text-align: center;">
+                            <a style="font-size: 16px;" ><i class="material-icons">star</i><i class="material-icons">star</i><span style="margin-left: 10px; margin-right: 10px; font-weight: bold;">{{ n.namecreator }}</span><i class="material-icons">star</i><i class="material-icons">star</i></a>
+                        </div>
+                        <div class="col-md-4">
+                            
+                        </div>
+                    </div><br>
+                    
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>{{ n.date }} </a>
+                </div>
+                <div class="card-body p-5 actions">
+                    <div class="row" style="direction: rtl;">
+                        <i style="cursor: pointer;" class="material-icons" (click)="this.getUserInfo(n.idStudent); this.togglePopup();">person</i>
+                        
+                    </div>
+                    
+                   
+                   
+                    <div class="row">
+                        <div class="mb-2">
+                            <i class=" text-primary"></i>
+                            <a>{{ n.body }}</a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        
+                        <div class="col-md-1" *ngFor="let doc of n.docs">
+                            <div class="row">
+                                <a href="{{ doc.link }}"><img src="../../../assets/img/{{ doc.name.split('.')[doc.name.split('.').length - 1] }}.png" alt="" srcset="" style="width: 80px; max-width: 80%;"><span style="color: black; font-weight: bold;">{{ doc.name }}</span></a>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+            </div><br><br>
+        
+    </div>
+</div>
+<div class="popup" id="popup" style="background: rgba(238, 238, 238, 0);">
+    <div class="overlay" (click)="this.togglePopup();"></div>
+        <div class="content" style="background: rgba(238, 238, 238, 0);">
+        
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card card-profile" style="background: linear-gradient(rgb(0, 66, 189), #ffffff);">
+                            <div class="card-avatar">
+                                <a href="javascript:void(0)">
+                                    <img class="img" src="{{ this.picture }}" />
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-category" style="font-size:18px; color:rgb(15, 15, 15);">{{ this.user.type }}</h6>
+                                <h4 class="card-title" style="font-weight: bold; color:rgb(15, 15, 15);">{{ this.user.firstname + " " + this.user.lastname }}</h4>
+                                <p class="card-description" style="font-size:18px; color:rgb(27, 27, 27);">
+                                    {{ this.user.aboutme }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header card-header-danger">
+                                <h4 class="card-title">Profile details</h4>
+        
+                            </div>
+                            <div class="card-body" style="text-align: left;">
+        
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">email</i><span class="contenu">{{ this.user.email }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="this.user.type == 'alumni'">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">work</i><span class="contenu">{{ this.user.workAt }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="this.user.type == 'student'">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">school</i><span class="contenu">{{ this.user.class }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p>
+                                            <img src="../../../assets/img/linkedin.png" style="width: 23px;"><span class="contenu">{{ this.user.linkedin }}</span>
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <p>
+                                            <i class="material-icons" style="margin-bottom: 0px; margin-top: auto;">phone</i><span class="contenu">{{ this.user.phone }}</span>
+                                        </p>
+                                    </div>
+        
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">history_edu</i><span class="contenu">{{ this.user.promotion }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">emoji_flags</i><span class="contenu">{{ this.user.country }}</span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">holiday_village</i><span class="contenu">{{ this.user.city }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <p>
+                                            <i class="material-icons" style="margin-right: 10px; margin-bottom: 0px; margin-top: auto;">location_on</i><span class="contenu">{{ this.user.address }}</span>
+                                        </p>
+                                    </div>
+                                    
+                                </div>
+        
+        
+                                <div class="clearfix"></div>
+        
+                            </div>
+                        </div>
+                    </div>
+        
+                </div>
+            </div>
+
+    </div>
+</div>

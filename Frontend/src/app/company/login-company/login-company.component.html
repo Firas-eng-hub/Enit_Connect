@@ -1,0 +1,39 @@
+<div class="row">
+    <div class="col-md-6" style="margin-left: auto; margin-right:auto;">
+        <div class="card">
+            <div class="card-header card-header-danger" style="text-align: center;">
+                <h5 class="card-title">Login as company</h5>
+
+            </div>
+            <div style="text-align: center;">
+                <img src="https://rapport-activites-annemasse-agglo.fr/wp-content/uploads/2019/07/CH_2018_logements.png" id="icon" alt="User Icon" style="width: 140px;" />
+            </div>
+            <div class="danger" *ngIf="isLoginError" style="text-align: center; color:red; border-color:red; font-weight:bold;font-size:22px;">
+                <p>
+                    Wrong email or password !
+                </p>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
+                            <mat-form-field class="example-full-width">
+                                <input autofocus matInput placeholder="Email address" type="email" (input)="company.email = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="Password" type="password" (input)="company.password = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div style="text-align:center;">
+                        <button id="submit-btn" (click)="loginCompany()" mat-raised-button type="submit" class="btn btn-danger">LOGIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

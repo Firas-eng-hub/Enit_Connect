@@ -1,0 +1,210 @@
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header card-header-danger">
+                    <h4 class="card-title">Documents{{ this.emp }}</h4>
+                    <div class="search">
+                        <input type="text" name="serch" class="searchTerm" placeholder="What are you looking for?" (input)="this.title=$event.target.value;search()">
+                        <button class="searchButton" (click)="search()">Search</button>
+                        
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <button mat-raised-button type="button" class="btn btn-danger" style="margin-left:7px;cursor:pointer;" (click)="togglePopup1();">Create folder<i class="material-icons" style="margin-left: 7px;margin-right:auto;">create_new_folder</i></button>
+                        <button mat-raised-button type="button" class="btn btn-danger" style="margin-left:7px;cursor:pointer;" (click)="togglePopup3();">Upload document<i class="material-icons" style="margin-left: 7px;margin-right:auto;">upload_file</i></button>
+                        <button *ngIf="this.emp != '/'" mat-raised-button type="button" class="btn btn-danger" style="margin-left:auto;cursor:pointer;" (click)="quitFolder();"><i class="material-icons" style="margin-left: auto;margin-right:7px;">assignment_return</i></button>
+                    </div>
+                    <div class="row">
+                        <input type="text" name="filter" id="filter" placeholder="Filter here ..." (input)="filter($event.target.value)">
+                        
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2 actions" style="text-align: center;" *ngFor="let doc of folders">
+                            <div class="row" style="direction: rtl;">
+                                <i class="material-icons" style="direction: center; cursor: pointer;width: 20px;margin: 3px;" (click)="this.selectedDoc = doc;togglePopup4();">info_outline</i>
+                                <i class="material-icons" style="direction: center; cursor: pointer;width: 20px;margin: 3px;" (click)="this.title = doc.title; togglePopup2();">delete_outline</i>
+                            </div>
+                            <img src="../../../assets/img/folder.png" alt="" srcset="" style="cursor: pointer;width: 80%;" (click)="this.enterFolder(doc.emplacement+doc.title+'/');">
+                            <p style="font-weight: bold;">{{ doc.title }}</p>
+                        </div>
+                        <div class="col-md-2 actions" style="text-align: center;" *ngFor="let doc of files">
+                            <div class="row" style="direction: rtl;">
+                                <i class="material-icons" style="direction: center; cursor: pointer;width: 20px;margin: 3px;" (click)="this.selectedDoc = doc;togglePopup4();">info_outline</i>
+                                <i class="material-icons" style="margin: 3px;direction: center; cursor: pointer;width: 20px;" (click)="this.title = doc.title; togglePopup2();">delete_outline</i>
+                            </div>
+                            <a *ngIf="doc.extension == 'doc' || doc.extension == 'docx' || doc.extension == 'pdf' || doc.extension == 'pptx' || doc.extension == 'ppt' || doc.extension == 'mp3' || doc.extension == 'mp4' || doc.extension == 'html' || doc.extension == 'htm' || doc.extension == 'odt' || doc.extension == 'xls' || doc.extension == 'xlsx' || doc.extension == 'wav' || doc.extension == 'exe' || doc.extension == 'rar' ||  doc.extension == 'zip'; else elseBlock" target="blank" href="{{ doc.link }}"><img src="../../../assets/img/{{ doc.extension }}.png" alt="" srcset="" style="cursor: pointer;width: 70%;"></a>
+                            <ng-template #elseBlock>
+                                <a *ngIf="doc.extension == 'PNG' || doc.extension == 'png' || doc.extension == 'jpg' || doc.extension == 'gpeg' || doc.extension == 'gif'" target="blank" href="{{ doc.link }}"><img src="{{ doc.link }}" alt="" srcset="" style="cursor: pointer;width: 70%;"></a>
+                                <a *ngIf="doc.extension != 'PNG' && doc.extension != 'png' && doc.extension != 'jpg' && doc.extension != 'gpeg' && doc.extension != 'gif'" target="blank" href="{{ doc.link }}"><img src="../../../assets/img/txt.png" alt="" srcset="" style="cursor: pointer;width: 70%;"></a>
+                            </ng-template>
+                            <p style="font-weight: bold;">{{ doc.title }}</p>
+                        </div>
+                        <div class="col-md-12" *ngIf="this.emptyFolder" style="text-align: center;">
+                            <h2 style="left: auto;right: auto;">Empty folder !</h2>
+                        </div>
+                        <div class="col-md-12" *ngIf="this.noResult" style="text-align: center;">
+                            <h2 style="left: auto;right: auto;">No result !</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="popup-1">
+    <div class="overlay" (click)="togglePopup1();"></div>
+    <div class="content" style="max-width: 520px;">
+
+
+
+        <div class="row">
+
+            <!--<div>
+                <div class="close-btn" (click)="togglePopup1();" style="margin-right: 0px;margin-left: auto;">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>-->
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Create new folder</h5>
+
+                </div>
+                <div class="card-body">
+                    <h6 *ngIf="erreur1" style="color: red; font-weight: bold;">Name already used !</h6>
+                    <div class="col-md-12">
+                        <mat-form-field class="example-full-width">
+                            <input autofocus matInput placeholder="Folder name" type="text" [value]="this.title" (input)="this.title = $event.target.value">
+                        </mat-form-field>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="togglePopup1();" type="button" class="btn btn-default" value="Cancel" style="width: 40%;margin-left:10%">
+                    <input mat-raised-button (click)="createFolder(this.title);" type="button" class="btn btn-danger" value="Create" style="width: 40%;">
+                </div>
+            </div>
+
+        </div>
+
+        
+        
+
+
+    </div>
+</div>
+
+<div class="popup" id="popup-2">
+    <div class="overlay" (click)="togglePopup2();"></div>
+    <div class="content" style="max-width: 520px;">
+        <div class="row">
+            
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Delete</h5>
+                </div>
+                <div class="card-body">
+                    <div class="col-md-12">
+                        <p style="font-weight: bold;">Are you sure you want to delete {{ this.title }} ?</p>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="togglePopup2();" type="button" class="btn btn-default" value="Cancel" style="width: 40%;margin-left:10%">
+                    <input mat-raised-button (click)="delete(this.title);" type="button" class="btn btn-danger" value="Delete" style="width: 40%;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="popup-3">
+    <div class="overlay" (click)="togglePopup3();"></div>
+    <div class="content" style="width: 78% !important;">
+        <div class="row">
+            
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Upload file</h5>
+                </div>
+                <div class="card-body">
+                    <form [formGroup]="form"  method="post" enctype="multipart/form-data"> 
+                        <input name="file" (change)="onFileChanged($event)" type="file" id="excel" style="display: none;"  #fileInput accept=".xlsx, .xls, .xml, .jpg, .jpeg, .png, .gif, .docx, .doc, .odt, .ppt, .pptx, .pdf, .mp4, .wav, .mp3, .txt, .zip, .rar, .exe, .php, .html, .htm, .js, .ts, .css, .scss, .c, .cpp, .cs, .py, .pas, .sql, .json" multiple="non">
+                        <button mat-raised-button type="button" class="btn btn-danger" style="margin-left:7px;cursor:pointer;" (click)="fileInput.click()">Select files<i class="material-icons" style="margin-left: 7px;margin-right:auto;">upload_file</i></button>
+                    </form>
+
+                    <div class="row" *ngFor="let stat of status">
+                        <div class="col-md-3"><p style="font-weight: bold;">{{ stat.name }}</p></div>
+                        
+                        <div class="col-md-9"><progress-bar [progress]="stat.status" [color-degraded]="{'0': '#32CD32'}"></progress-bar></div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="togglePopup3();" type="button" class="btn btn-default" value="Cancel" style="width: 20%;margin-left:30%">
+                    <input mat-raised-button (click)="uploadFile();" type="button" class="btn btn-danger" value="Upload" style="width: 20%;">
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="popup-4">
+    <div class="overlay" (click)="togglePopup4();"></div>
+    <div class="content" style="max-width: 520px;">
+        <div class="row">
+            
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Details</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <span class="prop">
+                            Type : 
+                        </span>
+                        <span class="val">
+                            {{ this.selectedDoc.type }} <span *ngIf="this.selectedDoc.type == 'file'"> ( .{{ this.selectedDoc.extension }} )</span>
+                        </span><br>
+                        <span class="prop">
+                            Name : 
+                        </span>
+                        <span class="val">
+                            {{ this.selectedDoc.title }}
+                        </span><br>
+                        <span class="prop">
+                            Author : 
+                        </span>
+                        <span class="val">
+                            {{ this.selectedDoc.namecreator }}
+                        </span><br>
+
+                        <span class="prop">
+                            Created at : 
+                        </span>
+                        <span class="val">
+                            {{ this.selectedDoc.date }}
+                        </span><br>
+                        <span class="prop" *ngIf="this.selectedDoc.type == 'file'">
+                            Size : 
+                        </span>
+                        <span class="val" *ngIf="this.selectedDoc.type == 'file'">
+                            {{ this.selectedDoc.size }}
+                        </span>
+                    </p>
+                </div>
+                <div style="text-align: center;">
+                    <input mat-raised-button (click)="togglePopup4();" type="button" class="btn btn-default" value="OK" style="width: 40%;">
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,470 @@
+
+
+
+<br>
+<br>
+<br>
+
+
+  
+
+  
+
+
+<header class="bg-dark py-5">
+    <div class="container px-5">
+        <div class="row gx-5 justify-content-center">
+            <div class="col-lg-12">
+                <div class="text-center">
+                    <h2 class="display-5 fw-bolder text-white">Everything you need to know about TIC ENIT Community</h2>
+                    <p class="lead text-white-50">Quickly design and customize responsive mobile-first sites with Bootstrap, the world’s most popular front-end open source toolkit!</p>
+                        <!--<a class="btn btn-primary btn-lg px-4 me-sm-3" href="#features">Get Started</a>-->
+                        <a type="button" class="btn btn-danger" style="cursor: pointer; " (click)="togglePopup();"><i class="material-icons">person</i>Members space</a>
+                        <!--<a type="button" class="btn btn-primary" style="cursor: pointer; background-color: gray;">Learn More</a>-->
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!--div class="slider" style="text-align: center; margin-left: auto; margin-right: auto;">
+    <div class="slides"-->
+      <!--radio buttons start-->
+      <!--input type="radio" name="radio-btn" id="radio1">
+      <input type="radio" name="radio-btn" id="radio2">
+      <input type="radio" name="radio-btn" id="radio3">
+      <input type="radio" name="radio-btn" id="radio4"-->
+      <!--radio buttons end-->
+      <!--slide images start-->
+      <!--div class="slide first">
+        <img src="../../../assets/img/img1.jpg" alt="">
+      </div>
+      <div class="slide">
+        <img src="../../../assets/img/img2.jpg" alt="">
+      </div>
+      <div class="slide">
+        <img src="../../../assets/img/img3.jpg" alt="">
+      </div>
+      <div class="slide">
+        <img src="../../../assets/img/img4.jpg" alt="">
+      </div>
+      
+      <div class="navigation-auto">
+        <div class="auto-btn1"></div>
+        <div class="auto-btn2"></div>
+        <div class="auto-btn3"></div>
+        <div class="auto-btn4"></div>
+      </div>
+      
+    </div>
+    
+    <div class="navigation-manual">
+      <label for="radio1" class="manual-btn"></label>
+      <label for="radio2" class="manual-btn"></label>
+      <label for="radio3" class="manual-btn"></label>
+      <label for="radio4" class="manual-btn"></label>
+    </div>
+    
+</div-->
+
+<!-- Features section  container px-5 my-5  row gx-5   col-lg-4 -->
+<section class="py-5 border-bottom" id="features">
+    <div class="container">
+
+
+        <div class="row" *ngFor="let n of news">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <h4 ><b>{{ n.title }}</b></h4>
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>{{ n.date }}</a>
+                </div>
+                <div class="card-body p-5">
+                    
+                    <div class="row" *ngIf="n.picture != ''">
+                        
+                        <div class="col-md-12" style="text-align: center;">
+                            <img src="{{ n.picture }}" alt="" srcset="" style="cursor: pointer;height: auto; max-width: 260px;margin-top: 15px;">
+                        </div>
+                        
+                    </div>
+                   
+                    <div class="row">
+                        <div class="mb-2">
+                            <i class=" text-primary"></i>
+                            <a>{{ n.content }}</a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        
+                        <div class="col-md-1" *ngFor="let doc of n.docs">
+                            <div class="row">
+                                <a href="{{ doc.link }}"><img src="../../../assets/img/{{ doc.name.split('.')[doc.name.split('.').length - 1] }}.png" alt="" srcset="" style="width: 80px; max-width: 80%;"><span style="color: black; font-weight: bold;">{{ doc.name }}</span></a>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+
+        <!--<div class="row">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <h4 ><b>Programme de bourse « Études combinées et séjours pratiques pour des ingénieurs des pays en voie de développement » (KOSPIE)</b></h4>
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>26/06/2021</a>
+                </div>
+                <div class="card-body p-5">
+
+                   
+
+                    <div class="mb-2">
+                        <i class=" text-primary"></i>
+                        <a>L’office allemand d'échanges universitaires (DAAD) propose le programme de bourses « Études combinées et séjours pratiques pour des ingénieurs des pays en voie de développement » (KOSPIE) avec des fonds du Ministère fédéral de la coopération économique et du développement (BMZ).
+                                                Dans le cadre de ce programme, de jeunes étudiants en ingénierie et en informatique de Tunisie effectuent un stage de trois à six mois dans certaines universités allemandes (Université technique de Dresde ou Université de Stuttgart) pour effectuer des recherches pour leur projet de fin d’études (PFE)..</a>
+                    </div>
+                    <a href="http://www.enit.rnu.tn/daad/DAAD.pdf"><input mat-raised-button type="button" class="btn btn-danger" value="More details"></a>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <h4 ><b>PROJET : PAQ COLLABORA</b></h4>
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>12/05/2021</a>
+                </div>
+                <div class="card-body p-5">
+
+                   
+
+                    <div class="mb-2">
+                        <i class=" text-primary"></i>
+                        <a>« Suivi/élaboration d’indices de sécheresse pour l'aide à la décision concernant la gestion de la productivité céréalière en Tunisie »</a>
+                    </div>
+                    <a href="http://www.enit.rnu.tn/pdf/Avis%20CTAMA.pdf"><input mat-raised-button type="button" class="btn btn-danger" value="More details"></a>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <h4 ><b>Master Professionnel International Co-Construit</b></h4>
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>20/02/2021</a>
+                </div>
+                <div class="card-body p-5">
+
+                   
+
+                    <div class="mb-2">
+                        <i class=" text-primary"></i>
+                        <a>Webinaire CITEF-ENIT du 20 janvier 2021 de 14h00 à 15h00 heure de Tunis (13h-14h Temp Universel)
+                            Technologie et Management des Systèmes de Production d’Energies Renouvelables pour l’Afrique : Un Master Professionnel International Co-Construit</a>
+                    </div>
+                    <a href="http://www.reseau-citef.org/formulaire-dinscription-3eme-webinaire-citef-tunisie/"><input mat-raised-button type="button" class="btn btn-danger" value="More details"></a>
+                    
+                </div>
+            </div>
+        </div>-->
+        
+    </div>
+</section>
+<!-- 
+<section class="bg-light py-5 border-bottom">
+    <div class="container px-5 my-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bolder">Pay as you grow</h2>
+            <p class="lead mb-0">With our no hassle pricing plans</p>
+        </div>
+        <div class="row gx-5 justify-content-center">
+
+            <div class="col-lg-6 col-xl-4">
+                <div class="card mb-5 mb-xl-0">
+                    <div class="card-body p-5">
+                        <div class="small text-uppercase fw-bold text-muted">Free</div>
+                        <div class="mb-3">
+                            <span class="display-4 fw-bold">$0</span>
+                            <span class="text-muted">/ mo.</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i>
+                                <strong>1 users</strong>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> 5GB storage
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Unlimited public projects
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Community access
+                            </li>
+                            <li class="mb-2 text-muted">
+                                <i class="bi bi-x"></i> Unlimited private projects
+                            </li>
+                            <li class="mb-2 text-muted">
+                                <i class="bi bi-x"></i> Dedicated support
+                            </li>
+                            <li class="mb-2 text-muted">
+                                <i class="bi bi-x"></i> Free linked domain
+                            </li>
+                            <li class="text-muted">
+                                <i class="bi bi-x"></i> Monthly status reports
+                            </li>
+                        </ul>
+                        <div class="d-grid"><a class="btn btn-outline-primary" href="#!">Choose plan</a></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 col-xl-4">
+                <div class="card mb-5 mb-xl-0">
+                    <div class="card-body p-5">
+                        <div class="small text-uppercase fw-bold">
+                            <i class="bi bi-star-fill text-warning"></i> Pro
+                        </div>
+                        <div class="mb-3">
+                            <span class="display-4 fw-bold">$9</span>
+                            <span class="text-muted">/ mo.</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i>
+                                <strong>5 users</strong>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> 5GB storage
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Unlimited public projects
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Community access
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Unlimited private projects
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Dedicated support
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Free linked domain
+                            </li>
+                            <li class="text-muted">
+                                <i class="bi bi-x"></i> Monthly status reports
+                            </li>
+                        </ul>
+                        <div class="d-grid"><a class="btn btn-primary" href="#!">Choose plan</a></div>
+                    </div>
+                </div>
+            </div>
+          
+            <div class="col-lg-6 col-xl-4">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <div class="small text-uppercase fw-bold text-muted">Enterprise</div>
+                        <div class="mb-3">
+                            <span class="display-4 fw-bold">$49</span>
+                            <span class="text-muted">/ mo.</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i>
+                                <strong>Unlimited users</strong>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> 5GB storage
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Unlimited public projects
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Community access
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Unlimited private projects
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i> Dedicated support
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check text-primary"></i>
+                                <strong>Unlimited</strong> linked domains
+                            </li>
+                            <li class="text-muted">
+                                <i class="bi bi-check text-primary"></i> Monthly status reports
+                            </li>
+                        </ul>
+                        <div class="d-grid"><a class="btn btn-outline-primary" href="#!">Choose plan</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+-->
+<section class="py-5 border-bottom">
+    <div class="container px-5 my-5 px-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bolder">Customer testimonials</h2>
+            <p class="lead mb-0">Our customers love working with us</p>
+        </div>
+        <div class="row gx-5 justify-content-center">
+            <div class="col-lg-6">
+                
+                <div class="card mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0"><i class="bi bi-chat-right-quote-fill text-primary fs-1"></i></div>
+                            <div class="ms-4">
+                                <p class="mb-1">Thank you for putting together such a great product. We loved working with you and the whole team, and we will be recommending you to others!</p>
+                                <div class="small text-muted">- Client Name, Location</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2-->
+                <div class="card">
+                    <div class="card-body p-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0"><i class="bi bi-chat-right-quote-fill text-primary fs-1"></i></div>
+                            <div class="ms-4">
+                                <p class="mb-1">The whole team was a huge help with putting things together for our company and brand. We will be hiring them again in the near future for additional work!</p>
+                                <div class="small text-muted">- Client Name, Location</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Contact section-->
+<section class="bg-light py-5">
+    <div class="container px-5 my-5 px-5">
+        <div class="text-center mb-5">
+            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-envelope"></i></div>
+            <h2 class="fw-bolder">Get in touch</h2>
+            <p class="lead mb-0">We'd love to hear from you</p>
+        </div>
+        <div class="row" style="margin-top: 0px; padding-top: 0px;" *ngIf="page == 'send'">
+            
+            <div class="col-md-12" style="margin-top: 0px; padding-top: 0px;">
+                <div class="card" style="margin-top: 0px; ">
+                    
+                    <div class="card-body" style="margin-top: 0px;">
+                        <div *ngIf="erreur1" style="text-align: center;color: red; font-weight: bold;">You must enter all inputs !</div>
+                        <form>
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Full name : " (input)="this.message.name = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+                                
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Email : " type="email" (input)="this.message.email = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width" style="height: 180px;">
+                                        <textarea matInput rows="7" placeholder="Message" (input)="this.message.message = $event.target.value" ></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div><br>
+
+
+                            <button mat-raised-button class="btn btn-danger" (click)="sendEmail()">Send<i class="material-icons" style="margin-left: 5px;" >send</i></button>
+                            <div class="clearfix"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="page == 'success'">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/success.jpg" alt="" style="width: 250px; margin-left:auto; margin-right:auto;"><br>
+                    <h3> Your message have been successfully sent </h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="page = 'send'">Send new message<i class="material-icons" style="margin-left: 7px;">send</i></button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<div class="popup" id="popup-1">
+    <div class="overlay"></div>
+    <div class="content">
+
+
+
+        <div class="row" *ngIf="this.popup == 'home'">
+            <div class="col-md-6" style="border-right: 1px solid rgb(165, 165, 165);">
+                <div class="close-btn ismob" (click)="togglePopup();">×</div>
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">Member login</p>
+                <app-login-user></app-login-user>
+
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">First visit ?</p>
+                <p style="font-size: 12px;color:rgb(80, 80, 80);text-align:left;">Space reserved for TIC-ENIT members</p>
+                <input style="font-size: 12px;" mat-raised-button (click)="createUserAccount();" type="button" class="btn btn-danger" value="Create account">
+
+            </div>
+            <div class="col-md-6 mobile" style="border-left: 1px solid rgb(165, 165, 165);">
+                <div class="close-btn" (click)="togglePopup();">×</div>
+                <br><br>
+                <div class="card">
+                    <div class="card-header card-header-danger" style="text-align: center;">
+                        <h6  style="font-size: 12px;" class="card-title">Space reserved for companies</h6>
+
+                    </div>
+                    <div class="card-body">
+                        <img src="../../../assets/img/comp.PNG" alt="" srcset="" style="width:80%;">
+                        <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;">Join TIC-ENIT companies now</p>
+                    </div>
+                    <input style="font-size: 12px;" mat-raised-button (click)="createCompanyAccount();" type="button" class="btn btn-danger" value="Join now">
+                </div>
+
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">Already have an account ?</p>
+                <input style="font-size: 12px;" mat-raised-button (click)="loginCompany();" type="button" class="btn btn-danger" value="Login">
+
+            </div>
+        </div>
+        <div *ngIf="this.popup == 'createUserAccount'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-register-user></app-register-user>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+        </div>
+        <div class="mobile" *ngIf="this.popup == 'createCompanyAccount'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-register-company></app-register-company>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+        </div>
+        <div class="mobile" *ngIf="this.popup == 'loginCompany'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-login-company></app-login-company>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+
+        </div>
+
+    </div>
+</div>

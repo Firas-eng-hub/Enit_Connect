@@ -1,0 +1,193 @@
+<div class="main-content">
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-10"></div>
+            <div class="col-md-2">
+                <button mat-raised-button type="button" class="btn btn-danger" style="cursor: pointer;" (click)="togglePopup();">
+                        <i class="material-icons">person</i>
+                        Members space
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="card card-stats">
+                    <div class="card-header card-header-warning card-header-icon">
+                        <div class="card-icon">
+                            <i class="material-icons">visibility</i>
+                        </div>
+                        <p class="card-category">Visitors</p>
+                        <h3 class="card-title">1000
+                        </h3>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">visibility</i>Number of visitors
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="card card-stats">
+                    <div class="card-header card-header-success card-header-icon">
+                        <div class="card-icon">
+                            <i class="material-icons">person</i>
+                        </div>
+                        <p class="card-category">Followers</p>
+                        <h3 class="card-title">500</h3>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">person</i> Number of followers
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="card card-stats">
+                    <div class="card-header card-header-danger card-header-icon">
+                        <div class="card-icon">
+                            <i class="material-icons">domain</i>
+                        </div>
+                        <p class="card-category">Company</p>
+                        <h3 class="card-title">100</h3>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">domain</i> Number of companies
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="card card-stats">
+                    <div class="card-header card-header-info card-header-icon">
+                        <div class="card-icon">
+                            <i class="material-icons">announcement</i>
+                        </div>
+                        <p class="card-category">Job Offers</p>
+                        <h3 class="card-title">75</h3>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">announcement</i> Work offers
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card card-chart">
+                    <div class="card-header card-header-success">
+                        <div class="ct-chart" id="dailySalesChart"></div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title">Daily Visitors</h4>
+                        <p class="card-category">
+                            <p class="card-category">Number of visitors in the past 7 days</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">access_time</i> updated 4 minutes ago
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-chart">
+                    <div class="card-header card-header-warning">
+                        <div class="ct-chart" id="websiteViewsChart"></div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title">Email Subscriptions</h4>
+                        <p class="card-category">Number of subscriptions in the past 7 days</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">access_time</i> campaign sent 2 days ago
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-chart">
+                    <div class="card-header card-header-danger">
+                        <div class="ct-chart" id="completedTasksChart"></div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title">Job Offers</h4>
+                        <p class="card-category">Number of job offers</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <i class="material-icons">access_time</i> campaign sent 2 days ago
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br><br><br><br><br><br><br>
+</div>
+
+<div class="popup" id="popup-1">
+    <div class="overlay"></div>
+    <div class="content">
+
+
+
+        <div class="row" *ngIf="this.popup == 'home'">
+            <div class="col-md-6" style="border-right: 1px solid rgb(165, 165, 165);">
+                <div class="close-btn ismob" (click)="togglePopup();">×</div>
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">Member login</p>
+                <app-login-user></app-login-user>
+
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">First visit ?</p>
+                <p style="font-size: 12px;color:rgb(80, 80, 80);text-align:left;">Space reserved for TIC-ENIT members</p>
+                <input style="font-size: 12px;" mat-raised-button (click)="createUserAccount();" type="button" class="btn btn-danger" value="Create account">
+
+            </div>
+            <div class="col-md-6 mobile" style="border-left: 1px solid rgb(165, 165, 165);">
+                <div class="close-btn" (click)="togglePopup();">×</div>
+                <br><br>
+                <div class="card">
+                    <div class="card-header card-header-danger" style="text-align: center;">
+                        <h6  style="font-size: 12px;" class="card-title">Space reserved for companies</h6>
+
+                    </div>
+                    <div class="card-body">
+                        <img src="../../../assets/img/comp.PNG" alt="" srcset="" style="width:80%;">
+                        <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;">Join TIC-ENIT companies now</p>
+                    </div>
+                    <input style="font-size: 12px;" mat-raised-button (click)="createCompanyAccount();" type="button" class="btn btn-danger" value="Join now">
+                </div>
+
+                <p style="font-size: 12px;color:rgb(80, 80, 80);font-weight:bold;text-align:left;">Already have an account ?</p>
+                <input style="font-size: 12px;" mat-raised-button (click)="loginCompany();" type="button" class="btn btn-danger" value="Login">
+
+            </div>
+        </div>
+        <div *ngIf="this.popup == 'createUserAccount'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-register-user></app-register-user>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+        </div>
+        <div class="mobile" *ngIf="this.popup == 'createCompanyAccount'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-register-company></app-register-company>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+        </div>
+        <div class="mobile" *ngIf="this.popup == 'loginCompany'">
+            <div class="close-btn" (click)="togglePopup();">×</div>
+            <br><br>
+            <app-login-company></app-login-company>
+            <input style="font-size: 12px;" mat-raised-button (click)="this.popup = 'home';" type="button" class="btn btn-danger" value="Back">
+
+        </div>
+
+    </div>
+</div>

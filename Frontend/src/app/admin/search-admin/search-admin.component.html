@@ -1,0 +1,727 @@
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h4 class="card-title ">Admin Search</h4>
+                        <select class="search_config" name="search" (input)="this.entity=$event.target.value" style="margin-right: 5px;">
+                            <option value="" disabled selected>What are you looking for ?</option>
+                            <option value="student" [selected]="this.entity == 'student'">Students</option>
+                            <option value="company" [selected]="this.entity == 'company'"> Companies </option>
+                            <option value="student" [selected]="this.entity == 'pfa'">PFA</option>
+                            <option value="company" [selected]="this.entity == 'pfe'"> PFE </option>
+                            <option value="student" [selected]="this.entity == 'internship'">Internships</option>
+                            <option value="company" [selected]="this.entity == 'job'"> Jobs </option>
+                       </select>
+                        <select *ngIf="this.entity != ''" class="search_config" name="search" id="s" (input)="this.property=$event.target.value">
+                            <option value="" disabled selected>Search with...</option>
+                            <option value="firstname" *ngIf="this.entity == 'student'">First Name</option>
+                            <option value="name" *ngIf="this.entity == 'company'">Name</option>
+                            <option value="country"> Country </option>
+                            <option value="city"> City </option>
+                            <option value="promotion" *ngIf="this.entity == 'student'"> Promotion </option>
+                            <option value="class" *ngIf="this.entity == 'student'"> Class </option>
+                       </select>
+                        <div class="search" *ngIf="this.property != '' && this.property != 'promotion' && this.property != 'class'">
+                            <input type="text" name="serch" class="searchTerm" placeholder="What are you looking for?" (input)="this.key=$event.target.value">
+                            <button class="searchButton" (click)="search()">Search</button>
+                        </div>
+                        <div class="search" *ngIf="this.property == 'promotion'">
+                            <mat-form-field appearance="fill" class="searchTerm">
+                                <mat-label>Promotion</mat-label>
+                                <mat-select>
+                                    <mat-option *ngFor="let year of years" (click)="this.key = year" [value]="year">
+                                        {{year}}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <button class="searchButton" (click)="search()">Search</button>
+                        </div>
+                        <div class="search" *ngIf="this.property == 'class'">
+                            <mat-form-field appearance="fill" class="searchTerm">
+                                <mat-label>Class</mat-label>
+                                <mat-select>
+                                    <mat-option *ngFor="let class of classes" (click)="this.key= class" [value]="class">
+                                        {{class}}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <button class="searchButton" (click)="search()">Search</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction:row;">
+                        <button *ngIf="this.entity != ''" class="searchButton1" style="margin-left: 17px;" (click)="getAll()">Get All</button>
+                        <button *ngIf="this.addresses.length != 0" class="searchButton3" (click)="togglePopupGroup()"> Delete</button>
+                        <button *ngIf="this.addresses.length != 0" class="searchButton2" (click)="mail()"> Send mail</button>
+                        <button class="change-mode" (click)="changeMode()" *ngIf="this.mode == 'table' && this.entity != ''">View in map</button>
+                        <button class="change-mode" (click)="changeMode()" *ngIf="this.mode == 'map' && this.entity != ''">View in table</button>
+                    </div>
+
+                    <div class="card-body" *ngIf="this.mode == 'table'">
+                        <div class="table-responsive" *ngIf="this.entity == 'student'">
+                            <table class="table">
+                                <thead class=" text-primary" *ngIf="this.users.length != 0">
+                                    <th>
+                                        <input type="checkbox" name="" id="" [checked]="this.addresses.length == this.users.length" (click)="toggleSelectAll();" style="cursor: pointer;"> Check all
+                                    </th>
+                                    <th>
+                                        Name
+                                    </th>
+                                    <th>
+                                        Country
+                                    </th>
+                                    <th>
+                                        City
+                                    </th>
+                                    <th>
+                                        Email address
+                                    </th>
+                                    <th>
+                                        Actions
+                                    </th>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let user of users; index as i">
+                                        <td>
+                                            <input style="cursor: pointer;" type="checkbox" name="" id="" [checked]="this.addresses.indexOf(user.email) != -1" (click)="toggleSelection(user.email,user.id);">
+                                        </td>
+                                        <td>
+                                            {{ user.firstname + " " + user.lastname }}
+                                        </td>
+                                        <td>
+                                            {{ user.country }}
+                                        </td>
+                                        <td>
+                                            {{ user.city }}
+                                        </td>
+                                        <td class="text-primary">
+                                            {{ user.email }}
+                                        </td>
+                                        <td>
+                                            <i class="material-icons" style="cursor: pointer;" (click)="viewProfileUser(user);">create</i>{{ " " + " " + " " }}
+                                            <i class="material-icons" style="cursor: pointer;" (click)="this.nameUserDelete = user.firstname + ' ' + user.lastname;togglePopup();this.idUserDelete = user.id;">delete</i>{{ " " + " " + " " }}
+                                            <i class="material-icons" style="cursor: pointer;" (click)="oneMail(user.email)">email</i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-responsive" *ngIf="this.entity == 'company'">
+                            <table class="table">
+                                <thead class=" text-primary" *ngIf="this.companies.length != 0">
+                                    <th>
+                                        Number
+                                    </th>
+                                    <th>
+                                        Company name
+                                    </th>
+                                    <th>
+                                        Country
+                                    </th>
+                                    <th>
+                                        City
+                                    </th>
+                                    <th>
+                                        Email address
+                                    </th>
+                                    <th>
+                                        View profile
+                                    </th>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let company of companies; index as i">
+                                        <td>
+                                            {{ i+1 }}
+                                        </td>
+                                        <td>
+                                            {{ company.name}}
+                                        </td>
+                                        <td>
+                                            {{ company.country }}
+                                        </td>
+                                        <td>
+                                            {{ company.city }}
+                                        </td>
+                                        <td class="text-primary">
+                                            {{ company.email }}
+                                        </td>
+                                        <td>
+                                            <a (click)="viewProfileCompany(company)" style="cursor: pointer;"><i class="material-icons">domain</i></a>
+                                            <i class="material-icons" style="cursor: pointer;" (click)="this.nameUserDelete = company.name;this.nameCompanyDelete = company.name;togglePopup();this.idCompanyDelete = company.id;">delete</i>{{ " " + " " +
+                                            " " }}
+                                            <i class="material-icons" style="cursor: pointer;" (click)="oneMail(company.email)">email</i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-body" *ngIf="this.mode == 'map'">
+                        <app-map-admin></app-map-admin>
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="popup-1">
+    <div class="overlay"></div>
+    <div class="content" style="max-width: 520px;">
+
+
+
+        <div class="row" *ngIf="deletepage == 'delete'">
+
+            <div>
+                <div class="close-btn" (click)="togglePopup();">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Delete user</h5>
+
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 16px;color:rgb(80, 80, 80);font-weight:bold;">Are you sure you want to delete {{ this.nameUserDelete + " ?" }}</p>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="togglePopup();" type="button" class="btn btn-default" value="Cancel" style="width: 40%;margin-left:10%">
+                    <input mat-raised-button (click)="deleteUser(this.idUserDelete);" type="button" class="btn btn-danger" value="Delete" style="width: 40%;">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row" *ngIf="deletepage == 'success'">
+            <div>
+                <div class="close-btn" (click)="togglePopup();this.deletepage = 'delete';">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+
+            <div class="col-md-12">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/success.jpg" alt="" style="width: 100px; margin-left:auto; margin-right:auto;"><br>
+                    <h3> {{ this.nameUserDelete + " " }}have been successfully deleted </h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="togglePopup();this.deletepage = 'delete';">Finish</button>
+
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="deletepage == 'error'">
+            <div>
+                <div class="close-btn" (click)="togglePopup();this.deletepage = 'delete';">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+
+            <div class="col-md-12">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/error.PNG" alt="" style="width: 100px; margin-left:auto; margin-right:auto; border-radius:50%;"><br>
+                    <h3> An error has occurred during deleting {{ this.entity }} !</h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="togglePopup();this.deletepage = 'delete';">Cancel</button>
+
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+<div class="popup" id="popup-2">
+    <div class="overlay"></div>
+    <div class="content">
+        <div class="close-btn" (click)="togglePopupUser();">×</div>
+        <br><br>
+        <div class="row" *ngIf="this.pageuser == 'profile'">
+            <div class="col-md-4">
+                <div class="card card-profile" style="background: linear-gradient(rgb(0, 66, 189), #ffffff);">
+                    <div class="card-avatar">
+                        <a href="javascript:void(0)">
+                            <img class="img" src="{{ this.picture }}" />
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-category" style="font-size:18px; color:rgb(15, 15, 15);">{{ this.user.type }}</h6>
+                        <h4 class="card-title" style="font-weight: bold; color:rgb(15, 15, 15);">{{ this.user.firstname + " " + this.user.lastname }}</h4>
+                        <p class="card-description" style="font-size:18px; color:rgb(27, 27, 27);">
+                            {{ this.user.aboutme }}
+                        </p>
+                        <a routerLinkActive="active" class="btn btn-danger btn-round" (click)="this.pageuser = 'editprofile';">Edit Profile</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h4 class="card-title">Profile details</h4>
+
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">First name : </span><span class="contenu">{{ this.user.firstname }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">Last name : </span><span class="contenu">{{ this.user.lastname }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4" *ngIf="this.user.type == 'alumni'">
+                                <p>
+                                    <span class="titre">Work at : </span><span class="contenu">{{ this.user.workAt }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4" *ngIf="this.user.type == 'student'">
+                                <p>
+                                    <span class="titre">Class : </span><span class="contenu">{{ this.user.class }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-8">
+                                <p>
+                                    <span class="titre">Email : </span><span class="contenu">{{ this.user.email }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">Phone : </span><span class="contenu">{{ this.user.phone }}</span>
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">LinkedIn : </span><span class="contenu">{{ this.user.linkedin }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">Country : </span><span class="contenu">{{ this.user.country }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">City : </span><span class="contenu">{{ this.user.city }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p>
+                                    <span class="titre">Address : </span><span class="contenu">{{ this.user.address }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">Promotion : </span><span class="contenu">{{ this.user.promotion }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+
+                        <div class="clearfix"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="row" *ngIf="this.pageuser == 'editprofile'">
+            <div class="col-md-4">
+                <div class="card card-profile" style="background: linear-gradient(rgb(0, 66, 189), #ffffff);">
+                    <div class="card-avatar">
+                        <a href="javascript:void(0)">
+                            <img class="img" src="{{ this.picture }}" />
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <input (click)="user.type = 'student';" type="radio" name="type" value="Student" style="width: 50px;" [checked]="user.type=='student'" /><span style="font-size:22px; color:rgb(25, 25, 25);"> Student </span>
+                        <input (click)="user.type = 'alumni';" type="radio" name="type" value="Alumni" style="width: 50px;" [checked]="user.type=='alumni'" /><span style="font-size:22px; color:rgb(25, 25, 25);"> Alumni </span>
+                        <br>
+                        <h4 class="card-title" style="font-weight: bold; color:rgb(15, 15, 15);">{{ this.user.firstname + " " + this.user.lastname }}</h4>
+
+                        <div class="row">
+                            <div class="col-md-12">
+
+                                <mat-form-field class="example-full-width">
+                                    <textarea style="color:rgb(9,9,9);" [value]="this.user.aboutme" matInput placeholder="About me" (input)="user.aboutme= $event.target.value"></textarea>
+                                </mat-form-field>
+
+                            </div>
+                        </div>
+
+                        <a routerLinkActive="active" class="btn btn-danger btn-round" (click)="updateProfileUser();">Save changes</a><br>
+                        <a class="btn btn-default btn-round" (click)="cancelUpdateProfileUser();">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h4 class="card-title">Edit your profile</h4>
+
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.firstname" matInput placeholder="Fist Name" type="text" (input)="user.firstname = $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.lastname" matInput placeholder="Last Name" type="text" (input)="user.lastname = $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4" *ngIf="this.user.type == 'alumni'">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.workat" matInput placeholder="Work at" (input)="user.workAt = $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4" *ngIf="this.user.type == 'student'">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Class</mat-label>
+                                    <select matNativeControl required>
+                                        <option *ngFor="let class of classes" (click)="user.class= class" [value]="class">
+                                            {{class}}
+                                        </option>
+                                    </select>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-8">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.email" matInput placeholder="Email address" type="email" (input)="user.email = $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.phone" matInput placeholder="Phone number" type="phone" (input)="user.phone = $event.target.value">
+                                </mat-form-field>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.linkedin" matInput placeholder="Linkedin" type="text" (input)="user.linkedin= $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.country" matInput placeholder="Country" type="text" (input)="user.country= $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.city" matInput placeholder="City" type="text" (input)="user.city = $event.target.value" required>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.user.address" matInput placeholder="Adress" type="text" (input)="user.address= $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Promotion</mat-label>
+                                    <select matNativeControl required>
+                                        <option *ngFor="let year of years" (click)="user.promotion= year" [value]="year">
+                                            {{year}}
+                                        </option>
+                                    </select>
+                                </mat-form-field>
+                            </div>
+                        </div>
+
+
+                        <div class="clearfix"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div class="popup" id="popup-3">
+    <div class="overlay"></div>
+    <div class="content">
+        <div class="close-btn" (click)="togglePopupCompany();">×</div>
+        <br><br>
+        <div class="row" *ngIf="this.pageCompany == 'profile'">
+            <div class="col-md-4">
+                <div class="card card-profile" style="background: linear-gradient(rgb(0, 66, 189), #ffffff);">
+                    <div class="card-avatar">
+                        <a href="javascript:void(0)">
+                            <img class="img" src="{{ this.logo }}" />
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-category" style="font-size:18px; color:rgb(15, 15, 15);">Company</h6>
+                        <h4 class="card-title" style="font-weight: bold; color:rgb(15, 15, 15);">{{ this.company.name }}</h4>
+                        <p class="card-description" style="font-size:18px; color:rgb(27, 27, 27);">
+                            {{ this.company.about }}
+                        </p>
+                        <a routerLinkActive="active" class="btn btn-danger btn-round" (click)="this.pageCompany = 'edit-profile';">Edit Profile</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h4 class="card-title">Profile company details</h4>
+
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row">
+                            <div class="col-md-5">
+                                <p>
+                                    <span class="titre">Company name : </span><span class="contenu">{{ this.company.name }}</span>
+                                </p>
+                            </div>
+
+                            <div class="col-md-7">
+                                <p>
+                                    <span class="titre">Web site : </span><span class="contenu">{{ this.company.website }}</span>
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-7">
+                                <p>
+                                    <span class="titre">Email : </span><span class="contenu">{{ this.company.email }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-5">
+                                <p>
+                                    <span class="titre">Phone : </span><span class="contenu">{{ this.company.phone }}</span>
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">Country : </span><span class="contenu">{{ this.company.country }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p>
+                                    <span class="titre">City : </span><span class="contenu">{{ this.company.city }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <p>
+                                    <span class="titre">Address : </span><span class="contenu">{{ this.company.address }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+
+                        <div class="clearfix"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="row" *ngIf="this.pageCompany == 'edit-profile'">
+            <div class="col-md-4">
+                <div class="card card-profile" style="background: linear-gradient(rgb(0, 66, 189), #ffffff);">
+                    <div class="card-avatar">
+                        <a href="javascript:void(0)">
+                            <img class="img" src="{{ this.picture }}" />
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-category" style="font-size:18px; color:rgb(15, 15, 15);">Company</h6>
+
+                        <h4 class="card-title" style="font-weight: bold; color:rgb(15, 15, 15);">{{ this.company.name }}</h4>
+
+                        <div class="row">
+                            <div class="col-md-12">
+
+                                <mat-form-field class="example-full-width">
+                                    <textarea style="color:rgb(9,9,9);" [value]="this.company.about" matInput placeholder="About the company" (input)="company.about= $event.target.value"></textarea>
+                                </mat-form-field>
+
+                            </div>
+                        </div>
+
+                        <a routerLinkActive="active" class="btn btn-danger btn-round" (click)="updateProfileCompany();">Save changes</a><br>
+                        <a class="btn btn-default btn-round" (click)="this.pageCompany = 'profile';">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h4 class="card-title">Edit your profile</h4>
+
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.name" matInput placeholder="Fist Name" type="text" disabled>
+                                </mat-form-field>
+                            </div>
+
+                            <div>
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.website" matInput placeholder="Web site" (input)="company.website = $event.target.value">
+                                </mat-form-field>
+                            </div>
+
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-8">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.email" matInput placeholder="Email address" type="email" disabled>
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.phone" matInput placeholder="Phone number" type="phone" (input)="company.phone = $event.target.value">
+                                </mat-form-field>
+                            </div>
+
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.country" matInput placeholder="Country" type="text" (input)="company.country= $event.target.value">
+                                </mat-form-field>
+                            </div>
+                            <div class="col-md-4">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.city" matInput placeholder="City" type="text" (input)="company.city = $event.target.value" required>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <mat-form-field class="example-full-width">
+                                    <input [value]="this.company.address" matInput placeholder="Adress" type="text" (input)="company.address= $event.target.value">
+                                </mat-form-field>
+                            </div>
+                        </div>
+
+
+                        <div class="clearfix"></div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="popup" id="popup-4">
+    <div class="overlay"></div>
+    <div class="content" style="max-width: 520px;">
+
+
+
+        <div class="row" *ngIf="deleteGroup == 'delete'">
+
+            <div>
+                <div class="close-btn" (click)="togglePopupGroup();">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-danger" style="text-align: center;">
+                    <h5 class="card-title">Delete selected items</h5>
+
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 16px;color:rgb(80, 80, 80);font-weight:bold;">Are you sure you want to delete selected items ?</p>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="togglePopupGroup();" type="button" class="btn btn-default" value="Cancel" style="width: 40%;margin-left:10%">
+                    <input mat-raised-button (click)="deleteGroupItems();" type="button" class="btn btn-danger" value="Delete" style="width: 40%;">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row" *ngIf="deleteGroup == 'success'">
+            <div>
+                <div class="close-btn" (click)="togglePopupGroup();this.deleteGroup = 'delete';">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+
+            <div class="col-md-12">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/success.jpg" alt="" style="width: 100px; margin-left:auto; margin-right:auto;"><br>
+                    <h3> Selected items have been successfully deleted </h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="togglePopupGroup();this.deleteGroup = 'delete';">Finish</button>
+
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="deleteGroup == 'error'">
+            <div>
+                <div class="close-btn" (click)="togglePopupGroup();this.deleteGroup = 'delete';">×</div>
+
+            </div>
+            <br>
+            <hr>
+            <br>
+
+            <div class="col-md-12">
+                <div class="card" style="padding: 20px; text-align:center;">
+                    <img src="../../assets/img/error.PNG" alt="" style="width: 100px; margin-left:auto; margin-right:auto; border-radius:50%;"><br>
+                    <h3> An error has occurred during deleting items !</h3><br><br>
+                    <button mat-raised-button type="submit" class="btn btn-danger pull-right" (click)="togglePopupGroup();this.deleteGroup = 'delete';">Cancel</button>
+
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>

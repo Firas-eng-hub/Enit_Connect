@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Build output
+dist/
+tmp/
+out-tsc/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+
+# Logs
+npm-debug.log

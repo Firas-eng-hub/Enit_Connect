@@ -1,0 +1,40 @@
+<br><br>
+<div class="row">
+    <div class="col-md-5" style="margin-left: auto; margin-right:auto;">
+        <div class="card">
+            <div class="card-header card-header-danger" style="text-align: center;">
+                <h3 class="card-title">Login as administrator</h3>
+
+            </div>
+            <div style="text-align: center;">
+                <img src="../../../assets/img/admin.png" id="icon" alt="User Icon" style="width: 198px;" />
+            </div>
+            <div class="danger" *ngIf="isLoginError" style="text-align: center; color:red; border-color:red; font-weight:bold;font-size:22px;">
+                <p>
+                    {{ loginErrorMessage }}
+                </p>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="Email address" type="email" (input)="admin.email = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="Password" type="password" (input)="admin.password = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div style="text-align:center;">
+                        <button id="submit-btn" (click)="loginAdmin()" mat-raised-button type="submit" class="btn btn-danger">LOGIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

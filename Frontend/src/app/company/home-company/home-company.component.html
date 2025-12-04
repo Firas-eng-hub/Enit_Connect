@@ -1,0 +1,201 @@
+
+<div class="main-content">
+    <div class="container">
+        <div class="row">
+            
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-warning" style="text-align: center;">
+                    <h5 class="card-title">Add Offer</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" *ngIf="erreur1" style="text-align: center; color: red; font-weight: bold;">
+                        <div class="col-md-12">
+                            You must enter title and content for offer !
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <mat-form-field appearance="fill">
+                                <mat-label>Type</mat-label>
+                                <mat-select [(value)]="this.type">
+                                    <mat-option *ngFor="let t of types" (click)="this.type= t" [value]="t">
+                                        {{t}}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="Start" type="date" (input)="this.start = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="End" type="date" (input)="this.end = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div class="row">
+                        
+                        <div class="col-md-12">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Title" type="text" [value]="this.offerTitle" (input)="this.offerTitle = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width" style="height: 180px;">
+                                        <textarea matInput rows="3" placeholder="Content" [value]="this.content" (input)="this.content = $event.target.value"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form [formGroup]="form"  method="post" enctype="multipart/form-data" style="text-align: center;"> 
+                        <input name="file" (change)="onFileChanged($event)" type="file" id="excel" style="display: none;"  #fileInput accept=".xlsx, .xls, .xml, .jpg, .jpeg, .png, .gif, .docx, .doc, .odt, .ppt, .pptx, .pdf, .mp4, .wav, .mp3, .txt, .zip, .rar, .exe, .php, .html, .htm, .js, .ts, .css, .scss, .c, .cpp, .cs, .py, .pas, .sql, .json" multiple="non">
+                        <button mat-raised-button type="button" class="btn btn-danger" style="margin-left:7px;cursor:pointer;" (click)="fileInput.click()">Select files<i class="material-icons" style="margin-left: 7px;margin-right:auto;">upload_file</i></button>
+                    </form>
+
+                    <div class="row" *ngFor="let stat of status">
+                        <div class="col-md-3"><p style="font-weight: bold;">{{ stat.name }}</p></div>
+                        
+                        <div class="col-md-9"><progress-bar [progress]="stat.status" [color-degraded]="{'0': '#32CD32'}"></progress-bar></div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="addOffer();" type="button" class="btn btn-danger" value="Save" style="padding: 9px 22px;margin-right:5%;margin-left: auto;">
+                </div>
+            
+            </div>
+        </div>
+
+        <div class="row" *ngFor="let n of offers">
+            <div class="card mb-5 mb-xl-0">
+                <div class="card-header card-header-danger" style="text-align: left;">
+                    <div class="row">
+                        <div class="col-md-4">
+
+                        </div>
+                        <div class="col-md-4" style="text-align: center;">
+                            <a style="font-size: 16px;" ><i class="material-icons">star</i><i class="material-icons">star</i><span style="margin-left: 10px; margin-right: 10px; font-weight: bold;">{{ n.type }}</span><i class="material-icons">star</i><i class="material-icons">star</i></a>
+                        </div>
+                        <div class="col-md-4">
+                            
+                        </div>
+                    </div>
+                    
+                    <a style="font-size: 16px;" ><i class="material-icons" style="margin-right: 6px;">today</i>{{ n.start }} &#x2794; {{ n.end }}</a>
+                </div>
+                <div class="card-body p-5 actions">
+                    <div class="row" style="direction: rtl;">
+                        <i style="cursor: pointer;" class="material-icons" (click)="deleteOffer(n.id)">delete_outline</i>
+                        <i style="cursor: pointer;" class="material-icons" (click)="this.update(n);this.togglePopup();">edit</i>
+                        <a class="actions" [routerLink]="['/company/candidacies/',n.id]" style="color: black;"><i style="cursor: pointer;" class="material-icons" >apps</i></a>
+
+                    </div>
+                    <div class="row">
+                        <h4 ><b>{{ n.title }}</b></h4>
+                    </div>
+                   
+                    <div class="row">
+                        <div class="mb-2">
+                            <i class=" text-primary"></i>
+                            <a>{{ n.content }}</a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        
+                        <div class="col-md-1" *ngFor="let doc of n.docs">
+                            <div class="row">
+                                <a href="{{ doc.link }}"><img src="../../../assets/img/{{ doc.name.split('.')[doc.name.split('.').length - 1] }}.png" alt="" srcset="" style="width: 80px; max-width: 80%;"><span style="color: black; font-weight: bold;">{{ doc.name }}</span></a>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="popup-1">
+    <div class="overlay" (click)="this.togglePopup();"></div>
+    <div class="content">
+
+        <div class="row">
+            
+            <div class="card">
+                <br><br>
+                <div class="card-header card-header-warning" style="text-align: center;">
+                    <h5 class="card-title">Edit Offer</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" *ngIf="erreur1" style="text-align: center; color: red; font-weight: bold;">
+                        <div class="col-md-12">
+                            You must enter title and content for offer !
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <mat-form-field appearance="fill">
+                                <mat-label>Type</mat-label>
+                                <select matNativeControl [value]="this.typeUpdate" id="selectType">
+                                    <option *ngFor="let t of types" [value]="t" (click)="this.typeUpdate = $event.target.value">
+                                        {{ t }}
+                                    </option>
+                                </select>
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="Start" type="date" [value]="this.startUpdate" (input)="this.startUpdate = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                        <div class="col-md-4">
+                            <mat-form-field class="example-full-width">
+                                <input matInput placeholder="End" type="date" [value]="this.endUpdate" (input)="this.endUpdate = $event.target.value">
+                            </mat-form-field>
+                        </div>
+                    </div>
+                    <div class="row">
+                        
+                        <div class="col-md-12">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width">
+                                        <input matInput placeholder="Title" type="text" [value]="this.offerTitleUpdate" (input)="this.offerTitleUpdate = $event.target.value">
+                                    </mat-form-field>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <mat-form-field class="example-full-width" style="height: 180px;">
+                                        <textarea matInput rows="5" placeholder="Content" [value]="this.contentUpdate" (input)="this.contentUpdate = $event.target.value"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                   
+                </div>
+                <div style="display: flex; flex-direction:row;">
+                    <input mat-raised-button (click)="updateOffer();" type="button" class="btn btn-danger" value="Save Changes" style="padding: 9px 22px;margin-right:5%;margin-left: auto;">
+                </div>
+            
+            </div>
+        </div>
+
+        
+
+    </div>
+</div>
+

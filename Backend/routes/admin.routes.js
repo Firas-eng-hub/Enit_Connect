@@ -1,0 +1,69 @@
+const express = require("express");
+const router = express.Router();
+
+const { authJwt } = require("../middlewares");
+const controller = require("../controllers/admin.controller");
+const savedoc = require('../helpers/savedoc');
+const newsdoc = require('../helpers/newsdoc');
+//Login Admin
+router.post("/", controller.signin);
+//Get All Students
+router.get("/allstudents", authJwt.verifyToken, controller.getAllStudents);
+//Get All Companies
+router.get("/allcompanies", authJwt.verifyToken, controller.getAllCompanies);
+//Get Students by key
+router.get("/search/student", authJwt.verifyToken, controller.getStudentsByKey);
+//Get Companies by key
+router.get("/search/company", authJwt.verifyToken, controller.getCompaniesByKey);
+//Send Email
+router.post("/contact", authJwt.verifyToken, controller.sendEmail);
+//Delete Students from database
+router.post("/student/delete", authJwt.verifyToken, authJwt.isAdmin, controller.deleteStudents);
+//Delete Companies from database
+router.post("/company/delete", authJwt.verifyToken, authJwt.isAdmin, controller.deleteCompanies);
+//Get Student informations by ID
+router.get("/student/:id", authJwt.verifyToken, controller.getStudentById);
+//Add Students
+router.post("/student/add", authJwt.verifyToken, authJwt.isAdmin, controller.addStudents);
+//Update Student informations
+router.patch("/student/:id", authJwt.verifyToken, authJwt.isAdmin, controller.updateStudent);
+//Delete Student from database
+router.delete("/student/:id", authJwt.verifyToken, authJwt.isAdmin, controller.deleteStudent);
+//Get Company informations by ID
+router.get("/company/:id", authJwt.verifyToken, controller.getCompanyById);
+//Edit Company informations
+router.patch("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.updateCompany);
+//Delete Company from database
+router.delete("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.deleteCompany);
+//Add folder
+router.post('/folder',authJwt.verifyToken, authJwt.isAdmin, controller.createFolder);
+//Add file
+router.post('/file', savedoc, controller.createFile);
+//Get documents
+router.post('/documents',authJwt.verifyToken, controller.getDocuments);
+//Delete document
+router.post('/deldoc', authJwt.verifyToken, controller.deleteDocument);
+//Search for document
+router.post('/searchdoc', authJwt.verifyToken, controller.searchDocument);
+//Receive message
+router.post('/message', controller.saveMessage);
+//Get messages
+router.get('/message',authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
+//Get number of unread messages
+router.get('/nbmessage',authJwt.verifyToken, controller.getNbMessage);
+//Delete message
+router.delete('/message/:id',authJwt.verifyToken, authJwt.isAdmin, controller.deleteMessage);
+//Delete news
+router.delete('/news/:id',authJwt.verifyToken, controller.deleteNews);
+//Add news
+router.post('/news',authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
+//Save docs for news
+router.post('/newsdoc',newsdoc, controller.newsDoc);
+//Get news
+router.get('/news', controller.getNews);
+
+
+module.exports = router;
+
+
+
