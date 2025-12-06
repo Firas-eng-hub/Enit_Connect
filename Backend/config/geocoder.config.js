@@ -1,45 +1,40 @@
 const NodeGeocoder = require('node-geocoder');
 
+// OpenStreetMap/Nominatim - FREE, no API key required
 const options = {
-  provider: 'here',
-
-  // Optional depending on the providers
+  provider: 'openstreetmap',
   httpAdapter: 'https',
-  apiKey: process.env.GEOCODER_API_KEY, // for Mapquest, OpenCage, Google Premier
-  formatter: null // 'gpx', 'string', ...
+  formatter: null
 };
 
 function latlng(req, res, callback) {
-  // If no API key is configured, skip geocoding
-  if (!process.env.GEOCODER_API_KEY) {
-    console.log('Geocoder API key not configured. Skipping geocoding.');
+  const geocoder = NodeGeocoder(options);
+  const add = (req.body.address || '') + ' ' + (req.body.city || '');
+
+  if (!add.trim()) {
+    console.log('No address provided for geocoding');
     callback(null);
     return;
   }
 
-  const geocoder = NodeGeocoder(options);
-  const add = req.body.address + ' ' + req.body.city;
   geocoder.geocode({
     address: add,
-    country: req.body.country,
-    language: 'FR'
+    country: req.body.country || '',
+    language: 'en'
   }).then(result => {
-    callback(result[0]);
-  })
-    .catch(err => {
-      // Don't fail the request if geocoding fails
-      console.error('Geocoding failed:', err.message);
+    if (result && result[0]) {
+      callback(result[0]);
+    } else {
+      console.log('No geocoding results found for:', add);
       callback(null);
-    });
-};
+    }
+  }).catch(err => {
+    console.error('Geocoding failed:', err.message);
+    callback(null);
+  });
+}
 
 function reverse(req, res, callback) {
-  if (!process.env.GEOCODER_API_KEY) {
-    console.log('Geocoder API key not configured. Skipping reverse geocoding.');
-    callback(null);
-    return;
-  }
-
   const geocoder = NodeGeocoder(options);
   geocoder.reverse(req.query)
     .then(result => {
@@ -49,6 +44,6 @@ function reverse(req, res, callback) {
       console.error('Reverse geocoding failed:', err.message);
       callback(null);
     });
-};
+}
 
 module.exports = { options, latlng, reverse };
