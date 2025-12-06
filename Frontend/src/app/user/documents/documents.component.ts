@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
@@ -65,7 +66,7 @@ export class DocumentsComponent implements OnInit {
     this.documents = [];
     this.emp = emp;
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post("http://localhost:3000/student/documents",{emp : emp} ,{ headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/student/documents`,{emp : emp} ,{ headers: reqHeader }).subscribe((data : any)=>{
      console.log(data);
       this.documents = data;
       if(this.documents.length == 0){
@@ -100,7 +101,7 @@ export class DocumentsComponent implements OnInit {
       doc.emplacement = this.emp;
       console.log(doc);
       var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-      this.http.post("http://localhost:3000/student/folder", doc ,{ headers: reqHeader }).subscribe((data : any)=>{
+      this.http.post(`${environment.apiUrl}/student/folder`, doc ,{ headers: reqHeader }).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup1();
@@ -126,7 +127,7 @@ export class DocumentsComponent implements OnInit {
         }
       });
       var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-      this.http.post("http://localhost:3000/student/deldoc",{title:  title , emplacement: this.emp ,type: type ,link: link} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      this.http.post(`${environment.apiUrl}/student/deldoc`,{title:  title , emplacement: this.emp ,type: type ,link: link} ,{ headers: reqHeader }).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup2();
@@ -180,7 +181,7 @@ export class DocumentsComponent implements OnInit {
       fData.append("name",this.form.value.name);
       fData.append("file",  this.selectedFile, this.selectedFile.name);
       console.log(fData);
-      this.http.post('http://localhost:3000/student/file?type='+type+'&title='+name+'&emplacement='+this.emp+'&idcreator='+doc.idcreator+'&date='+doc.date+'&namecreator='+doc.namecreator+'&size='+this.size, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+      this.http.post(`${environment.apiUrl}/student/file?type=`+type+'&title='+name+'&emplacement='+this.emp+'&idcreator='+doc.idcreator+'&date='+doc.date+'&namecreator='+doc.namecreator+'&size='+this.size, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
       if(event.type === HttpEventType.UploadProgress )  {
        for(var j = 0; j<this.status.length;j++){
          console.log(event)
@@ -227,7 +228,7 @@ export class DocumentsComponent implements OnInit {
       this.documents = [];
       this.emp = '/';
       var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-      this.http.post("http://localhost:3000/student/searchdoc",{title : this.title} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      this.http.post(`${environment.apiUrl}/student/searchdoc`,{title : this.title} ,{ headers: reqHeader }).subscribe((data : any)=>{
        console.log(data);
         this.documents = data;
         if(this.documents.length == 0){

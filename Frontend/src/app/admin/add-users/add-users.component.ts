@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { Company } from 'app/company/models/company.model';
@@ -184,7 +185,7 @@ export class AddUsersComponent implements OnInit {
     document.getElementById("submit-btn").setAttribute("style","cursor: not-allowed! important;");
     
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post('http://localhost:3000/admin/student/add', {students : this.users}, { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/admin/student/add`, {students : this.users}, { headers: reqHeader }).subscribe((data : any)=>{
       this.page = "success";
       console.log(data);
    },

@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 
@@ -8,7 +9,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NewsComponent implements OnInit {
 
-  constructor(private http : HttpClient) { }
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
     this.getNews();
@@ -24,63 +25,63 @@ export class NewsComponent implements OnInit {
   news = [];
   page = "send";
   message = {
-    name : "",
-    email : "",
-    message : "",
-    date : "",
-    lu : false
+    name: "",
+    email: "",
+    message: "",
+    date: "",
+    lu: false
   };
   erreur1 = false;
   public popup = 'home';
-  public togglePopup(){
+  public togglePopup() {
     this.popup = 'home';
     document.getElementById("popup-1").classList.toggle("active");
   }
-  public createUserAccount(){
+  public createUserAccount() {
     this.popup = 'createUserAccount';
   }
-  public createCompanyAccount(){
+  public createCompanyAccount() {
     this.popup = 'createCompanyAccount';
   }
-  public loginCompany(){
+  public loginCompany() {
     this.popup = 'loginCompany';
   }
-  sendEmail(){
-    if(this.message.name == "" || this.message.email == "" || this.message.message == "" ){
+  sendEmail() {
+    if (this.message.name == "" || this.message.email == "" || this.message.message == "") {
       this.erreur1 = true;
-    }else{
+    } else {
       var dateObj = new Date();
-        var month = dateObj.getUTCMonth() + 1; //months from 1-12
-        var day = dateObj.getUTCDate();
-        var year = dateObj.getUTCFullYear();
+      var month = dateObj.getUTCMonth() + 1; //months from 1-12
+      var day = dateObj.getUTCDate();
+      var year = dateObj.getUTCFullYear();
 
-        this.message.date = day + "/" + month + "/" + year;
-      
-      this.http.post("http://localhost:3000/admin/message", this.message ).subscribe((data : any)=>{
+      this.message.date = day + "/" + month + "/" + year;
+
+      this.http.post(`${environment.apiUrl}/admin/message`, this.message).subscribe((data: any) => {
         console.log(data);
         this.message = {
-          name : "",
-          email : "",
-          message : "",
-          date : "",
-          lu : false
+          name: "",
+          email: "",
+          message: "",
+          date: "",
+          lu: false
         };
         this.page = "success";
-     },
-     (err : HttpErrorResponse)=>{
-      console.log(err);
-     });  
+      },
+        (err: HttpErrorResponse) => {
+          console.log(err);
+        });
     }
 
   }
 
-  getNews(){
-    this.http.get("http://localhost:3000/admin/news").subscribe((data : any) => {
+  getNews() {
+    this.http.get(`${environment.apiUrl}/admin/news`).subscribe((data: any) => {
       this.news = data;
       console.log(this.news);
     },
-    (err : HttpErrorResponse)=>{
-    console.log(err);
-    });
+      (err: HttpErrorResponse) => {
+        console.log(err);
+      });
   }
 }

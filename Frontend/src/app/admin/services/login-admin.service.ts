@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Admin } from '../models/admin.model';
@@ -8,11 +9,11 @@ import { Admin } from '../models/admin.model';
 })
 export class LoginAdminService {
 
-   //readonly url = 'http://localhost:3000/admin';
+   //readonly url = `${environment.apiUrl}/admin`;
    constructor(private http : HttpClient) { }
    loginUser(admin : Admin){
      var reqHeader = new HttpHeaders({ 'Content-Type': 'application/json','No-Auth':'True' });
-     return this.http.post('http://localhost:3000/admin', admin, { headers: reqHeader });
+     return this.http.post(`${environment.apiUrl}/admin`, admin, { headers: reqHeader });
    }
 }
 

@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
@@ -40,7 +41,7 @@ export class ProfileUserComponent implements OnInit {
     profileData.append("image",  this.selectedFile, this.selectedFile.name);
     console.log(profileData);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post('http://localhost:3000/student/upload/' + localStorage.getItem("user_id"), profileData, { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/student/upload/` + localStorage.getItem("user_id"), profileData, { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       this.page = "profile";
       window.location.reload();
@@ -54,7 +55,7 @@ export class ProfileUserComponent implements OnInit {
   }
 
   
-  readonly url = 'http://localhost:3000/student/';
+  readonly url = `${environment.apiUrl}/student/`;
   constructor(private http : HttpClient, private profileService: ProfileService) { }
   user = new User("student");
   page = "profile";
@@ -145,7 +146,7 @@ export class ProfileUserComponent implements OnInit {
     document.getElementById("savechanges").setAttribute("disabled","true");
     document.getElementById("savechanges").setAttribute("style","cursor: not-allowed! important;");
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.patch("http://localhost:3000/student/"+localStorage.getItem("user_id"),this.user, { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.patch(`${environment.apiUrl}/student/`+localStorage.getItem("user_id"),this.user, { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       if(this.modifPic){
         this.updateProfilePicture();

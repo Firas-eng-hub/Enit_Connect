@@ -1,3 +1,4 @@
+import { environment } from '../../../../environments/environment';
 import { Component, OnInit, ElementRef } from '@angular/core';
 import { ROUTES } from '../admin-sidebar/admin-sidebar.component';
 import {Location, LocationStrategy, PathLocationStrategy} from '@angular/common';
@@ -41,7 +42,7 @@ export class AdminNavbarComponent implements OnInit {
     
     getNbMessages(){
         var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-        this.http.get("http://localhost:3000/admin/nbmessage",{ headers: reqHeader }).subscribe((data : any)=>{
+        this.http.get(`${environment.apiUrl}/admin/nbmessage`,{ headers: reqHeader }).subscribe((data : any)=>{
          console.log(data);
           this.nb = data.nb;
        },

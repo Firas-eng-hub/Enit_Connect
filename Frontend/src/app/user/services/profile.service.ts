@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 
@@ -11,7 +12,7 @@ import { Subject } from "rxjs";
 })
 export class ProfileService {
 
-  readonly url = "http://localhost:3000/student/";
+  readonly url = `${environment.apiUrl}/student/`;
 
   constructor(private http: HttpClient) {}
 
@@ -24,6 +25,6 @@ export class ProfileService {
     profileData.append("name",name);
     profileData.append("image", image, name);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    return this.http.patch('http://localhost:3000/student/upload/' + localStorage.getItem("user_id"), profileData, { headers: reqHeader });
+    return this.http.patch(`${environment.apiUrl}/student/upload/` + localStorage.getItem("user_id"), profileData, { headers: reqHeader });
   }
 }

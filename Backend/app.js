@@ -56,6 +56,14 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to TIC-ENIT API." });
 });
 
+// Health check endpoint for Docker
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 //Routes
 // Static files (if needed in future)
 app.use("/admin", admin_routes);
@@ -64,3 +72,4 @@ app.use("/company", company_routes);
 app.use("/offers", offer_routes);
 
 module.exports = app;
+

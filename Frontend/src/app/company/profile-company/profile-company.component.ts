@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Company } from '../models/company.model';
@@ -10,14 +11,14 @@ import { Company } from '../models/company.model';
 export class ProfileCompanyComponent implements OnInit {
 
   
-  readonly url = 'http://localhost:3000/company/';
+  readonly url = `${environment.apiUrl}/company/`;
   constructor(private http : HttpClient) { }
   company = new Company();
   page = "profile";
   picture = "./assets/img/companyprofil.png";
   ngOnInit() {
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.get('http://localhost:3000/company/info?id='+localStorage.getItem("company_id"), { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.get(`${environment.apiUrl}/company/info?id=`+localStorage.getItem("company_id"), { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       this.company.name =data.name;
       this.company.email =data.email;
@@ -41,7 +42,7 @@ export class ProfileCompanyComponent implements OnInit {
   updateProfile(){
     console.log(this.company);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.patch('http://localhost:3000/company/update?id='+localStorage.getItem("company_id"),this.company, { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.patch(`${environment.apiUrl}/company/update?id=`+localStorage.getItem("company_id"),this.company, { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       
       this.page = "profile";

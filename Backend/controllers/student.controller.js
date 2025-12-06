@@ -549,26 +549,39 @@ exports.updateStudent = (req, res, next) => {
 exports.companiesInfo = (req, res) => {
     const info = [];
     let nb = 0;
+
+    // Handle empty array - return immediately
+    if (!req.body.companies || req.body.companies.length === 0) {
+        return res.status(200).send(info);
+    }
+
     req.body.companies.forEach(elt => {
         Company.findById({ _id: elt }).then((company) => {
-            info.push({
-                id: company._id,
-                name: company.name,
-                about: company.about,
-                address: company.address,
-                city: company.city,
-                country: company.country,
-                email: company.email,
-                phone: company.phone,
-                website: company.website,
-                logo: company.logo
-            });
+            // Handle case where company is not found
+            if (company) {
+                info.push({
+                    id: company._id,
+                    name: company.name,
+                    about: company.about,
+                    address: company.address,
+                    city: company.city,
+                    country: company.country,
+                    email: company.email,
+                    phone: company.phone,
+                    website: company.website,
+                    logo: company.logo
+                });
+            }
             nb++;
             if (nb == req.body.companies.length) {
                 res.status(200).send(info);
             }
         }).catch((erreur) => {
-            res.status(500).send({ message: erreur });
+            nb++;
+            console.error('Error finding company:', erreur);
+            if (nb == req.body.companies.length) {
+                res.status(200).send(info);
+            }
         })
     });
 

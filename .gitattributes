@@ -1,0 +1,22 @@
+# Handle line endings automatically for cross-platform compatibility
+* text=auto
+
+# Force LF line endings for shell scripts (critical for Docker)
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# Force LF for config files
+*.conf text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile* text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.rar binary
