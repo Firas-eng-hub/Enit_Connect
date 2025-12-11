@@ -57,7 +57,7 @@ export class NewsComponent implements OnInit {
 
       this.message.date = day + "/" + month + "/" + year;
 
-      this.http.post(`${environment.apiUrl}/admin/message`, this.message).subscribe((data: any) => {
+      this.http.post(`${environment.apiUrl}/api/admin/message`, this.message).subscribe((data: any) => {
         console.log(data);
         this.message = {
           name: "",
@@ -76,7 +76,7 @@ export class NewsComponent implements OnInit {
   }
 
   getNews() {
-    this.http.get(`${environment.apiUrl}/admin/news`).subscribe((data: any) => {
+    this.http.get(`${environment.apiUrl}/api/admin/news`).subscribe((data: any) => {
       this.news = data;
       console.log(this.news);
     },

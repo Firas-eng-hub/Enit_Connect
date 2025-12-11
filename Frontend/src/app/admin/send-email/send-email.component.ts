@@ -30,7 +30,7 @@ export class SendEmailComponent implements OnInit {
     document.getElementById("submit-btn").setAttribute("disabled","true");
     document.getElementById("submit-btn").setAttribute("style","cursor: not-allowed! important;");
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post(`${environment.apiUrl}/admin/contact`,this.email, { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/api/admin/contact`,this.email, { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       this.page = "success";
       this.addresses = [];

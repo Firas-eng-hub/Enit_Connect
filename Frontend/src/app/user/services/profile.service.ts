@@ -25,6 +25,6 @@ export class ProfileService {
     profileData.append("name",name);
     profileData.append("image", image, name);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    return this.http.patch(`${environment.apiUrl}/student/upload/` + localStorage.getItem("user_id"), profileData, { headers: reqHeader });
+    return this.http.patch(`${environment.apiUrl}/api/student/upload/` + localStorage.getItem("user_id"), profileData, { headers: reqHeader });
   }
 }

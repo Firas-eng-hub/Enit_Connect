@@ -29,7 +29,7 @@ export class CandidaciesComponent implements OnInit {
       id = param.get('id');
     });
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.get(`${environment.apiUrl}/offers/candidacies?id=`+id ,{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.get(`${environment.apiUrl}/api/offers/candidacies?id=`+id ,{ headers: reqHeader }).subscribe((data : any) => {
       this.candidacies = data.candidacies;
       this.offer = data;
       console.log(this.offer);
@@ -40,7 +40,7 @@ export class CandidaciesComponent implements OnInit {
   }
   public getUserInfo(id : string){
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.get(`${environment.apiUrl}/company/user/`+id ,{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.get(`${environment.apiUrl}/api/company/user/`+id ,{ headers: reqHeader }).subscribe((data : any) => {
       this.user = data;
       if(data.picture != ""){
         this.picture = data.picture;

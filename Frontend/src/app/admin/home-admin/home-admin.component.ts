@@ -68,7 +68,7 @@ export class HomeAdminComponent implements OnInit {
 
   postNews(news : News){
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post(`${environment.apiUrl}/admin/news`,news ,{ headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/api/admin/news`,news ,{ headers: reqHeader }).subscribe((data : any)=>{
      console.log(data);
     this.newsTitle = "";
     this.content = "";
@@ -116,7 +116,7 @@ export class HomeAdminComponent implements OnInit {
           fData.append("file",  this.selectedFile, this.selectedFile.name);
           console.log(fData);
 
-          this.http.post(`${environment.apiUrl}/admin/newsdoc?type=`+type, fData ).subscribe((data : any)=>{
+          this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData ).subscribe((data : any)=>{
             console.log(data);
             news.picture = data.link;
             if(this.noDocs){
@@ -154,7 +154,7 @@ export class HomeAdminComponent implements OnInit {
             fData.append("name",this.form.value.name);
             fData.append("file",  this.selectedFile, this.selectedFile.name);
             //console.log(fData);
-            this.http.post(`${environment.apiUrl}/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+            this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
             if(event.type === HttpEventType.UploadProgress )  {
              for(var j = 0; j<this.status.length;j++){
                console.log(event)
@@ -196,7 +196,7 @@ export class HomeAdminComponent implements OnInit {
   }
 
   getNews(){
-    this.http.get(`${environment.apiUrl}/admin/news`).subscribe((data : any) => {
+    this.http.get(`${environment.apiUrl}/api/admin/news`).subscribe((data : any) => {
       this.news = data;
       console.log(this.news);
     },
@@ -207,7 +207,7 @@ export class HomeAdminComponent implements OnInit {
 
   deleteNews(id : string){
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.delete(`${environment.apiUrl}/admin/news/`+id,{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.delete(`${environment.apiUrl}/api/admin/news/`+id,{ headers: reqHeader }).subscribe((data : any) => {
       console.log(data);
       this.getNews();
     },

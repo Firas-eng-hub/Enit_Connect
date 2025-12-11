@@ -27,7 +27,7 @@ export class HomeUserComponent implements OnInit {
   getOffers(){
     
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.get(`${environment.apiUrl}/offers` ,{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.get(`${environment.apiUrl}/api/offers` ,{ headers: reqHeader }).subscribe((data : any) => {
       console.log(data);  
       this.offers1 = data;
       this.getCompaniesInfo();
@@ -51,7 +51,7 @@ export class HomeUserComponent implements OnInit {
     });
     console.log(this.companiesId);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/student/companiesinfo` ,{ companies : this.companiesId},{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.post(`${environment.apiUrl}/api/student/companiesinfo` ,{ companies : this.companiesId},{ headers: reqHeader }).subscribe((data : any) => {
       this.companiesInfo = data;
       this.offers = this.offers1;
       console.log(data);
@@ -97,7 +97,7 @@ export class HomeUserComponent implements OnInit {
   postCandidacy(cand : Candidacy){
     console.log(cand);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/student/apply/`+ this.idOffer,cand ,{ headers: reqHeader }).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/api/student/apply/`+ this.idOffer,cand ,{ headers: reqHeader }).subscribe((data : any)=>{
      //console.log(data);
     
     this.contentOffer = "";
@@ -148,7 +148,7 @@ export class HomeUserComponent implements OnInit {
           fData.append("name",this.form.value.name);
           fData.append("file",  this.selectedFile, this.selectedFile.name);
           //console.log(fData);
-          this.http.post(`${environment.apiUrl}/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+          this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
           if(event.type === HttpEventType.UploadProgress )  {
             for(var j = 0; j<this.status.length;j++){
               console.log(event)

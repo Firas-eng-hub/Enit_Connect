@@ -24,7 +24,7 @@ export class MessagesComponent implements OnInit {
   }
   deleteMessage(id : string){
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.delete(`${environment.apiUrl}/admin/message/`+ id,{ headers: reqHeader }).subscribe((data : any)=>{
+    this.http.delete(`${environment.apiUrl}/api/admin/message/`+ id,{ headers: reqHeader }).subscribe((data : any)=>{
      console.log(data);
       this.getMessages();
    },
@@ -36,7 +36,7 @@ export class MessagesComponent implements OnInit {
   getMessages(){
     
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.get(`${environment.apiUrl}/admin/message`,{ headers: reqHeader }).subscribe((data : any)=>{
+    this.http.get(`${environment.apiUrl}/api/admin/message`,{ headers: reqHeader }).subscribe((data : any)=>{
      console.log(data);
       this.messages = data;
       if(this.messages.length == 0){

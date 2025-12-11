@@ -12,6 +12,6 @@ export class RegisterCompanyService {
 
   registerCompany(company : Company){
     var reqHeader = new HttpHeaders({ 'Content-Type': 'application/json','No-Auth':'True' });
-    return this.http.post(`${environment.apiUrl}/company/signup`, company, { headers: reqHeader });
+    return this.http.post(`${environment.apiUrl}/api/company/signup`, company, { headers: reqHeader });
   }
 }

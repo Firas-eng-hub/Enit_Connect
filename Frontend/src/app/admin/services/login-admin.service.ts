@@ -13,7 +13,7 @@ export class LoginAdminService {
    constructor(private http : HttpClient) { }
    loginUser(admin : Admin){
      var reqHeader = new HttpHeaders({ 'Content-Type': 'application/json','No-Auth':'True' });
-     return this.http.post(`${environment.apiUrl}/admin`, admin, { headers: reqHeader });
+     return this.http.post(`${environment.apiUrl}/api/admin`, admin, { headers: reqHeader });
    }
 }
 

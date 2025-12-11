@@ -83,7 +83,7 @@ export class SearchUserComponent implements OnInit {
     });
     console.log(this.companiesId);
     var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/student/companiesinfo` ,{ companies : this.companiesId},{ headers: reqHeader }).subscribe((data : any) => {
+    this.http.post(`${environment.apiUrl}/api/student/companiesinfo` ,{ companies : this.companiesId},{ headers: reqHeader }).subscribe((data : any) => {
       this.companiesInfo = data;
       this.offers = this.offers1;
       console.log(data);
@@ -149,7 +149,7 @@ noResult = false;
     }else if(this.entity == "company"){
       entite = "companies";
     }
-    this.http.get(`${environment.apiUrl}/student/` + entite , { headers: reqHeader }).subscribe((data : any)=>{
+    this.http.get(`${environment.apiUrl}/api/student/` + entite , { headers: reqHeader }).subscribe((data : any)=>{
       console.log(data);
       this.togglePopupLoading();
       if(this.entity == "student"){

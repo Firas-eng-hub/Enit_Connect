@@ -13,6 +13,6 @@ export class RegisterUserService {
 
   registerUser(user: User) {
     var reqHeader = new HttpHeaders({ 'Content-Type': 'application/json', 'No-Auth': 'True' });
-    return this.http.post(`${this.apiUrl}/student/signup`, user, { headers: reqHeader });
+    return this.http.post(`${this.apiUrl}/api/student/signup`, user, { headers: reqHeader });
   }
 }
