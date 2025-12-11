@@ -307,13 +307,20 @@ exports.signin = (req, res) => {
             });
         }
 
-        const token = jwt.sign({ email: student.email, id: student._id }, config.secret, { expiresIn: "999999h" });
+        const token = jwt.sign({ email: student.email, id: student._id }, config.secret, { expiresIn: "24h" });
 
-        return res.status(200).send({
-            id: student._id,
-            email: student.email,
-            name: student.firstname + ' ' + student.lastname,
-            accessToken: token
+        // Create refresh token
+        const RefreshToken = db.refreshToken;
+        RefreshToken.createToken(student._id, 'Student').then(refreshToken => {
+            return res.status(200).send({
+                id: student._id,
+                email: student.email,
+                name: student.firstname + ' ' + student.lastname,
+                accessToken: token,
+                refreshToken: refreshToken
+            });
+        }).catch(err => {
+            return res.status(500).send({ message: "Error creating refresh token", error: err });
         });
     });
 };

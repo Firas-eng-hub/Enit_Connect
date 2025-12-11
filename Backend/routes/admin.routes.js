@@ -1,12 +1,22 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 
 const { authJwt } = require("../middlewares");
 const controller = require("../controllers/admin.controller");
 const savedoc = require('../helpers/savedoc');
 const newsdoc = require('../helpers/newsdoc');
+
+// Rate limiter for admin authentication (stricter)
+const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3, // Only 3 attempts for admin
+  message: 'Too many admin login attempts, please try again later.',
+  skipSuccessfulRequests: true,
+});
+
 //Login Admin
-router.post("/", controller.signin);
+router.post("/", adminAuthLimiter, controller.signin);
 //Get All Students
 router.get("/allstudents", authJwt.verifyToken, controller.getAllStudents);
 //Get All Companies

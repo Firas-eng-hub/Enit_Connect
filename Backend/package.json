@@ -28,7 +28,12 @@
     "dotenv": "^8.2.0",
     "email-templates": "^8.0.4",
     "express": "^4.17.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.2.1",
     "express-trimmer": "0.0.3",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.6.6",
     "mongoose": "^5.12.3",
@@ -38,7 +43,9 @@
     "nodemailer": "^6.5.0",
     "nodemailer-sendinblue-transport": "^1.2.3",
     "string-similarity": "^4.0.4",
-    "undici": "^5.28.4"
+    "undici": "^5.28.4",
+    "uuid": "^13.0.0",
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"

@@ -122,12 +122,19 @@ exports.signin = (req, res) => {
             });
         }
 
-        const token = jwt.sign({ email: company.email, id: company._id }, config.secret, { expiresIn: "999999h" });
+        const token = jwt.sign({ email: company.email, id: company._id }, config.secret, { expiresIn: "24h" });
 
-        return res.status(200).send({
-            id: company._id,
-            email: company.email,
-            accessToken: token
+        // Create refresh token
+        const RefreshToken = db.refreshToken;
+        RefreshToken.createToken(company._id, 'Company').then(refreshToken => {
+            return res.status(200).send({
+                id: company._id,
+                email: company.email,
+                accessToken: token,
+                refreshToken: refreshToken
+            });
+        }).catch(err => {
+            return res.status(500).send({ message: "Error creating refresh token", error: err });
         });
     });
 };
