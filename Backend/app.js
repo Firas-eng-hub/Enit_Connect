@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 
 dotenv.config({ path: '.env' })
 
@@ -56,12 +57,15 @@ app.use(hpp());
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// CORS configuration
+// Cookie parser for HTTP-only JWT cookies
+app.use(cookieParser());
+
+// CORS configuration - must allow credentials for cookies
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || '*',
+  origin: process.env.FRONTEND_URL || 'http://localhost:4200',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-  credentials: true,
+  credentials: true, // Required for cookies
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
@@ -74,10 +78,7 @@ const dbConfig = require("./config/db.config");
 //`mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`
 //`mongodb+srv://${dbConfig.user}:${dbConfig.pwd}@${dbConfig.domain}/${dbConfig.DB}?retryWrites=true&w=majority`
 db.mongoose
-  .connect(`mongodb+srv://${dbConfig.user}:${dbConfig.pwd}@${dbConfig.domain}/${dbConfig.DB}?retryWrites=true&w=majority`, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
+  .connect(`mongodb+srv://${dbConfig.user}:${dbConfig.pwd}@${dbConfig.domain}/${dbConfig.DB}?retryWrites=true&w=majority`)
   .then(() => {
     console.log("Successfully connect to MongoDB.");
   })
@@ -86,7 +87,7 @@ db.mongoose
     process.exit();
   });
 
-db.mongoose.set('useCreateIndex', true);
+// Note: useCreateIndex removed in Mongoose 6+, no longer needed
 
 //Home Page
 app.get("/", (req, res) => {

@@ -16,8 +16,8 @@ on:
 
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/tic-backend
-  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/tic-frontend
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/enit-connect-backend
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/enit-connect-frontend
 
 jobs:
   # ==========================================

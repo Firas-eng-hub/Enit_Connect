@@ -9,9 +9,7 @@ services:
   # ==========================================
   backend:
     container_name: tic-backend
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile
+    image: firaskali/enit-connect-backend:latest
     restart: unless-stopped
     env_file:
       - ./Backend/.env
@@ -37,9 +35,7 @@ services:
   # ==========================================
   frontend:
     container_name: tic-frontend
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile
+    image: firaskali/enit-connect-frontend:latest
     restart: unless-stopped
     ports:
       - "80:80"

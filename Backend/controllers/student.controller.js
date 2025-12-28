@@ -281,6 +281,8 @@ exports.signup = (req, res) => {
 };
 
 exports.signin = (req, res) => {
+    const authJwt = require("../middlewares/authJwt");
+
     Student.findOne({
         email: req.body.email
     }).exec((err, student) => {
@@ -302,7 +304,6 @@ exports.signin = (req, res) => {
 
         if (!passwordIsValid) {
             return res.status(401).send({
-                accessToken: null,
                 message: "Invalid Password!"
             });
         }
@@ -312,12 +313,15 @@ exports.signin = (req, res) => {
         // Create refresh token
         const RefreshToken = db.refreshToken;
         RefreshToken.createToken(student._id, 'Student').then(refreshToken => {
+            // Set HTTP-only cookies (XSS protection)
+            authJwt.setAuthCookies(res, token, refreshToken, 'student');
+
+            // Return user info without tokens in body
             return res.status(200).send({
                 id: student._id,
                 email: student.email,
                 name: student.firstname + ' ' + student.lastname,
-                accessToken: token,
-                refreshToken: refreshToken
+                userType: 'student'
             });
         }).catch(err => {
             return res.status(500).send({ message: "Error creating refresh token", error: err });

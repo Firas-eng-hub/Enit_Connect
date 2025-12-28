@@ -96,6 +96,8 @@ exports.signup = (req, res) => {
 };
 
 exports.signin = (req, res) => {
+    const authJwt = require("../middlewares/authJwt");
+
     Company.findOne({
         email: req.body.email
     }).exec((err, company) => {
@@ -117,7 +119,6 @@ exports.signin = (req, res) => {
 
         if (!passwordIsValid) {
             return res.status(401).send({
-                accessToken: null,
                 message: "Invalid Password!"
             });
         }
@@ -127,11 +128,14 @@ exports.signin = (req, res) => {
         // Create refresh token
         const RefreshToken = db.refreshToken;
         RefreshToken.createToken(company._id, 'Company').then(refreshToken => {
+            // Set HTTP-only cookies (XSS protection)
+            authJwt.setAuthCookies(res, token, refreshToken, 'company');
+
             return res.status(200).send({
                 id: company._id,
                 email: company.email,
-                accessToken: token,
-                refreshToken: refreshToken
+                name: company.name,
+                userType: 'company'
             });
         }).catch(err => {
             return res.status(500).send({ message: "Error creating refresh token", error: err });

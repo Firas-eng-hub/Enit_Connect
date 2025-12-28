@@ -348,24 +348,6 @@ GEOCODER_API_KEY=
 GEOCODER_PROVIDER=openstreetmap
 ```
 
-### How to Get Gmail App Password
-1. **Enable 2-Factor Authentication:**  
-   Visit https://myaccount.google.com/security
-2. **Generate App Password:**  
-   Go to https://myaccount.google.com/apppasswords  
-   Select "Mail" and your device → Generate
-3. **Copy the 16-character password** and paste in `EMAIL_PASS`
-
-### MongoDB Atlas Setup
-1. Create free cluster at https://cloud.mongodb.com/
-2. Create database user (username/password)
-3. Whitelist your IP or allow all IPs (`0.0.0.0/0`)
-4. Get connection string and extract:
-   - `DB_USER`: Database username
-   - `DB_PASS`: Database password
-   - `DB_HOST`: Cluster URL (e.g., `cluster0.xxxxx.mongodb.net`)
-   - `DB_NAME`: Database name (default: `enit_connect`)
-
 ### Frontend Environment Configuration
 
 **Development (`src/environments/environment.ts`):**
