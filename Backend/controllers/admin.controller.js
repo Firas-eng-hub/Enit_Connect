@@ -259,22 +259,19 @@ exports.getDocuments = (req, res) => {
         });
 }
 
-exports.signin = (req, res) => {
+exports.signin = async (req, res) => {
     const authJwt = require("../middlewares/authJwt");
 
-    Admin.findOne({
-        email: req.body.email
-    }).exec((err, admin) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
+    try {
+        const admin = await Admin.findOne({ email: req.body.email }).exec();
+
         if (!admin) {
-            return res.status(404).send({ message: "Admin Not found." });
+            return res.status(401).send({ message: "Invalid email or password." });
         }
 
         if (req.body.password !== admin.password) {
             return res.status(401).send({
-                message: "Invalid Password!"
+                message: "Invalid email or password."
             });
         }
 
@@ -282,20 +279,20 @@ exports.signin = (req, res) => {
 
         // Create refresh token
         const RefreshToken = db.refreshToken;
-        RefreshToken.createToken(admin._id, 'Admin').then(refreshToken => {
-            // Set HTTP-only cookies (XSS protection)
-            authJwt.setAuthCookies(res, token, refreshToken, 'admin');
+        const refreshToken = await RefreshToken.createToken(admin._id, 'Admin');
+        
+        // Set HTTP-only cookies (XSS protection)
+        authJwt.setAuthCookies(res, token, refreshToken, 'admin');
 
-            return res.status(200).send({
-                name: "Administrator",
-                id: admin._id,
-                email: admin.email,
-                userType: 'admin'
-            });
-        }).catch(err => {
-            return res.status(500).send({ message: "Error creating refresh token", error: err });
+        return res.status(200).send({
+            name: "Administrator",
+            id: admin._id,
+            email: admin.email,
+            userType: 'admin'
         });
-    });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
 exports.getAllStudents = (req, res, next) => {

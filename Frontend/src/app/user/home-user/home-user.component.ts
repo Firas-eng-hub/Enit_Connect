@@ -26,8 +26,8 @@ export class HomeUserComponent implements OnInit {
   companiesInfo = [];
   getOffers(){
     
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.get(`${environment.apiUrl}/api/offers` ,{ headers: reqHeader }).subscribe((data : any) => {
+    
+    this.http.get(`${environment.apiUrl}/api/offers` ).subscribe((data : any) => {
       console.log(data);  
       this.offers1 = data;
       this.getCompaniesInfo();
@@ -50,8 +50,8 @@ export class HomeUserComponent implements OnInit {
       this.companiesId.push(elt.companyid);
     });
     console.log(this.companiesId);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/api/student/companiesinfo` ,{ companies : this.companiesId},{ headers: reqHeader }).subscribe((data : any) => {
+    
+    this.http.post(`${environment.apiUrl}/api/student/companiesinfo` ,{ companies : this.companiesId}).subscribe((data : any) => {
       this.companiesInfo = data;
       this.offers = this.offers1;
       console.log(data);
@@ -96,8 +96,8 @@ export class HomeUserComponent implements OnInit {
 
   postCandidacy(cand : Candidacy){
     console.log(cand);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/api/student/apply/`+ this.idOffer,cand ,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/student/apply/`+ this.idOffer,cand ).subscribe((data : any)=>{
      //console.log(data);
     
     this.contentOffer = "";

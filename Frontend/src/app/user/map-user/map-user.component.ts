@@ -35,9 +35,9 @@ export class MapUserComponent implements AfterViewInit {
     localStorage.removeItem("addresses");
     this.entity = localStorage.getItem("entity");
     localStorage.removeItem("entity");
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
+    
     this.addresses.forEach(addr => {
-      this.http.get(`${environment.apiUrl}/`+ this.entity + "/location?property=email&key=" + addr, { headers: reqHeader }).subscribe((data : any)=>{
+      this.http.get(`${environment.apiUrl}/api/`+ this.entity + "/location?property=email&key=" + addr).subscribe((data : any)=>
       console.log(data);
       if(data[0].lat != null && data[0].lng != null){
         var coord = {

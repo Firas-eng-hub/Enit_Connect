@@ -40,8 +40,8 @@ export class ProfileUserComponent implements OnInit {
     profileData.append("name",this.form.value.name);
     profileData.append("image",  this.selectedFile, this.selectedFile.name);
     console.log(profileData);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.post(`${environment.apiUrl}/api/student/upload/` + localStorage.getItem("user_id"), profileData, { headers: reqHeader }).subscribe((data : any)=>{
+    // Using withCredentials for HTTP-only cookie auth
+    this.http.post(`${environment.apiUrl}/api/student/upload/` + localStorage.getItem("user_id"), profileData, { withCredentials: true }).subscribe((data : any)=>{
       console.log(data);
       this.page = "profile";
       window.location.reload();
@@ -55,7 +55,7 @@ export class ProfileUserComponent implements OnInit {
   }
 
   
-  readonly url = `${environment.apiUrl}/student/`;
+  readonly url = `${environment.apiUrl}/api/student/`;
   constructor(private http : HttpClient, private profileService: ProfileService) { }
   user = new User("student");
   page = "profile";
@@ -96,8 +96,8 @@ export class ProfileUserComponent implements OnInit {
     for(i=2000; i<this.date.getFullYear() + 5;i++){
       this.years.push(i+"");
     }
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.get(this.url+localStorage.getItem("user_id"), { headers: reqHeader }).subscribe((data : any)=>{
+    // Using withCredentials for HTTP-only cookie auth
+    this.http.get(this.url+localStorage.getItem("user_id"), { withCredentials: true }).subscribe((data : any)=>{
       console.log(data);
       this.user.firstname =data.firstname;
       this.user.lastname =data.lastname;
@@ -118,7 +118,7 @@ export class ProfileUserComponent implements OnInit {
       
    },
    (err : HttpErrorResponse)=>{
-     
+     console.log('Error fetching profile:', err);
    });
    this.http.get('assets/json/countries.json').subscribe((data : any )=> {
      data.countries.forEach(element => {
@@ -145,8 +145,8 @@ export class ProfileUserComponent implements OnInit {
     this.togglePopup();
     document.getElementById("savechanges").setAttribute("disabled","true");
     document.getElementById("savechanges").setAttribute("style","cursor: not-allowed! important;");
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("userToken")});
-    this.http.patch(`${environment.apiUrl}/api/student/`+localStorage.getItem("user_id"),this.user, { headers: reqHeader }).subscribe((data : any)=>{
+    // Using withCredentials for HTTP-only cookie auth
+    this.http.patch(`${environment.apiUrl}/api/student/`+localStorage.getItem("user_id"),this.user, { withCredentials: true }).subscribe((data : any)=>{
       console.log(data);
       if(this.modifPic){
         this.updateProfilePicture();

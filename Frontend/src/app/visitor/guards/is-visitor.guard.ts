@@ -10,20 +10,29 @@ export class IsVisitorGuard implements CanActivate {
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot):  boolean {
-    if (localStorage.getItem('userToken') != null && localStorage.getItem('user_id') != null){
+    const userType = localStorage.getItem('userType');
+    const userId = localStorage.getItem('user_id');
+    const companyId = localStorage.getItem('company_id');
+    const adminId = localStorage.getItem('admin_id');
+
+    // Redirect to user home if logged in as student
+    if (userType === 'student' && userId != null) {
       this.router.navigate(['/user/home']);
       return false;
     }
-    else if (localStorage.getItem('companyToken') != null && localStorage.getItem('company_id') != null){
+    // Redirect to company home if logged in as company
+    else if (userType === 'company' && companyId != null) {
       this.router.navigate(['/company/home']);
       return false;
     }
-    else if (localStorage.getItem('adminToken') != null && localStorage.getItem('admin_id') != null){
+    // Redirect to admin home if logged in as admin
+    else if (userType === 'admin' && adminId != null) {
       this.router.navigate(['/admin/home']);
       return false;
-    }else{
+    }
+    // Not logged in - allow visitor access
+    else {
       return true;
     }
-      
   }
 }

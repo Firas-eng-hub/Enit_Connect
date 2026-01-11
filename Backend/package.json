@@ -11,7 +11,11 @@
     "dev": "nodemon server.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
-  "keywords": ["NodeJs", "Express", "MongoDB"],
+  "keywords": [
+    "NodeJs",
+    "Express",
+    "MongoDB"
+  ],
   "author": "DABBABI Elaid",
   "license": "ISC",
   "dependencies": {
@@ -20,7 +24,6 @@
     "capitalize": "^2.0.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dateformat": "^5.0.3",
     "dotenv": "^16.4.5",
     "email-templates": "^12.0.1",
     "express": "^4.21.2",

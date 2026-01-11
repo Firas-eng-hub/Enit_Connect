@@ -67,8 +67,8 @@ export class HomeAdminComponent implements OnInit {
   }
 
   postNews(news : News){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post(`${environment.apiUrl}/api/admin/news`,news ,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/admin/news`,news ).subscribe((data : any)=>{
      console.log(data);
     this.newsTitle = "";
     this.content = "";
@@ -206,8 +206,8 @@ export class HomeAdminComponent implements OnInit {
   }
 
   deleteNews(id : string){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.delete(`${environment.apiUrl}/api/admin/news/`+id,{ headers: reqHeader }).subscribe((data : any) => {
+    
+    this.http.delete(`${environment.apiUrl}/api/admin/news/`+id).subscribe((data : any) => {
       console.log(data);
       this.getNews();
     },

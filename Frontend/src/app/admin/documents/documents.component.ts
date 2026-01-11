@@ -64,8 +64,8 @@ export class DocumentsComponent implements OnInit {
     this.folders = [];
     this.documents = [];
     this.emp = emp;
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post(`${environment.apiUrl}/api/admin/documents`,{emp : emp} ,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/admin/documents`,{emp : emp} ).subscribe((data : any)=>{
      console.log(data);
       this.documents = data;
       if(this.documents.length == 0){
@@ -99,8 +99,8 @@ export class DocumentsComponent implements OnInit {
       doc.title = title;
       doc.emplacement = this.emp;
       console.log(doc);
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post(`${environment.apiUrl}/api/admin/folder`, doc ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/folder`, doc ).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup1();
@@ -125,8 +125,8 @@ export class DocumentsComponent implements OnInit {
           link = elt.link;
         }
       });
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post(`${environment.apiUrl}/api/admin/deldoc`,{title:  title , emplacement: this.emp ,type: type ,link: link} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/deldoc`,{title:  title , emplacement: this.emp ,type: type ,link: link} ).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup2();
@@ -226,8 +226,8 @@ export class DocumentsComponent implements OnInit {
       this.folders = [];
       this.documents = [];
       this.emp = '/';
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post(`${environment.apiUrl}/api/admin/searchdoc`,{title : this.title} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/searchdoc`,{title : this.title} ).subscribe((data : any)=>{
        console.log(data);
         this.documents = data;
         if(this.documents.length == 0){

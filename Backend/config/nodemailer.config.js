@@ -22,6 +22,9 @@ exports.sendConfirmationEmail = (name, email, confirmationCode) => {
         return;
     }
 
+    // Use APP_URL from environment or default to localhost
+    const appUrl = process.env.APP_URL || 'http://localhost';
+
     emailsender.send({
         template: 'confirmation',
         message: {
@@ -31,6 +34,7 @@ exports.sendConfirmationEmail = (name, email, confirmationCode) => {
         locals: {
             name: name,
             confirmationCode: confirmationCode,
+            appUrl: appUrl,
         }
     }).then(() => {
         console.log("Confirmation email sent to:", email);

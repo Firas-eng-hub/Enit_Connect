@@ -1,3 +1,26 @@
 *{
     font-size: 12px !important;
 }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-box {
+    background-color: #ffebee;
+    border: 1px solid #f44336;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 10px;
+}
+
+.error-text {
+    color: #c62828;
+    font-weight: bold;
+}
+
+.help-text {
+    color: #666;
+    font-size: 12px;
+}

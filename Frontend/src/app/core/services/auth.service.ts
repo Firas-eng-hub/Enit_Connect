@@ -37,7 +37,7 @@ export class AuthService {
 
     // Check if user is authenticated (calls backend to verify cookie)
     checkAuthStatus(): Observable<AuthState> {
-        return this.http.get<any>(`${this.apiUrl}/auth/check`, { withCredentials: true }).pipe(
+        return this.http.get<any>(`${this.apiUrl}/api/auth/check`, { withCredentials: true }).pipe(
             map(response => {
                 const state: AuthState = {
                     authenticated: response.authenticated,
@@ -78,9 +78,9 @@ export class AuthService {
     // Login - backend sets HTTP-only cookies
     login(userType: 'student' | 'company' | 'admin', credentials: { email: string, password: string }): Observable<any> {
         const endpoints = {
-            student: `${this.apiUrl}/student/signin`,
-            company: `${this.apiUrl}/company/signin`,
-            admin: `${this.apiUrl}/admin/signin`
+            student: `${this.apiUrl}/api/student/login`,
+            company: `${this.apiUrl}/api/company/login`,
+            admin: `${this.apiUrl}/api/admin/login`
         };
 
         return this.http.post<any>(endpoints[userType], credentials, { withCredentials: true }).pipe(
@@ -97,7 +97,13 @@ export class AuthService {
                 });
 
                 // Store user info in localStorage (NOT tokens - those are in HTTP-only cookies)
-                localStorage.setItem('user_id', response.id);
+                // Store ID with the correct key based on user type
+                const idKeys = {
+                    student: 'user_id',
+                    company: 'company_id',
+                    admin: 'admin_id'
+                };
+                localStorage.setItem(idKeys[userType], response.id);
                 localStorage.setItem('name', response.name);
                 localStorage.setItem('userType', userType);
             })
@@ -106,7 +112,7 @@ export class AuthService {
 
     // Logout - clears HTTP-only cookies via backend
     logout(): Observable<any> {
-        return this.http.post<any>(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).pipe(
+        return this.http.post<any>(`${this.apiUrl}/api/auth/logout`, {}, { withCredentials: true }).pipe(
             tap(() => {
                 this.clearLocalData();
             }),
@@ -137,6 +143,6 @@ export class AuthService {
 
     // Refresh token
     refreshToken(): Observable<any> {
-        return this.http.post<any>(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true });
+        return this.http.post<any>(`${this.apiUrl}/api/auth/refresh`, {}, { withCredentials: true });
     }
 }

@@ -20,6 +20,11 @@ const app = express();
 const path = require('path');
 
 // ============================================
+// Trust Proxy (required when behind nginx/load balancer)
+// ============================================
+app.set('trust proxy', 1);
+
+// ============================================
 // Security Middleware
 // ============================================
 

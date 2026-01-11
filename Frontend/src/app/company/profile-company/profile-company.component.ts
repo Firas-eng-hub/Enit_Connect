@@ -11,14 +11,14 @@ import { Company } from '../models/company.model';
 export class ProfileCompanyComponent implements OnInit {
 
   
-  readonly url = `${environment.apiUrl}/company/`;
+  readonly url = `${environment.apiUrl}/api/company/`;
   constructor(private http : HttpClient) { }
   company = new Company();
   page = "profile";
   picture = "./assets/img/companyprofil.png";
   ngOnInit() {
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.get(`${environment.apiUrl}/api/company/info?id=`+localStorage.getItem("company_id"), { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.get(`${environment.apiUrl}/api/company/info?id=`+localStorage.getItem("company_id")).subscribe((data : any)=>{
       console.log(data);
       this.company.name =data.name;
       this.company.email =data.email;
@@ -41,8 +41,8 @@ export class ProfileCompanyComponent implements OnInit {
 
   updateProfile(){
     console.log(this.company);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.patch(`${environment.apiUrl}/api/company/update?id=`+localStorage.getItem("company_id"),this.company, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.patch(`${environment.apiUrl}/api/company/update?id=`+localStorage.getItem("company_id"),this.company).subscribe((data : any)=>{
       console.log(data);
       
       this.page = "profile";

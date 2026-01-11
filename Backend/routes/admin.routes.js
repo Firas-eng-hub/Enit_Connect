@@ -17,6 +17,7 @@ const adminAuthLimiter = rateLimit({
 
 //Login Admin
 router.post("/", adminAuthLimiter, controller.signin);
+router.post("/login", adminAuthLimiter, controller.signin);
 //Get All Students
 router.get("/allstudents", authJwt.verifyToken, controller.getAllStudents);
 //Get All Companies
@@ -46,11 +47,11 @@ router.patch("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.up
 //Delete Company from database
 router.delete("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.deleteCompany);
 //Add folder
-router.post('/folder',authJwt.verifyToken, authJwt.isAdmin, controller.createFolder);
+router.post('/folder', authJwt.verifyToken, authJwt.isAdmin, controller.createFolder);
 //Add file
 router.post('/file', savedoc, controller.createFile);
 //Get documents
-router.post('/documents',authJwt.verifyToken, controller.getDocuments);
+router.post('/documents', authJwt.verifyToken, controller.getDocuments);
 //Delete document
 router.post('/deldoc', authJwt.verifyToken, controller.deleteDocument);
 //Search for document
@@ -58,17 +59,17 @@ router.post('/searchdoc', authJwt.verifyToken, controller.searchDocument);
 //Receive message
 router.post('/message', controller.saveMessage);
 //Get messages
-router.get('/message',authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
+router.get('/message', authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
 //Get number of unread messages
-router.get('/nbmessage',authJwt.verifyToken, controller.getNbMessage);
+router.get('/nbmessage', authJwt.verifyToken, controller.getNbMessage);
 //Delete message
-router.delete('/message/:id',authJwt.verifyToken, authJwt.isAdmin, controller.deleteMessage);
+router.delete('/message/:id', authJwt.verifyToken, authJwt.isAdmin, controller.deleteMessage);
 //Delete news
-router.delete('/news/:id',authJwt.verifyToken, controller.deleteNews);
+router.delete('/news/:id', authJwt.verifyToken, controller.deleteNews);
 //Add news
-router.post('/news',authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
+router.post('/news', authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
 //Save docs for news
-router.post('/newsdoc',newsdoc, controller.newsDoc);
+router.post('/newsdoc', newsdoc, controller.newsDoc);
 //Get news
 router.get('/news', controller.getNews);
 

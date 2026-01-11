@@ -41,8 +41,8 @@ export class AdminNavbarComponent implements OnInit {
 
     
     getNbMessages(){
-        var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-        this.http.get(`${environment.apiUrl}/api/admin/nbmessage`,{ headers: reqHeader }).subscribe((data : any)=>{
+        
+        this.http.get(`${environment.apiUrl}/api/admin/nbmessage`).subscribe((data : any)=>{
          console.log(data);
           this.nb = data.nb;
        },
