@@ -37,7 +37,7 @@ export class MapAdminComponent implements AfterViewInit {
     localStorage.removeItem("entity");
     
     this.addresses.forEach(addr => {
-      this.http.get(`${environment.apiUrl}/api/`+ this.entity + "/location?property=email&key=" + addr).subscribe((data : any)=>
+      this.http.get(`${environment.apiUrl}/api/`+ this.entity + "/location?property=email&key=" + addr).subscribe((data : any)=>{
       console.log(data);
       if(data[0].lat != null && data[0].lng != null){
         var coord = {
