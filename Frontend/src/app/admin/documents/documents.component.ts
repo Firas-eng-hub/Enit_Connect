@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
@@ -63,8 +64,8 @@ export class DocumentsComponent implements OnInit {
     this.folders = [];
     this.documents = [];
     this.emp = emp;
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post("http://localhost:3000/admin/documents",{emp : emp} ,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/admin/documents`,{emp : emp} ).subscribe((data : any)=>{
      console.log(data);
       this.documents = data;
       if(this.documents.length == 0){
@@ -98,8 +99,8 @@ export class DocumentsComponent implements OnInit {
       doc.title = title;
       doc.emplacement = this.emp;
       console.log(doc);
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post("http://localhost:3000/admin/folder", doc ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/folder`, doc ).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup1();
@@ -124,8 +125,8 @@ export class DocumentsComponent implements OnInit {
           link = elt.link;
         }
       });
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post("http://localhost:3000/admin/deldoc",{title:  title , emplacement: this.emp ,type: type ,link: link} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/deldoc`,{title:  title , emplacement: this.emp ,type: type ,link: link} ).subscribe((data : any)=>{
         console.log(data);
         this.title = "";
         this.togglePopup2();
@@ -179,7 +180,7 @@ export class DocumentsComponent implements OnInit {
       fData.append("name",this.form.value.name);
       fData.append("file",  this.selectedFile, this.selectedFile.name);
       console.log(fData);
-      this.http.post('http://localhost:3000/admin/file?type='+type+'&title='+name+'&emplacement='+this.emp+'&idcreator='+doc.idcreator+'&date='+doc.date+'&namecreator='+doc.namecreator+'&size='+this.size, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+      this.http.post(`${environment.apiUrl}/api/admin/file?type=`+type+'&title='+name+'&emplacement='+this.emp+'&idcreator='+doc.idcreator+'&date='+doc.date+'&namecreator='+doc.namecreator+'&size='+this.size, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
       if(event.type === HttpEventType.UploadProgress )  {
        for(var j = 0; j<this.status.length;j++){
          console.log(event)
@@ -225,8 +226,8 @@ export class DocumentsComponent implements OnInit {
       this.folders = [];
       this.documents = [];
       this.emp = '/';
-      var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-      this.http.post("http://localhost:3000/admin/searchdoc",{title : this.title} ,{ headers: reqHeader }).subscribe((data : any)=>{
+      
+      this.http.post(`${environment.apiUrl}/api/admin/searchdoc`,{title : this.title} ).subscribe((data : any)=>{
        console.log(data);
         this.documents = data;
         if(this.documents.length == 0){

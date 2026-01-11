@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
@@ -8,16 +9,24 @@ const company = require("../controllers/company.controller");
 const storage = require('../helpers/storage');
 const savedoc = require('../helpers/savedoc');
 
+// Rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true,
+});
+
 // Get posts
 router.get("/posts", controller.getPosts);
 // Add Post
 router.post('/posts',controller.addPost);
 //Register Student
-router.post("/signup", verifySignUp.checkDuplicateEmail, controller.signup);
+router.post("/signup", authLimiter, verifySignUp.checkDuplicateEmail, controller.signup);
 //Confirm Email
 router.get("/confirm/:confirmationCode", controller.verifyUser);
 //Login Student
-router.post("/login", controller.signin);
+router.post("/login", authLimiter, controller.signin);
 //Get All Student
 router.get("/all", controller.getAll);
 

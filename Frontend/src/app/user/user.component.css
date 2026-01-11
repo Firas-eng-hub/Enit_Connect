@@ -1,0 +1,7 @@
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.sidebar-bg-default {
+    background-image: url(/assets/img/sidebar-4.jpg);
+}

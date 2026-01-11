@@ -8,29 +8,57 @@
             <div style="text-align: center;">
                 <img src="https://rapport-activites-annemasse-agglo.fr/wp-content/uploads/2019/07/CH_2018_logements.png" id="icon" alt="User Icon" style="width: 140px;" />
             </div>
-            <div class="danger" *ngIf="isLoginError" style="text-align: center; color:red; border-color:red; font-weight:bold;font-size:22px;">
-                <p>
-                    Wrong email or password !
-                </p>
+
+            <!-- Enhanced Error Message Display -->
+            <div *ngIf="isLoginError" style="text-align: center; padding: 10px; margin: 10px;">
+                <div style="background-color: #ffebee; border: 1px solid #f44336; border-radius: 4px; padding: 15px;">
+                    <p style="color: #c62828; font-weight: bold; margin: 0;">
+                        <i class="material-icons" style="vertical-align: middle;">error</i>
+                        {{ loginErrorMessage }}
+                    </p>
+                    <p style="color: #666; font-size: 12px; margin: 10px 0 0 0;">
+                        <span *ngIf="loginErrorMessage.includes('Invalid email or password')">
+                            Please check your credentials and try again. <a routerLink="/visitor/company-register" style="color: #c62828;">Register</a> if you don't have an account.
+                        </span>
+                        <span *ngIf="loginErrorMessage.includes('Pending')">
+                            Your account is pending verification. Please check your email for the confirmation link.
+                        </span>
+                        <span *ngIf="loginErrorMessage.includes('connect') || loginErrorMessage.includes('server')">
+                            Unable to connect to server. Please check your internet connection and try again.
+                        </span>
+                    </p>
+                </div>
             </div>
+
+            <!-- Loading Indicator -->
+            <div *ngIf="isLoading" style="text-align: center; padding: 10px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="spinner" style="width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #e91e63; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="color: #666; margin: 0;">Logging in...</p>
+                </div>
+            </div>
+
             <div class="card-body">
-                <form>
+                <form (ngSubmit)="loginCompany()">
                     <div class="row">
                         <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
                             <mat-form-field class="example-full-width">
-                                <input autofocus matInput placeholder="Email address" type="email" (input)="company.email = $event.target.value">
+                                <input autofocus matInput placeholder="Email address" type="email" [(ngModel)]="company.email" name="email">
                             </mat-form-field>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-10" style="margin-left: auto; margin-right:auto;">
                             <mat-form-field class="example-full-width">
-                                <input matInput placeholder="Password" type="password" (input)="company.password = $event.target.value">
+                                <input matInput placeholder="Password" type="password" [(ngModel)]="company.password" name="password">
                             </mat-form-field>
                         </div>
                     </div>
                     <div style="text-align:center;">
-                        <button id="submit-btn" (click)="loginCompany()" mat-raised-button type="submit" class="btn btn-danger">LOGIN</button>
+                        <button id="submit-btn" mat-raised-button type="submit" class="btn btn-danger" [disabled]="isLoading">
+                            <span *ngIf="!isLoading">LOGIN</span>
+                            <span *ngIf="isLoading">LOGGING IN...</span>
+                        </button>
                     </div>
                 </form>
             </div>

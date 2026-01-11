@@ -219,77 +219,77 @@ exports.updatePicture = (req, res) => {
 
 };
 
-exports.signup = (req, res) => {
-
-    bcrypt.hash(req.body.password, 10, (err, hash) => {
-        if (err) {
-            return res.status(500).json({
-                message: err
-            });
-        } else {
-            const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let confirmCode = '';
-            for (let i = 0; i < 25; i++) {
-                confirmCode += characters[Math.floor(Math.random() * characters.length)];
-            }
-
-            location.latlng(req, res, (result) => {
-                let latitude = null;
-                let longitude = null;
-                if (result) {
-                    latitude = result.latitude;
-                    longitude = result.longitude;
-                }
-                const student = new Student({
-                    _id: new db.mongoose.Types.ObjectId(),
-                    firstname: req.body.firstname,
-                    lastname: req.body.lastname,
-                    email: req.body.email,
-                    password: hash,
-                    confirmationCode: confirmCode,
-                    country: req.body.country,
-                    city: req.body.city,
-                    address: req.body.address,
-                    phone: req.body.phone,
-                    type: req.body.type,
-                    workAt: req.body.workAt,
-                    class: req.body.class,
-                    promotion: req.body.promotion,
-                    linkedin: req.body.linkedin,
-                    picture: req.body.picture,
-                    aboutme: req.body.aboutme,
-                    latitude: latitude,
-                    longitude: longitude
-                });
-                student.save((err, student) => {
-                    if (err) {
-                        return res.status(500).send({ message: err });
-                    }
-
-                    res.status(201).send({ message: "User was registered successfully! Please check your email" });
-
-                    nodemailer.sendConfirmationEmail(
-                        student.firstname,
-                        student.email,
-                        student.confirmationCode
-                    );
-                });
-            });
-
+exports.signup = async (req, res) => {
+    try {
+        const hash = await bcrypt.hash(req.body.password, 10);
+        
+        const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let confirmCode = '';
+        for (let i = 0; i < 25; i++) {
+            confirmCode += characters[Math.floor(Math.random() * characters.length)];
         }
-    })
+
+        // Get location (wrapped in promise)
+        const getLocation = () => {
+            return new Promise((resolve) => {
+                location.latlng(req, res, (result) => {
+                    resolve(result);
+                });
+            });
+        };
+
+        const locationResult = await getLocation();
+        let latitude = null;
+        let longitude = null;
+        if (locationResult) {
+            latitude = locationResult.latitude;
+            longitude = locationResult.longitude;
+        }
+
+        const student = new Student({
+            _id: new db.mongoose.Types.ObjectId(),
+            firstname: req.body.firstname,
+            lastname: req.body.lastname,
+            email: req.body.email,
+            password: hash,
+            confirmationCode: confirmCode,
+            country: req.body.country,
+            city: req.body.city,
+            address: req.body.address,
+            phone: req.body.phone,
+            type: req.body.type,
+            workAt: req.body.workAt,
+            class: req.body.class,
+            promotion: req.body.promotion,
+            linkedin: req.body.linkedin,
+            picture: req.body.picture,
+            aboutme: req.body.aboutme,
+            latitude: latitude,
+            longitude: longitude
+        });
+
+        await student.save();
+
+        res.status(201).send({ message: "User was registered successfully! Please check your email" });
+
+        nodemailer.sendConfirmationEmail(
+            student.firstname,
+            student.email,
+            student.confirmationCode
+        );
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
-exports.signin = (req, res) => {
-    Student.findOne({
-        email: req.body.email
-    }).exec((err, student) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
+exports.signin = async (req, res) => {
+    const authJwt = require("../middlewares/authJwt");
+
+    try {
+        const student = await Student.findOne({ email: req.body.email }).exec();
 
         if (!student) {
-            return res.status(404).send({ message: "Student Not found." });
+            return res.status(401).send({ message: "Invalid email or password." });
         }
 
         if (student.status !== "Active") {
@@ -302,41 +302,48 @@ exports.signin = (req, res) => {
 
         if (!passwordIsValid) {
             return res.status(401).send({
-                accessToken: null,
-                message: "Invalid Password!"
+                message: "Invalid email or password."
             });
         }
 
-        const token = jwt.sign({ email: student.email, id: student._id }, config.secret, { expiresIn: "999999h" });
+        const token = jwt.sign({ email: student.email, id: student._id }, config.secret, { expiresIn: "24h" });
 
+        // Create refresh token
+        const RefreshToken = db.refreshToken;
+        const refreshToken = await RefreshToken.createToken(student._id, 'Student');
+        
+        // Set HTTP-only cookies (XSS protection)
+        authJwt.setAuthCookies(res, token, refreshToken, 'student');
+
+        // Return user info without tokens in body
         return res.status(200).send({
             id: student._id,
             email: student.email,
             name: student.firstname + ' ' + student.lastname,
-            accessToken: token
+            userType: 'student'
         });
-    });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
-exports.verifyUser = (req, res, next) => {
-    Student.findOne({
-        confirmationCode: req.params.confirmationCode,
-    }).then((student) => {
+exports.verifyUser = async (req, res, next) => {
+    try {
+        const student = await Student.findOne({
+            confirmationCode: req.params.confirmationCode,
+        });
+
         if (!student) {
             return res.status(404).send({ message: "User Not found." });
         }
 
         student.status = "Active";
-        student.save((err) => {
-            if (err) {
-                return res.status(500).send({ message: err });
-            }
+        await student.save();
 
-            res.status(200).send({ message: "Account Verified!" })
-        });
-    }).catch(err => {
-        res.status(500).send({ message: err });
-    });
+        res.status(200).send({ message: "Account Verified!" });
+    } catch (err) {
+        res.status(500).send({ message: err.message || err });
+    }
 };
 
 exports.getLocation = (req, res, next) => {
@@ -549,26 +556,39 @@ exports.updateStudent = (req, res, next) => {
 exports.companiesInfo = (req, res) => {
     const info = [];
     let nb = 0;
+
+    // Handle empty array - return immediately
+    if (!req.body.companies || req.body.companies.length === 0) {
+        return res.status(200).send(info);
+    }
+
     req.body.companies.forEach(elt => {
         Company.findById({ _id: elt }).then((company) => {
-            info.push({
-                id: company._id,
-                name: company.name,
-                about: company.about,
-                address: company.address,
-                city: company.city,
-                country: company.country,
-                email: company.email,
-                phone: company.phone,
-                website: company.website,
-                logo: company.logo
-            });
+            // Handle case where company is not found
+            if (company) {
+                info.push({
+                    id: company._id,
+                    name: company.name,
+                    about: company.about,
+                    address: company.address,
+                    city: company.city,
+                    country: company.country,
+                    email: company.email,
+                    phone: company.phone,
+                    website: company.website,
+                    logo: company.logo
+                });
+            }
             nb++;
             if (nb == req.body.companies.length) {
                 res.status(200).send(info);
             }
         }).catch((erreur) => {
-            res.status(500).send({ message: erreur });
+            nb++;
+            console.error('Error finding company:', erreur);
+            if (nb == req.body.companies.length) {
+                res.status(200).send(info);
+            }
         })
     });
 

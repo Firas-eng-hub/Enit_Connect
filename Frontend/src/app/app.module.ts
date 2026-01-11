@@ -25,9 +25,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MapUserComponent } from './user/map-user/map-user.component';
+import { CoreModule } from './core/core.module';
 
 @NgModule({
   imports: [
+    CoreModule, // Auth service and HTTP interceptor for cookie-based auth
     VisitorComponentsModule,
     UserComponentsModule,
     CompanyComponentsModule,
@@ -59,3 +61,4 @@ import { MapUserComponent } from './user/map-user/map-user.component';
   bootstrap: [AppComponent]
 })
 export class AppModule { }
+

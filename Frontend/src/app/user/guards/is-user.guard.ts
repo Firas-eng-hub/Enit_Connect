@@ -9,21 +9,30 @@ export class IsUserGuard implements CanActivate {
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot):  boolean {
-      if (localStorage.getItem('userToken') != null && localStorage.getItem('user_id') != null){
+      const userType = localStorage.getItem('userType');
+      const userId = localStorage.getItem('user_id');
+      const companyId = localStorage.getItem('company_id');
+      const adminId = localStorage.getItem('admin_id');
+
+      // Allow if logged in as student
+      if (userType === 'student' && userId != null) {
         return true;
       }
-      else if (localStorage.getItem('companyToken') != null && localStorage.getItem('company_id') != null){
+      // Redirect to company home if logged in as company
+      else if (userType === 'company' && companyId != null) {
         this.router.navigate(['/company/home']);
         return false;
       }
-      else if (localStorage.getItem('adminToken') != null && localStorage.getItem('admin_id') != null){
+      // Redirect to admin home if logged in as admin
+      else if (userType === 'admin' && adminId != null) {
         this.router.navigate(['/admin/home']);
         return false;
-      }else{
+      }
+      // Not logged in - redirect to visitor
+      else {
         this.router.navigate(['/visitor/news']);
         return false;
       }
-      
   }
   
 }

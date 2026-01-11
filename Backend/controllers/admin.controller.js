@@ -259,33 +259,40 @@ exports.getDocuments = (req, res) => {
         });
 }
 
-exports.signin = (req, res) => {
-    Admin.findOne({
-        email: req.body.email
-    }).exec((err, admin) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
+exports.signin = async (req, res) => {
+    const authJwt = require("../middlewares/authJwt");
+
+    try {
+        const admin = await Admin.findOne({ email: req.body.email }).exec();
+
         if (!admin) {
-            return res.status(404).send({ message: "Admin Not found." });
+            return res.status(401).send({ message: "Invalid email or password." });
         }
 
         if (req.body.password !== admin.password) {
             return res.status(401).send({
-                accessToken: null,
-                message: "Invalid Password!"
+                message: "Invalid email or password."
             });
         }
 
-        const token = jwt.sign({ email: admin.email, id: admin._id }, config.secret, { expiresIn: "999999h" });
+        const token = jwt.sign({ email: admin.email, id: admin._id }, config.secret, { expiresIn: "24h" });
+
+        // Create refresh token
+        const RefreshToken = db.refreshToken;
+        const refreshToken = await RefreshToken.createToken(admin._id, 'Admin');
+        
+        // Set HTTP-only cookies (XSS protection)
+        authJwt.setAuthCookies(res, token, refreshToken, 'admin');
 
         return res.status(200).send({
             name: "Administrator",
             id: admin._id,
             email: admin.email,
-            accessToken: token
+            userType: 'admin'
         });
-    });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
 exports.getAllStudents = (req, res, next) => {

@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Email } from '../models/email.model';
@@ -28,8 +29,8 @@ export class SendEmailComponent implements OnInit {
     console.log(this.email);
     document.getElementById("submit-btn").setAttribute("disabled","true");
     document.getElementById("submit-btn").setAttribute("style","cursor: not-allowed! important;");
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post("http://localhost:3000/admin/contact",this.email, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/admin/contact`,this.email).subscribe((data : any)=>{
       console.log(data);
       this.page = "success";
       this.addresses = [];

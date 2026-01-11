@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, AfterViewInit  } from '@angular/core';
 import * as L from 'leaflet';
@@ -34,9 +35,9 @@ export class MapAdminComponent implements AfterViewInit {
     localStorage.removeItem("addresses");
     this.entity = localStorage.getItem("entity");
     localStorage.removeItem("entity");
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
+    
     this.addresses.forEach(addr => {
-      this.http.get("http://localhost:3000/"+ this.entity + "/location?property=email&key=" + addr, { headers: reqHeader }).subscribe((data : any)=>{
+      this.http.get(`${environment.apiUrl}/api/`+ this.entity + "/location?property=email&key=" + addr).subscribe((data : any)=>
       console.log(data);
       if(data[0].lat != null && data[0].lng != null){
         var coord = {

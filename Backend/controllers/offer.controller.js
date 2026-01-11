@@ -1,6 +1,5 @@
 const db = require("../models");
 const capitalize = require('capitalize');
-const dateFormat = require("dateformat");
 const Offer = db.offer;
 const Company = db.company;
 

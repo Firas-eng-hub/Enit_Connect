@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
@@ -67,8 +68,8 @@ export class HomeCompanyComponent implements OnInit {
   
 
   postOffer(offer : Offer){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.post("http://localhost:3000/offers",offer ,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/offers`,offer ).subscribe((data : any)=>{
      console.log(data);
     this.offerTitle = "";
     this.content = "";
@@ -121,7 +122,7 @@ export class HomeCompanyComponent implements OnInit {
           fData.append("name",this.form.value.name);
           fData.append("file",  this.selectedFile, this.selectedFile.name);
           //console.log(fData);
-          this.http.post('http://localhost:3000/admin/newsdoc?type='+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+          this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
           if(event.type === HttpEventType.UploadProgress )  {
             for(var j = 0; j<this.status.length;j++){
               console.log(event)
@@ -163,9 +164,9 @@ export class HomeCompanyComponent implements OnInit {
   }
 
   getOffers(){
-    console.log("http://localhost:3000/offers/myoffers?id="+localStorage.getItem('company_id'));
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.get("http://localhost:3000/offers/myoffers?id="+localStorage.getItem('company_id') ,{ headers: reqHeader }).subscribe((data : any) => {
+    console.log(`${environment.apiUrl}/api/offers/myoffers?id=`+localStorage.getItem('company_id'));
+    
+    this.http.get(`${environment.apiUrl}/api/offers/myoffers?id=`+localStorage.getItem('company_id') ).subscribe((data : any) => {
       this.offers = data;
       console.log(this.offers);
     },
@@ -175,8 +176,8 @@ export class HomeCompanyComponent implements OnInit {
   }
 
   deleteOffer(id : string){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.delete("http://localhost:3000/offers?id="+id,{ headers: reqHeader }).subscribe((data : any) => {
+    
+    this.http.delete(`${environment.apiUrl}/api/offers?id=`+id).subscribe((data : any) => {
       console.log(data);
       this.getOffers();
     },
@@ -213,8 +214,8 @@ export class HomeCompanyComponent implements OnInit {
     offer.title = this.offerTitleUpdate;
     offer.type = (<HTMLInputElement>document.getElementById("selectType")).value ;
     console.log(offer);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("companyToken")});
-    this.http.patch("http://localhost:3000/offers?id="+this.idUpdate,offer,{ headers: reqHeader }).subscribe((data : any) => {
+    
+    this.http.patch(`${environment.apiUrl}/api/offers?id=`+this.idUpdate,offer).subscribe((data : any) => {
       console.log(data);
       this.togglePopup();
       this.getOffers();

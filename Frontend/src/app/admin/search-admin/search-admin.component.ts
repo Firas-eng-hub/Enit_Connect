@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -66,8 +67,8 @@ export class SearchAdminComponent implements OnInit {
   
 
   search(){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.get("http://localhost:3000/admin/search/"+this.entity+"?property="+this.property+"&key="+this.key, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.get(`${environment.apiUrl}/api/admin/search/`+this.entity+"?property="+this.property+"&key="+this.key).subscribe((data : any)=>{
       console.log(data);
       if(this.entity =="student"){
         this.users = data;
@@ -83,8 +84,8 @@ export class SearchAdminComponent implements OnInit {
 
   }
   getAllUsers(){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.get("http://localhost:3000/admin/allstudents", { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.get(`${environment.apiUrl}/api/admin/allstudents`).subscribe((data : any)=>{
       console.log(data);
       this.users = data;
       this.addresses = [];
@@ -96,8 +97,8 @@ export class SearchAdminComponent implements OnInit {
   }
   getAllCompanies(){
     this.addresses = [];
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.get("http://localhost:3000/admin/allcompanies", { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.get(`${environment.apiUrl}/api/admin/allcompanies`).subscribe((data : any)=>{
       console.log(data);
       this.companies = data;
       this.addresses = [];
@@ -137,8 +138,8 @@ export class SearchAdminComponent implements OnInit {
     document.getElementById("popup-1").classList.toggle("active");
   }
   public deleteUser(id : string){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.delete("http://localhost:3000/admin/student/"+id, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.delete(`${environment.apiUrl}/api/admin/student/`+id).subscribe((data : any)=>{
       console.log(data);
       this.deletepage = "success";
       //this.users = data;
@@ -218,8 +219,8 @@ export class SearchAdminComponent implements OnInit {
   }
   updateProfileUser(){
     console.log(this.user);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.patch("http://localhost:3000/admin/student/"+this.idUserUpdate,this.user, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.patch(`${environment.apiUrl}/api/admin/student/`+this.idUserUpdate,this.user).subscribe((data : any)=>{
       console.log(data);
       
       this.pageuser = "profile";
@@ -258,8 +259,8 @@ export class SearchAdminComponent implements OnInit {
   }
   updateProfileCompany(){
     console.log(this.company);
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.patch("http://localhost:3000/admin/company/"+this.idCompanyUpdate,this.company, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.patch(`${environment.apiUrl}/api/admin/company/`+this.idCompanyUpdate,this.company).subscribe((data : any)=>{
       console.log(data);
       
       this.pageCompany = "profile";
@@ -279,8 +280,8 @@ export class SearchAdminComponent implements OnInit {
   public deleteGroupItems(){
     console.log(this.groupIdDelete);
     var obj = {"deleteArray": this.groupIdDelete};
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.post("http://localhost:3000/admin/" + this.entity + "/delete",obj, { headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.post(`${environment.apiUrl}/api/admin/` + this.entity + "/delete",obj).subscribe((data : any)=>{
       console.log(data);
       this.groupIdDelete = [];
       this.addresses = [];

@@ -1,16 +1,25 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
 const { company, offer } = require("../controllers");
 
+// Rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true,
+});
+
 //Register Company
-router.post("/signup", verifySignUp.checkDuplicateCompany, company.signup);
+router.post("/signup", authLimiter, verifySignUp.checkDuplicateCompany, company.signup);
 //Confirm Email
 router.get("/confirm/:confirmationCode", company.verifyCompany);
 //Login Company
-router.post("/login", company.signin);
+router.post("/login", authLimiter, company.signin);
 //Get Companies Locations
 router.get("/location", authJwt.verifyToken, company.getCompanyLocations);
 //Search for Companies with Property and Key

@@ -5,59 +5,93 @@ const Company = db.company;
 const Student = db.student;
 const Admin = db.admin;
 
+// Cookie configuration for JWT tokens
+const cookieOptions = {
+  httpOnly: true,        // Prevents JavaScript access (XSS protection)
+  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+  sameSite: 'lax',      // CSRF protection
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  path: '/'
+};
 
+const refreshCookieOptions = {
+  ...cookieOptions,
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days for refresh token
+};
 
+// Helper function to set auth cookies
+exports.setAuthCookies = (res, accessToken, refreshToken, userType) => {
+  res.cookie('accessToken', accessToken, cookieOptions);
+  res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+  res.cookie('userType', userType, { ...cookieOptions, httpOnly: false }); // Allow JS to read user type
+};
+
+// Helper function to clear auth cookies
+exports.clearAuthCookies = (res) => {
+  res.clearCookie('accessToken', { path: '/' });
+  res.clearCookie('refreshToken', { path: '/' });
+  res.clearCookie('userType', { path: '/' });
+};
+
+// Verify token from cookie or Authorization header (for backward compatibility)
 exports.verifyToken = (req, res, next) => {
-  let token = req.headers["authorization"];
-  if (!token) {
-    return res.status(403).send({ message: "No token provided !" });
+  // First try to get token from HTTP-only cookie
+  let token = req.cookies?.accessToken;
+
+  // Fallback to Authorization header for backward compatibility
+  if (!token && req.headers["authorization"]) {
+    token = req.headers["authorization"].split(' ')[1];
   }
-  token = token.split(' ')[1];
+
+  if (!token) {
+    return res.status(403).send({ message: "No token provided!" });
+  }
 
   jwt.verify(token, config.secret, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized!" });
+      // Token expired or invalid
+      return res.status(401).send({ message: "Unauthorized! Token invalid or expired." });
     }
     req.id = decoded.id;
+    req.email = decoded.email;
     next();
   });
 };
 
-exports.isAdmin = ( req, res, next ) => {
+exports.isAdmin = (req, res, next) => {
   Admin.findById({ _id: req.id }).then((admin) => {
     if (!admin) {
       res.status(401).send({ message: "Unauthorized!" });
     } else {
       next();
     }
-  }).catch(
-    err => {
-      res.status(500).send({ message: "error" + err });
+  }).catch(err => {
+    res.status(500).send({ message: "error" + err });
   });
 };
 
-exports.isStudent = ( req, res, next ) => {
+exports.isStudent = (req, res, next) => {
   Student.findById({ _id: req.id }).then((student) => {
     if (!student) {
       res.status(401).send({ message: "Unauthorized!" });
     } else {
       next();
     }
-  }).catch(
-    err => {
-      res.status(500).send({ message: "error" + err });
+  }).catch(err => {
+    res.status(500).send({ message: "error" + err });
   });
 };
 
-exports.isCompany = ( req, res, next ) => {
-  Company.findById({ _id: req.query.id }).then((company) => {
+exports.isCompany = (req, res, next) => {
+  Company.findById({ _id: req.query.id || req.id }).then((company) => {
     if (!company) {
       res.status(401).send({ message: "Unauthorized!" });
     } else {
       next();
     }
-  }).catch(
-    err => {
-      res.status(500).send({ message: "error " + err });
+  }).catch(err => {
+    res.status(500).send({ message: "error " + err });
   });
 };
+
+module.exports = exports;

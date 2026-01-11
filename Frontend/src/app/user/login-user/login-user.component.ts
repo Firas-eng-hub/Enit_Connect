@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { User } from '../models/user.model';
-import { LoginUserService } from '../services/login-user.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login-user',
@@ -14,11 +14,17 @@ export class LoginUserComponent implements OnInit {
   isLoginError: boolean = false;
   isLoading: boolean = false;
   user = new User("student");
-  constructor(private loginUserService: LoginUserService, private router: Router) { }
 
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-
+    // If already authenticated as student, redirect to home
+    if (this.authService.isAuthenticated() && this.authService.getUserType() === 'student') {
+      this.router.navigate(['/user/home']);
+    }
   }
 
   loginUser() {
@@ -29,24 +35,26 @@ export class LoginUserComponent implements OnInit {
       return;
     }
 
-    console.log(this.user);
     this.isLoading = true;
     this.isLoginError = false;
-    document.getElementById("submit-btn").setAttribute("disabled", "true");
-    document.getElementById("submit-btn").setAttribute("style", "cursor: not-allowed! important;");
+    document.getElementById("submit-btn")?.setAttribute("disabled", "true");
+    document.getElementById("submit-btn")?.setAttribute("style", "cursor: not-allowed! important;");
 
-    this.loginUserService.loginUser(this.user).subscribe((data: any) => {
-      this.isLoading = false;
-      localStorage.setItem('userToken', data.accessToken);
-      localStorage.setItem('user_id', data.id);
-      localStorage.setItem('name', data.name);
-      //window.location.replace('/user/home');
-      this.router.navigate(['/user/home']);
-    },
+    // Use AuthService for login (handles HTTP-only cookies automatically)
+    this.authService.login('student', {
+      email: this.user.email,
+      password: this.user.password
+    }).subscribe(
+      (data: any) => {
+        this.isLoading = false;
+        // Tokens are now stored in HTTP-only cookies (not accessible via JS)
+        // Only user info is stored in localStorage
+        this.router.navigate(['/user/home']);
+      },
       (err: HttpErrorResponse) => {
         this.isLoading = false;
-        document.getElementById("submit-btn").removeAttribute("disabled");
-        document.getElementById("submit-btn").setAttribute("style", "cursor: pointer;");
+        document.getElementById("submit-btn")?.removeAttribute("disabled");
+        document.getElementById("submit-btn")?.setAttribute("style", "cursor: pointer;");
         this.isLoginError = true;
 
         // Better error messages based on error type
@@ -61,9 +69,7 @@ export class LoginUserComponent implements OnInit {
         } else {
           this.loginErrorMessage = "An unexpected error occurred. Please try again later.";
         }
-      });
-
+      }
+    );
   }
-
 }
-

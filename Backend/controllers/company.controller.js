@@ -39,72 +39,72 @@ exports.getUserInfo = (req, res) => {
         res.status(500).send({ message: err });
     });
 }
-exports.signup = (req, res) => {
-    bcrypt.hash(req.body.password, 10, (err, hash) => {
-        if (err) {
-            return res.status(500).json({
-                message: err
-            });
-        } else {
-            const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let confirmCode = '';
-            for (let i = 0; i < 25; i++) {
-                confirmCode += characters[Math.floor(Math.random() * characters.length)];
-            }
-
-            location.latlng(req, res, (result) => {
-                let latitude = null;
-                let longitude = null;
-
-                if (result) {
-                    latitude = result.latitude;
-                    longitude = result.longitude;
-                }
-                const company = new Company({
-                    _id: new db.mongoose.Types.ObjectId(),
-                    name: req.body.name,
-                    email: req.body.email,
-                    password: hash,
-                    confirmationCode: confirmCode,
-                    country: req.body.country,
-                    address: req.body.address,
-                    city: req.body.city,
-                    website: req.body.website,
-                    phone: req.body.phone,
-                    logo: req.body.logo,
-                    about: req.body.about,
-                    latitude: latitude,
-                    longitude: longitude
-                });
-                company.save((err, company) => {
-                    if (err) {
-                        return res.status(500).send({ message: err });
-                    }
-
-                    res.status(201).send({ message: "Company was registered successfully! Please check your email" });
-
-                    /*nodemailer.sendConfirmationEmail(
-                        company.name,
-                        student.email,
-                        student.confirmationCode
-                    );*/
-                });
-            });
-
+exports.signup = async (req, res) => {
+    try {
+        const hash = await bcrypt.hash(req.body.password, 10);
+        
+        const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let confirmCode = '';
+        for (let i = 0; i < 25; i++) {
+            confirmCode += characters[Math.floor(Math.random() * characters.length)];
         }
-    })
+
+        // Get location (wrapped in promise)
+        const getLocation = () => {
+            return new Promise((resolve) => {
+                location.latlng(req, res, (result) => {
+                    resolve(result);
+                });
+            });
+        };
+
+        const locationResult = await getLocation();
+        let latitude = null;
+        let longitude = null;
+        if (locationResult) {
+            latitude = locationResult.latitude;
+            longitude = locationResult.longitude;
+        }
+
+        const company = new Company({
+            _id: new db.mongoose.Types.ObjectId(),
+            name: req.body.name,
+            email: req.body.email,
+            password: hash,
+            confirmationCode: confirmCode,
+            country: req.body.country,
+            address: req.body.address,
+            city: req.body.city,
+            website: req.body.website,
+            phone: req.body.phone,
+            logo: req.body.logo,
+            about: req.body.about,
+            latitude: latitude,
+            longitude: longitude
+        });
+
+        await company.save();
+
+        res.status(201).send({ message: "Company was registered successfully! Please check your email" });
+
+        /*nodemailer.sendConfirmationEmail(
+            company.name,
+            company.email,
+            company.confirmationCode
+        );*/
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
-exports.signin = (req, res) => {
-    Company.findOne({
-        email: req.body.email
-    }).exec((err, company) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
+exports.signin = async (req, res) => {
+    const authJwt = require("../middlewares/authJwt");
+
+    try {
+        const company = await Company.findOne({ email: req.body.email }).exec();
 
         if (!company) {
-            return res.status(404).send({ message: "Company Not found." });
+            return res.status(401).send({ message: "Invalid email or password." });
         }
 
         if (company.status != "Active") {
@@ -117,40 +117,47 @@ exports.signin = (req, res) => {
 
         if (!passwordIsValid) {
             return res.status(401).send({
-                accessToken: null,
-                message: "Invalid Password!"
+                message: "Invalid email or password."
             });
         }
 
-        const token = jwt.sign({ email: company.email, id: company._id }, config.secret, { expiresIn: "999999h" });
+        const token = jwt.sign({ email: company.email, id: company._id }, config.secret, { expiresIn: "24h" });
+
+        // Create refresh token
+        const RefreshToken = db.refreshToken;
+        const refreshToken = await RefreshToken.createToken(company._id, 'Company');
+        
+        // Set HTTP-only cookies (XSS protection)
+        authJwt.setAuthCookies(res, token, refreshToken, 'company');
 
         return res.status(200).send({
             id: company._id,
             email: company.email,
-            accessToken: token
+            name: company.name,
+            userType: 'company'
         });
-    });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };
 
-exports.verifyCompany = (req, res) => {
-    Company.findOne({
-        confirmationCode: req.params.confirmationCode,
-    }).then((company) => {
+exports.verifyCompany = async (req, res) => {
+    try {
+        const company = await Company.findOne({
+            confirmationCode: req.params.confirmationCode,
+        });
+
         if (!company) {
             return res.status(404).send({ message: "Company Not found." });
         }
 
         company.status = "Active";
-        company.save((err) => {
-            if (err) {
-                return res.status(500).send({ message: err });
-            }
+        await company.save();
 
-            res.status(200).send({ message: "Account Verified!" })
-        });
-    }).catch(err => {
-        res.status(500).send({ message: err });
-    });
+        res.status(200).send({ message: "Account Verified!" });
+    } catch (err) {
+        res.status(500).send({ message: err.message || err });
+    }
 };
 
 

@@ -1,0 +1,82 @@
+# ============================================
+# TIC-Connect Docker Compose Configuration
+# Production-ready setup for Azure VPS
+# ============================================
+
+services:
+  # ==========================================
+  # Backend API Service (Node.js/Express)
+  # ==========================================
+  backend:
+    container_name: tic-backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    # image: firaskali/enit-connect-backend:latest  # Uncomment for Docker Hub push
+    restart: unless-stopped
+    env_file:
+      - ./Backend/.env
+    volumes:
+      # Persist uploads across container restarts
+      - uploads_data:/app/uploads
+    networks:
+      - tic-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # Frontend (Angular + Nginx)
+  # ==========================================
+  frontend:
+    container_name: tic-frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    # image: firaskali/enit-connect-frontend:latest  # Uncomment for Docker Hub push
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      # Mount custom nginx config
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tic-network
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  tic-network:
+    driver: bridge
+    name: tic-connect-network
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  uploads_data:
+    name: tic-uploads
+    driver: local

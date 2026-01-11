@@ -13,5 +13,6 @@ db.document = require("./document.model");
 db.message = require('./message.model');
 db.new = require('./new.model');
 db.post = require('./post.model');
+db.refreshToken = require('./refreshToken.model');
 
 module.exports = db;

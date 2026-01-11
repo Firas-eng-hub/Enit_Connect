@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -22,8 +23,8 @@ export class MessagesComponent implements OnInit {
     this.router.navigate(["/admin/send"]);
   }
   deleteMessage(id : string){
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.delete("http://localhost:3000/admin/message/"+ id,{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.delete(`${environment.apiUrl}/api/admin/message/`+ id).subscribe((data : any)=>{
      console.log(data);
       this.getMessages();
    },
@@ -34,8 +35,8 @@ export class MessagesComponent implements OnInit {
 
   getMessages(){
     
-    var reqHeader = new HttpHeaders({ 'Authorization': 'Bearer ' + localStorage.getItem("adminToken")});
-    this.http.get("http://localhost:3000/admin/message",{ headers: reqHeader }).subscribe((data : any)=>{
+    
+    this.http.get(`${environment.apiUrl}/api/admin/message`).subscribe((data : any)=>{
      console.log(data);
       this.messages = data;
       if(this.messages.length == 0){

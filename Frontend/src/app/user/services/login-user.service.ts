@@ -13,6 +13,6 @@ export class LoginUserService {
 
   loginUser(user: User) {
     var reqHeader = new HttpHeaders({ 'Content-Type': 'application/json', 'No-Auth': 'True' });
-    return this.http.post(`${this.apiUrl}/student/login`, user, { headers: reqHeader });
+    return this.http.post(`${this.apiUrl}/student/login`, user, { headers: reqHeader, withCredentials: true });
   }
 }
