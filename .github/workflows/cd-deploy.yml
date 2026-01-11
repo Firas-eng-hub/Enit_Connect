@@ -1,0 +1,86 @@
+name: CD - Deploy to LAN Server
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Push Docker Images"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  DEPLOY_PATH: /opt/enit-connect
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_HUB_PAT }}" | docker login -u firaskali --password-stdin
+
+      - name: Pull latest images
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: |
+          export TAG=${{ steps.tag.outputs.tag }}
+          docker compose pull
+
+      - name: Deploy with zero-downtime
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: |
+          export TAG=${{ steps.tag.outputs.tag }}
+          docker compose up -d --remove-orphans
+
+      - name: Health check
+        run: |
+          echo "Waiting for services to be healthy..."
+          sleep 10
+          
+          # Check frontend
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+          if [ "$FRONTEND_STATUS" != "200" ]; then
+            echo "❌ Frontend health check failed (HTTP $FRONTEND_STATUS)"
+            exit 1
+          fi
+          echo "✅ Frontend is healthy"
+          
+          # Check backend via nginx proxy
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/admin/news)
+          if [ "$BACKEND_STATUS" != "200" ]; then
+            echo "❌ Backend health check failed (HTTP $BACKEND_STATUS)"
+            exit 1
+          fi
+          echo "✅ Backend is healthy"
+
+      - name: Cleanup old images
+        run: |
+          docker image prune -f
+
+      - name: Deployment summary
+        run: |
+          echo "### 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ✅ Running |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ✅ Running |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Server:** LAN (192.168.1.141)" >> $GITHUB_STEP_SUMMARY
