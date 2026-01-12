@@ -33,8 +33,10 @@ jobs:
           fi
 
       - name: Login to Docker Hub
+        env:
+          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
         run: |
-          echo "${{ secrets.DOCKER_HUB_PAT }}" | docker login -u firaskali --password-stdin
+          echo "$DOCKER_HUB_PAT" | docker login -u firaskali --password-stdin
 
       - name: Pull latest images
         working-directory: ${{ env.DEPLOY_PATH }}
