@@ -8,7 +8,7 @@ const Admin = db.admin;
 // Cookie configuration for JWT tokens
 const cookieOptions = {
   httpOnly: true,        // Prevents JavaScript access (XSS protection)
-  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+  secure: false,         // Set to true only if using HTTPS
   sameSite: 'lax',      // CSRF protection
   maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   path: '/'

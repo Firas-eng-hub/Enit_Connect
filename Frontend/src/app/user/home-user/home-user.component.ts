@@ -27,7 +27,7 @@ export class HomeUserComponent implements OnInit {
   getOffers(){
     
     
-    this.http.get(`${environment.apiUrl}/api/offers` ).subscribe((data : any) => {
+    this.http.get(`${environment.apiUrl}/api/offers`, { withCredentials: true }).subscribe((data : any) => {
       console.log(data);  
       this.offers1 = data;
       this.getCompaniesInfo();
@@ -51,7 +51,7 @@ export class HomeUserComponent implements OnInit {
     });
     console.log(this.companiesId);
     
-    this.http.post(`${environment.apiUrl}/api/student/companiesinfo` ,{ companies : this.companiesId}).subscribe((data : any) => {
+    this.http.post(`${environment.apiUrl}/api/student/companiesinfo`, { companies : this.companiesId}, { withCredentials: true }).subscribe((data : any) => {
       this.companiesInfo = data;
       this.offers = this.offers1;
       console.log(data);
@@ -97,7 +97,7 @@ export class HomeUserComponent implements OnInit {
   postCandidacy(cand : Candidacy){
     console.log(cand);
     
-    this.http.post(`${environment.apiUrl}/api/student/apply/`+ this.idOffer,cand ).subscribe((data : any)=>{
+    this.http.post(`${environment.apiUrl}/api/student/apply/`+ this.idOffer, cand, { withCredentials: true }).subscribe((data : any)=>{
      //console.log(data);
     
     this.contentOffer = "";
@@ -148,7 +148,7 @@ export class HomeUserComponent implements OnInit {
           fData.append("name",this.form.value.name);
           fData.append("file",  this.selectedFile, this.selectedFile.name);
           //console.log(fData);
-          this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData ,{reportProgress : true, observe : 'events'}).subscribe((event : any)=>{
+          this.http.post(`${environment.apiUrl}/api/admin/newsdoc?type=`+type, fData, { reportProgress: true, observe: 'events', withCredentials: true }).subscribe((event : any)=>{
           if(event.type === HttpEventType.UploadProgress )  {
             for(var j = 0; j<this.status.length;j++){
               console.log(event)
