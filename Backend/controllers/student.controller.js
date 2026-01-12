@@ -37,12 +37,13 @@ exports.addPost = (req, res) => {
         body: req.body.body,
         description: req.body.description
     });
-    post.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "Post was added successfully!" });
-    });
+    post.save()
+        .then(document => {
+            res.status(201).send({ message: "Post was added successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.apply = (req, res) => {
@@ -138,12 +139,13 @@ exports.createFile = (req, res) => {
         size: req.query.size,
     });
 
-    document.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "File was uploaded successfully!" });
-    });
+    document.save()
+        .then(document => {
+            res.status(201).send({ message: "File was uploaded successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.createFolder = (req, res) => {
@@ -159,12 +161,14 @@ exports.createFolder = (req, res) => {
         emplacement: req.body.emplacement,
         size: ""
     });
-    document.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "Folder was created successfully!" });
-    });
+    
+    document.save()
+        .then(savedDocument => {
+            res.status(201).send({ message: "Folder was created successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.getDocuments = (req, res) => {

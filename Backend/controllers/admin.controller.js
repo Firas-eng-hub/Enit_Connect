@@ -55,12 +55,13 @@ exports.addNews = (req, res) => {
         picture: req.body.picture,
         docs: req.body.docs
     });
-    news.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "News was added successfully!" });
-    });
+    news.save()
+        .then(document => {
+            res.status(201).send({ message: "News was added successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.deleteMessage = (req, res) => {
@@ -120,12 +121,13 @@ exports.saveMessage = (req, res) => {
         message: req.body.message,
         lu: req.body.lu
     });
-    message.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "Message was sent successfully!" });
-    });
+    message.save()
+        .then(document => {
+            res.status(201).send({ message: "Message was sent successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.searchDocument = (req, res) => {
@@ -165,12 +167,13 @@ exports.createFolder = (req, res) => {
         emplacement: req.body.emplacement,
         size: ""
     });
-    document.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "Folder was created successfully!" });
-    });
+    document.save()
+        .then(document => {
+            res.status(201).send({ message: "Folder was created successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 exports.deleteDocument = (req, res) => {
@@ -226,12 +229,13 @@ exports.createFile = (req, res) => {
         size: req.query.size,
     });
 
-    document.save((err, document) => {
-        if (err) {
-            return res.status(500).send({ message: err });
-        }
-        res.status(201).send({ message: "File was uploaded successfully!" });
-    });
+    document.save()
+        .then(document => {
+            res.status(201).send({ message: "File was uploaded successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
 }
 
 
@@ -662,18 +666,18 @@ exports.addStudents = async (req, res, next) => {
                     confirmationCode: confirmCode,
                     type: item.type
                 });
-                student.save((err, student) => {
-                    if (err) {
-                        return res.status(500).send({ message: err });
-                    }
-
-                    nodemailer.sendConfirmationEmail(
-                        student.firstname,
-                        student.email,
-                        student.confirmationCode
-                    );
-                    return res.status(200).send({ message: "Users was registered successfully! An email is sent" });
-                });
+                student.save()
+                    .then(savedStudent => {
+                        nodemailer.sendConfirmationEmail(
+                            savedStudent.firstname,
+                            savedStudent.email,
+                            savedStudent.confirmationCode
+                        );
+                        return res.status(200).send({ message: "Users was registered successfully! An email is sent" });
+                    })
+                    .catch(err => {
+                        return res.status(500).send({ message: err.message || err });
+                    });
 
             }
         })

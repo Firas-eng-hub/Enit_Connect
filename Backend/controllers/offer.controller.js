@@ -17,12 +17,13 @@ exports.addOffer = (req, res) => {
         candidacies: [],
     });
 
-    offer.save((error, offer) => {
-        if (error) {
-            return res.status(500).send({ message: error });
-        }
-        res.status(201).send({ message: "Offer added successfully!" });
-    });
+    offer.save()
+        .then(savedOffer => {
+            res.status(201).send({ message: "Offer added successfully!" });
+        })
+        .catch(error => {
+            res.status(500).send({ message: error.message || error });
+        });
 };
 
 exports.getAll = (req, res) => {
