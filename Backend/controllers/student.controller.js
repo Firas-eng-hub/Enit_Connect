@@ -47,21 +47,37 @@ exports.addPost = (req, res) => {
 }
 
 exports.apply = (req, res) => {
-    let cand = [];
-    Offer.findById({
-        _id: req.params.id
-    }).then((offer) => {
-        cand = offer.candidacies;
-    });
-    cand.push(req.body);
-    const offer = new Offer();
-    offer.candidacies = cand;
-    Offer.updateOne({ _id: req.params.id }, offer)
-        .then(() => {
-            res.status(200).send({ message: "Success !" });
-        }).catch(err => {
-            console.error(err);
-            res.status(500).send({ message: err });
+    Offer.findById(req.params.id)
+        .then((offer) => {
+            if (!offer) {
+                return res.status(404).send({ message: "Offer not found!" });
+            }
+            
+            // Initialize candidacies array if it doesn't exist
+            if (!offer.candidacies) {
+                offer.candidacies = [];
+            }
+            
+            // Add the new candidacy with student ID from token
+            const candidacy = {
+                studentId: req.userId, // This comes from authJwt middleware
+                body: req.body.body,
+                documents: req.body.documents || [],
+                status: 'pending',
+                createdAt: new Date()
+            };
+            
+            offer.candidacies.push(candidacy);
+            
+            // Save the updated offer
+            return offer.save();
+        })
+        .then((updatedOffer) => {
+            res.status(200).send({ message: "Application submitted successfully!" });
+        })
+        .catch(err => {
+            console.error('Apply error:', err);
+            res.status(500).send({ message: err.message || "Error applying to offer" });
         });
 }
 exports.searchDocument = (req, res) => {

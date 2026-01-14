@@ -16,7 +16,7 @@ on:
 
 env:
   DEPLOY_PATH: /opt/enit-connect
-
+  
 jobs:
   deploy:
     runs-on: self-hosted

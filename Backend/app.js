@@ -34,24 +34,6 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// Rate limiting - prevent brute force attacks
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', limiter);
-
-// Stricter rate limit for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Only 5 login attempts per 15 minutes
-  message: 'Too many login attempts, please try again later.',
-  skipSuccessfulRequests: true,
-});
-
 // Data sanitization against NoSQL injection
 app.use(mongoSanitize());
 
@@ -65,7 +47,7 @@ app.use(bodyParser.json({ limit: '10mb' }));
 // Cookie parser for HTTP-only JWT cookies
 app.use(cookieParser());
 
-// CORS configuration - must allow credentials for cookies
+// CORS configuration - MUST come before rate limiting to ensure CORS headers on all responses
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:4200',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -74,6 +56,24 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
+
+// Rate limiting - prevent brute force attacks (after CORS so rate limit responses include CORS headers)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Higher limit in development
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', limiter);
+
+// Stricter rate limit for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 5 : 50, // Higher limit in development
+  message: 'Too many login attempts, please try again later.',
+  skipSuccessfulRequests: true,
+});
 
 // Trim whitespace from request body
 app.use(trimmer);

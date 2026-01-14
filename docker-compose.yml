@@ -34,12 +34,12 @@ services:
         max-file: "3"
 
   # ==========================================
-  # Frontend (Angular + Nginx)
+  # Frontend (React + Vite + Nginx)
   # ==========================================
   frontend:
     container_name: tic-frontend
     build:
-      context: ./Frontend
+      context: ./frontend
       dockerfile: Dockerfile
     # image: firaskali/enit-connect-frontend:latest  # Uncomment for Docker Hub push
     restart: unless-stopped
@@ -54,7 +54,7 @@ services:
     networks:
       - tic-network
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      test: [ "CMD", "curl", "-f", "http://localhost/" ]
       interval: 30s
       timeout: 10s
       retries: 3

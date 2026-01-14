@@ -13,12 +13,13 @@ exports.checkAuth = async (req, res) => {
     const token = req.cookies?.accessToken;
 
     if (!token) {
-      return res.status(401).json({ authenticated: false });
+      // Return 200 with authenticated: false (not 401) so frontend can handle gracefully
+      return res.status(200).json({ authenticated: false });
     }
 
     jwt.verify(token, config.secret, async (err, decoded) => {
       if (err) {
-        return res.status(401).json({ authenticated: false, message: "Token invalid or expired" });
+        return res.status(200).json({ authenticated: false, message: "Token invalid or expired" });
       }
 
       // Get user info based on userType cookie
@@ -34,7 +35,7 @@ exports.checkAuth = async (req, res) => {
       }
 
       if (!user) {
-        return res.status(401).json({ authenticated: false });
+        return res.status(200).json({ authenticated: false });
       }
 
       return res.status(200).json({
