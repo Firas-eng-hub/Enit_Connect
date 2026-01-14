@@ -56,8 +56,8 @@ jobs:
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
-          context: ./Frontend
-          file: ./Frontend/Dockerfile
+          context: ./frontend
+          file: ./frontend/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: |
             ${{ env.FRONTEND_IMAGE }}:${{ steps.tags.outputs.sha_tag }}
