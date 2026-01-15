@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, User, Search, FileText, LogOut } from 'lucide-react';
+import { Home, User, Search, FileText, LogOut, Briefcase } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 const navItems = [
   { path: '/user/home', label: 'Home', icon: Home },
+  { path: '/user/offers', label: 'Browse Offers', icon: Briefcase },
   { path: '/user/profile', label: 'Profile', icon: User },
   { path: '/user/search', label: 'Search', icon: Search },
   { path: '/user/documents', label: 'Documents', icon: FileText },
