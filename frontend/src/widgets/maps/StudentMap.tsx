@@ -3,10 +3,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface StudentLocation {
-  lat: number;
-  lng: number;
+  id?: string;
+  lat: number | string;
+  lng: number | string;
   name: string;
-  url: string;
 }
 
 interface StudentMapProps {
@@ -79,8 +79,11 @@ export function StudentMap({ locations }: StudentMapProps) {
     // Add markers for each student location
     const bounds: L.LatLngTuple[] = [];
     locations.forEach((location) => {
-      if (location.lat && location.lng) {
-        L.marker([location.lat, location.lng], { icon: studentIcon })
+      const lat = typeof location.lat === 'number' ? location.lat : Number(location.lat);
+      const lng = typeof location.lng === 'number' ? location.lng : Number(location.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const profileUrl = location.id ? `/user/student/${location.id}` : '';
+        L.marker([lat, lng], { icon: studentIcon })
           .addTo(map)
           .bindPopup(`
             <div style="padding: 8px; min-width: 150px;">
@@ -88,10 +91,10 @@ export function StudentMap({ locations }: StudentMapProps) {
                 ${location.name}
               </div>
               <div style="color: #6b7280; font-size: 12px; margin-bottom: 8px;">
-                📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
+                📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}
               </div>
-              ${location.url ? `
-                <a href="${location.url}" 
+              ${profileUrl ? `
+                <a href="${profileUrl}" 
                    style="
                      display: inline-block;
                      padding: 6px 12px;
@@ -108,7 +111,7 @@ export function StudentMap({ locations }: StudentMapProps) {
               ` : ''}
             </div>
           `);
-        bounds.push([location.lat, location.lng]);
+        bounds.push([lat, lng]);
       }
     });
 
@@ -128,7 +131,9 @@ export function StudentMap({ locations }: StudentMapProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No Location Data</h3>
-            <p className="text-gray-600">Students don't have location information yet</p>
+            <p className="text-gray-600 max-w-sm">
+              Students don't have location information yet. Location data is based on geocoding addresses.
+            </p>
           </div>
         </div>
       )}

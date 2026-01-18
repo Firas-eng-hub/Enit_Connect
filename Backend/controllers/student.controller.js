@@ -369,12 +369,7 @@ exports.verifyUser = async (req, res, next) => {
 exports.getLocation = (req, res, next) => {
     let query = req.query.q;
     query = query.replace(/\+/g, ' ');
-    const geocoder = NodeGeocoder(location.options);
-    geocoder.geocode({
-        address: query,
-        country: 'Tunisie',
-        language: 'FR'
-    })
+    location.geocodeText(query, 'Tunisie', 'FR')
         .then(result => {
             res.status(200).send(result);
         })
@@ -462,10 +457,10 @@ exports.getStudentLocations = (req, res, next) => {
             const response = [];
             docs.forEach((doc) => {
                 response.push({
+                    id: doc._id,
                     lat: doc.latitude,
                     lng: doc.longitude,
-                    name: doc.firstname + ' ' + doc.lastname,
-                    url: process.env.BASE_URL + "/student/" + doc._id
+                    name: doc.firstname + ' ' + doc.lastname
                 });
             });
             if (docs.length >= 0) {
@@ -545,9 +540,30 @@ exports.getStudentById = (req, res, next) => {
 
 };
 
-exports.updateStudent = (req, res, next) => {
-    if (req.id === req.params.id) {
-        const newData = new Student({
+exports.updateStudent = async (req, res) => {
+    if (!db.mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).send({ message: "Invalid student id." });
+    }
+    if (req.id !== req.params.id) {
+        return res.status(403).send({ message: "Unauthorized!" });
+    }
+
+    try {
+        const getLocation = () => {
+            return new Promise((resolve) => {
+                location.latlng(req, res, (result) => {
+                    resolve(result);
+                });
+            });
+        };
+
+        let locationResult = null;
+        try {
+            locationResult = await getLocation();
+        } catch (err) {
+            console.error('Location lookup failed:', err);
+        }
+        const newData = {
             status: 'Active',
             country: req.body.country,
             city: req.body.city,
@@ -559,17 +575,18 @@ exports.updateStudent = (req, res, next) => {
             promotion: req.body.promotion,
             linkedin: req.body.linkedin,
             picture: req.body.picture,
-            aboutme: req.body.aboutme,
-        });
-        Student.updateOne({ _id: req.params.id }, newData)
-            .then(() => {
-                res.status(200).send({ message: "User updated" });
-            }).catch(err => {
+            aboutme: req.body.aboutme
+        };
+        if (locationResult) {
+            newData.latitude = locationResult.latitude;
+            newData.longitude = locationResult.longitude;
+        }
 
-                res.status(500).send({ message: err });
-            });
-    } else {
-        res.status(404).send({ message: "Unauthorized!" })
+        await Student.updateOne({ _id: req.params.id }, { $set: newData });
+        return res.status(200).send({ message: "User updated" });
+    } catch (err) {
+        console.error('Failed to update student:', err);
+        return res.status(500).send({ message: err?.message || err });
     }
 };
 

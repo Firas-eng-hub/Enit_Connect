@@ -14,6 +14,10 @@ export interface Student {
   city?: string;
   phone?: string;
   picture?: string;
+  address?: string;
+  workAt?: string;
+  linkedin?: string;
+  aboutme?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -48,4 +52,8 @@ export interface StudentUpdateRequest {
   country?: string;
   city?: string;
   phone?: string;
+  address?: string;
+  workAt?: string;
+  linkedin?: string;
+  aboutme?: string;
 }

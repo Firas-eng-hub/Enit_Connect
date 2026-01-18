@@ -31,7 +31,8 @@ app.set('trust proxy', 1);
 // Set security HTTP headers
 app.use(helmet({
   contentSecurityPolicy: false, // Disable for file uploads
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Data sanitization against NoSQL injection
@@ -105,7 +106,11 @@ app.get("/health", (req, res) => {
 });
 
 // Serve uploaded files statically
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
+  setHeaders: (res) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  }
+}));
 
 //Routes
 // Mount API routes
@@ -127,4 +132,3 @@ app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
-

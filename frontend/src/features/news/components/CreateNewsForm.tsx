@@ -6,6 +6,7 @@ import { Image } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Textarea } from '@/shared/ui/Textarea';
+import { formatFileSize, validateFile } from '@/shared/lib/utils';
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -23,6 +24,7 @@ interface CreateNewsFormProps {
 export function CreateNewsForm({ onSubmit, onCancel, isLoading }: CreateNewsFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const {
     register,
@@ -35,7 +37,22 @@ export function CreateNewsForm({ onSubmit, onCancel, isLoading }: CreateNewsForm
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const validationError = validateFile(file, {
+        maxSizeMB: 5,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+        label: 'image',
+      });
+      if (validationError) {
+        setImageError(validationError);
+        setSelectedImage(null);
+        setImagePreview(null);
+        e.target.value = '';
+        return;
+      }
+
       setSelectedImage(file);
+      setImageError(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -84,6 +101,10 @@ export function CreateNewsForm({ onSubmit, onCancel, isLoading }: CreateNewsForm
             <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-lg" />
           )}
         </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Max {formatFileSize(5 * 1024 * 1024)}. JPG, PNG, or WEBP.
+        </p>
+        {imageError && <p className="mt-2 text-sm text-red-600">{imageError}</p>}
       </div>
 
       <div className="flex gap-3 pt-4">

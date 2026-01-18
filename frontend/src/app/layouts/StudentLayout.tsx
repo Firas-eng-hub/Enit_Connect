@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Home, User, FileText, Briefcase } from 'lucide-react';
+import { Home, User, FileText, Briefcase, Search } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
@@ -15,7 +15,8 @@ const sidebarSections: SidebarSection[] = [
   {
     title: 'Career',
     items: [
-      { path: '/user/search', label: 'Browse Offers', icon: Briefcase },
+      { path: '/user/offers', label: 'Browse Offers', icon: Briefcase },
+      { path: '/user/search', label: 'Search Students', icon: Search },
       { path: '/user/documents', label: 'My Documents', icon: FileText },
     ],
   },

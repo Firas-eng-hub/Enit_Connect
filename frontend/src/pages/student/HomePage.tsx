@@ -120,10 +120,11 @@ export function HomePage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {offers.map((offer) => {
+          {offers.map((offer, index) => {
             const company = getCompanyForOffer(offer.companyid);
+            const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${index}`;
             return (
-              <div key={offer._id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+              <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
                 {/* Colored top bar */}
                 <div className={cn(
                   'h-1.5',

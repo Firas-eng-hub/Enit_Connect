@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, Map as MapIcon, List, User, Mail, Phone, MapPin } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { StudentMap } from '@/widgets/maps/StudentMap';
@@ -22,10 +22,10 @@ interface StudentResult {
 }
 
 interface StudentLocation {
-  lat: number;
-  lng: number;
+  id?: string;
+  lat: number | string;
+  lng: number | string;
   name: string;
-  url: string;
 }
 
 export function SearchPage() {
@@ -33,13 +33,36 @@ export function SearchPage() {
   const [searchProperty, setSearchProperty] = useState('firstname');
   const [results, setResults] = useState<StudentResult[]>([]);
   const [locations, setLocations] = useState<StudentLocation[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searched, setSearched] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [showMap, setShowMap] = useState(false);
+
+  // Load all student locations on mount
+  useEffect(() => {
+    const loadAllLocations = async () => {
+      try {
+        const response = await httpClient.get('/api/student/location', {
+          params: { property: 'firstname', key: '' }
+        });
+        setLocations(response.data);
+      } catch (err) {
+        console.error('Failed to load locations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAllLocations();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchKey.trim()) return;
+    if (!searchKey.trim()) {
+      // Reset to initial state when search is cleared
+      setSearched(false);
+      setResults([]);
+      return;
+    }
 
     setLoading(true);
     setSearched(true);
@@ -128,6 +151,20 @@ export function SearchPage() {
           </button>
         </div>
       </form>
+
+      {/* View All Students on Map button - centered before search */}
+      {!searched && (
+        <div className="mb-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-primary-700 hover:to-primary-800 transition-all flex items-center gap-2"
+          >
+            <MapIcon className="w-5 h-5" />
+            {showMap ? 'Hide Map' : 'View All Students on Map'}
+          </button>
+        </div>
+      )}
 
       {/* View mode toggle */}
       {searched && results.length > 0 && (
@@ -281,8 +318,17 @@ export function SearchPage() {
         </div>
       )}
 
+      {/* Map view - show when button clicked before search */}
+      {!searched && showMap && (
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-6">
+          <div className="h-[600px]">
+            <StudentMap locations={locations} />
+          </div>
+        </div>
+      )}
+
       {/* Empty state before search */}
-      {!searched && (
+      {!searched && !showMap && (
         <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-blue-50 rounded-3xl border-2 border-dashed border-primary-200 p-16 shadow-xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-blue-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
           

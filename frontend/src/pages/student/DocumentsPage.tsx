@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Upload, Trash2, Download, File } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
+import { formatFileSize, getApiErrorMessage, validateFile } from '@/shared/lib/utils';
 
 interface Document {
   _id: string;
@@ -9,6 +10,16 @@ interface Document {
   type: string;
   createdAt: string;
 }
+
+const DOCUMENT_MAX_MB = 10;
+const DOCUMENT_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg',
+];
+const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 
 export function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -27,6 +38,7 @@ export function DocumentsPage() {
       setDocuments(response.data || []);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
+      setError(getApiErrorMessage(err, 'Failed to fetch documents. Please try again.'));
       setDocuments([]);
     } finally {
       setLoading(false);
@@ -36,6 +48,18 @@ export function DocumentsPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateFile(file, {
+      maxSizeMB: DOCUMENT_MAX_MB,
+      allowedMimeTypes: DOCUMENT_MIME_TYPES,
+      allowedExtensions: DOCUMENT_EXTENSIONS,
+      label: 'document',
+    });
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
+      return;
+    }
 
     setUploading(true);
     setError(null);
@@ -51,7 +75,7 @@ export function DocumentsPage() {
       });
       fetchDocuments();
     } catch (err) {
-      setError('Failed to upload document');
+      setError(getApiErrorMessage(err, 'Failed to upload document. Please try again.'));
       console.error(err);
     } finally {
       setUploading(false);
@@ -108,6 +132,9 @@ export function DocumentsPage() {
           />
         </label>
       </div>
+      <p className="text-sm text-gray-500 mb-6">
+        Max file size {formatFileSize(DOCUMENT_MAX_MB * 1024 * 1024)}. Allowed types: PDF, DOC, DOCX, PNG, JPG.
+      </p>
 
       {error && (
         <div className="bg-red-50 border-2 border-red-200 text-red-600 p-4 rounded-xl mb-6 font-medium">{error}</div>

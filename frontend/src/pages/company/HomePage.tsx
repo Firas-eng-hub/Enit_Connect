@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Briefcase, Users, Trash2, Calendar, Eye } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
+import { getApiErrorMessage } from '@/shared/lib/utils';
 import type { Offer } from '@/entities/offer/types';
 import { formatDate, cn } from '@/shared/lib/utils';
 
@@ -69,7 +70,7 @@ export function HomePage() {
       fetchOffers();
     } catch (err) {
       console.error('Failed to create offer:', err);
-      alert('Failed to create offer. Please try again.');
+      alert(getApiErrorMessage(err, 'Failed to create offer. Please try again.'));
     } finally {
       setSubmitting(false);
     }

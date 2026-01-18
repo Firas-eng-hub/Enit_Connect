@@ -7,7 +7,7 @@ const navItems = [
   { path: '/user/home', label: 'Home', icon: Home },
   { path: '/user/offers', label: 'Browse Offers', icon: Briefcase },
   { path: '/user/profile', label: 'Profile', icon: User },
-  { path: '/user/search', label: 'Search', icon: Search },
+  { path: '/user/search', label: 'Search Students', icon: Search },
   { path: '/user/documents', label: 'Documents', icon: FileText },
 ];
 
