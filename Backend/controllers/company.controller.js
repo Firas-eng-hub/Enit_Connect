@@ -332,7 +332,7 @@ exports.updateLogo = (req, res) => {
         };
 
         if (req.file && req.file.filename) {
-            updateFields.logo = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+            updateFields.logo = `/uploads/${req.file.filename}`;
         }
 
         Company.updateOne({ _id: req.params.id }, { $set: updateFields })

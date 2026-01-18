@@ -18,7 +18,7 @@ services:
       - ./Backend/.env
     volumes:
       # Persist uploads across container restarts
-      - uploads_data:/app/uploads
+      - ./Backend/uploads:/app/uploads
     networks:
       - tic-network
     healthcheck:
@@ -72,11 +72,3 @@ networks:
   tic-network:
     driver: bridge
     name: tic-connect-network
-
-# ==========================================
-# Volumes
-# ==========================================
-volumes:
-  uploads_data:
-    name: tic-uploads
-    driver: local

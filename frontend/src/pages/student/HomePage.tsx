@@ -132,6 +132,8 @@ export function HomePage() {
     return <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>;
   }
 
+  const selectedNewsDate = selectedNews?.date ?? selectedNews?.createdAt;
+
   return (
     <div>
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10 shadow-xl mb-8">
@@ -368,9 +370,7 @@ export function HomePage() {
                 <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedNews.title}</h4>
                 <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
                   <Calendar className="w-4 h-4" />
-                  {selectedNews.date || selectedNews.createdAt
-                    ? formatDate(selectedNews.date || selectedNews.createdAt)
-                    : 'No date'}
+                  {selectedNewsDate ? formatDate(selectedNewsDate) : 'No date'}
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
