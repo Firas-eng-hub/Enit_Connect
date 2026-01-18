@@ -20,8 +20,39 @@ export function SearchPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const response = await httpClient.post('/api/admin/search', { query });
-      setResults(response.data);
+      const isEmail = query.includes('@');
+      const studentProps = isEmail ? ['email'] : ['firstname', 'lastname'];
+      const companyProps = isEmail ? ['email'] : ['name'];
+
+      const studentRequests = studentProps.map((property) =>
+        httpClient.get('/api/admin/search/student', {
+          params: { property, key: query }
+        })
+      );
+      const companyRequests = companyProps.map((property) =>
+        httpClient.get('/api/admin/search/company', {
+          params: { property, key: query }
+        })
+      );
+
+      const [studentResponses, companyResponses] = await Promise.all([
+        Promise.all(studentRequests),
+        Promise.all(companyRequests),
+      ]);
+
+      const combined: SearchResult[] = [];
+      const addUnique = (items: Array<Student | Company>, resultType: 'student' | 'company') => {
+        items.forEach((item) => {
+          const id = (item as Student & { id?: string })._id ?? (item as Student & { id?: string }).id ?? '';
+          if (!id) return;
+          if (combined.some((entry) => entry._id === id && entry.resultType === resultType)) return;
+          combined.push({ ...(item as Student | Company), _id: id, resultType });
+        });
+      };
+
+      studentResponses.forEach((response) => addUnique(response.data, 'student'));
+      companyResponses.forEach((response) => addUnique(response.data, 'company'));
+      setResults(combined);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);

@@ -31,6 +31,15 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
     const basePath = userType === 'admin' ? '/admin' : userType === 'company' ? '/company' : '/user';
     navigate(`${basePath}/settings`);
   };
+  
+  const handleProfile = () => {
+    if (userType === 'admin') {
+      navigate('/admin/settings');
+      return;
+    }
+    const basePath = userType === 'company' ? '/company' : '/user';
+    navigate(`${basePath}/profile`);
+  };
 
   const userMenuTrigger = (
     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
@@ -95,7 +104,7 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
 
           {/* User menu */}
           <Dropdown trigger={userMenuTrigger} align="right">
-            <DropdownItem icon={<User className="w-4 h-4" />}>
+            <DropdownItem icon={<User className="w-4 h-4" />} onClick={handleProfile}>
               Profile
             </DropdownItem>
             <DropdownItem 

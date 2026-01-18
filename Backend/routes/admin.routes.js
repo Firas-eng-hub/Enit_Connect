@@ -36,6 +36,8 @@ router.post("/company/delete", authJwt.verifyToken, authJwt.isAdmin, controller.
 router.get("/student/:id", authJwt.verifyToken, controller.getStudentById);
 //Add Students
 router.post("/student/add", authJwt.verifyToken, authJwt.isAdmin, controller.addStudents);
+//Add Companies
+router.post("/company/add", authJwt.verifyToken, authJwt.isAdmin, controller.addCompany);
 //Update Student informations
 router.patch("/student/:id", authJwt.verifyToken, authJwt.isAdmin, controller.updateStudent);
 //Delete Student from database
@@ -68,6 +70,8 @@ router.delete('/message/:id', authJwt.verifyToken, authJwt.isAdmin, controller.d
 router.delete('/news/:id', authJwt.verifyToken, controller.deleteNews);
 //Add news
 router.post('/news', authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
+//Update news
+router.patch('/news/:id', authJwt.verifyToken, authJwt.isAdmin, controller.updateNews);
 //Save docs for news
 router.post('/newsdoc', newsdoc, controller.newsDoc);
 //Get news
@@ -75,6 +79,4 @@ router.get('/news', controller.getNews);
 
 
 module.exports = router;
-
-
 

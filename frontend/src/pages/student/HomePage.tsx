@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { Building2, Calendar, Briefcase, Send } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Offer } from '@/entities/offer/types';
+import type { News } from '@/entities/news/types';
+import { NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/components/NewsCard';
 import { formatDate, cn } from '@/shared/lib/utils';
+import { config } from '@/app/config/env';
 
 interface CompanyInfo {
   _id: string;
@@ -20,9 +23,14 @@ export function HomePage() {
   const [applicationText, setApplicationText] = useState('');
   const [applyLoading, setApplyLoading] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
+  const [news, setNews] = useState<News[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsError, setNewsError] = useState<string | null>(null);
+  const [selectedNews, setSelectedNews] = useState<News | null>(null);
 
   useEffect(() => {
     fetchOffers();
+    fetchNews();
   }, []);
 
   const fetchOffers = async () => {
@@ -44,6 +52,32 @@ export function HomePage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNews = async () => {
+    setNewsLoading(true);
+    setNewsError(null);
+    try {
+      const response = await httpClient.get('/api/admin/news');
+      const visibleNews = response.data.filter((item: News) => {
+        const statusValue = typeof item.status === 'string'
+          ? item.status.toLowerCase().trim()
+          : 'published';
+        const audienceValue = Array.isArray(item.audience)
+          ? item.audience.map((value: string) => value.toLowerCase().trim())
+          : typeof item.audience === 'string'
+            ? item.audience.split(',').map((value: string) => value.toLowerCase().trim()).filter(Boolean)
+            : ['student', 'company', 'visitor'];
+        const audienceList = audienceValue.length > 0 ? audienceValue : ['student', 'company', 'visitor'];
+        return statusValue !== 'draft' && audienceList.includes('student');
+      });
+      setNews(visibleNews);
+    } catch (err) {
+      console.error('Failed to fetch news:', err);
+      setNewsError('Failed to load news');
+    } finally {
+      setNewsLoading(false);
     }
   };
 
@@ -101,29 +135,76 @@ export function HomePage() {
   return (
     <div>
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Available Offers</h1>
-        <p className="text-primary-100 text-lg">Browse and apply to internships and job opportunities</p>
+        <h1 className="text-4xl font-bold text-white mb-2">Student Dashboard</h1>
+        <p className="text-primary-100 text-lg">Stay updated with campus news and new opportunities</p>
       </div>
 
-      {offers.length === 0 ? (
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-emerald-50 rounded-3xl border-2 border-dashed border-primary-300 p-16 shadow-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-emerald-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 -ml-32 -mb-32"></div>
-          
-          <div className="relative text-center">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
-              <Briefcase className="w-12 h-12 text-white" />
+      <section className="mb-12">
+        <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-sky-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold uppercase tracking-wide mb-3">
+                Campus News
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Latest News</h2>
+              <p className="text-gray-600">Updates for students</p>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">No Offers Available Yet</h3>
-            <p className="text-lg text-gray-600 mb-4 max-w-md mx-auto">New opportunities are posted regularly. Check back soon to find your next internship or job!</p>
+            <button
+              onClick={fetchNews}
+              className="px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+          <div className="mt-6">
+            {newsError && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4">{newsError}</div>}
+            {newsLoading ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <NewsCardSkeleton count={3} />
+              </div>
+            ) : news.length === 0 ? (
+              <NewsEmpty />
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {news.map((item, index) => {
+                  const newsKey = item._id || (item as { id?: string }).id || `${item.title}-${index}`;
+                  return <NewsCard key={newsKey} news={item} onRead={setSelectedNews} />;
+                })}
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {offers.map((offer, index) => {
-            const company = getCompanyForOffer(offer.companyid);
-            const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${index}`;
-            return (
+      </section>
+
+      <section className="mb-12">
+        <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 shadow-sm mb-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wide mb-3">
+              Opportunities
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Available Offers</h2>
+            <p className="text-gray-600">Browse internships and job opportunities</p>
+          </div>
+        </div>
+        {offers.length === 0 ? (
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-emerald-50 rounded-3xl border-2 border-dashed border-primary-300 p-16 shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-emerald-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 -ml-32 -mb-32"></div>
+            
+            <div className="relative text-center">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
+                <Briefcase className="w-12 h-12 text-white" />
+              </div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-3">No Offers Available Yet</h3>
+              <p className="text-lg text-gray-600 mb-4 max-w-md mx-auto">New opportunities are posted regularly. Check back soon to find your next internship or job!</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {offers.map((offer, index) => {
+              const company = getCompanyForOffer(offer.companyid);
+              const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${index}`;
+              return (
               <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
                 {/* Colored top bar */}
                 <div className={cn(
@@ -178,11 +259,12 @@ export function HomePage() {
                     Apply Now
                   </button>
                 </div>
-              </div>
+            </div>
             );
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Apply Modal */}
       {selectedOffer && (
@@ -241,6 +323,60 @@ export function HomePage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedNews && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedNews(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
+              <h3 className="text-lg font-bold text-white">Full Article</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedNews(null)}
+                className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {(() => {
+                const imageSource = selectedNews.picture || selectedNews.image;
+                const imageUrl = imageSource
+                  ? imageSource.startsWith('http')
+                    ? imageSource
+                    : `${config.apiUrl}/${imageSource}`
+                  : null;
+                return imageUrl ? (
+                  <div className="rounded-2xl overflow-hidden">
+                    <img
+                      src={imageUrl}
+                      alt={selectedNews.title}
+                      className="w-full max-h-96 object-cover"
+                    />
+                  </div>
+                ) : null;
+              })()}
+              <div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedNews.title}</h4>
+                <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
+                  <Calendar className="w-4 h-4" />
+                  {selectedNews.date || selectedNews.createdAt
+                    ? formatDate(selectedNews.date || selectedNews.createdAt)
+                    : 'No date'}
+                </div>
+              </div>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {selectedNews.content}
+              </p>
+            </div>
           </div>
         </div>
       )}

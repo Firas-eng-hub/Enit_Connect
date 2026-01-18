@@ -26,15 +26,25 @@ function NewsCardSkeleton() {
 }
 
 // News card component
-function NewsCard({ news, featured = false }: { news: News; featured?: boolean }) {
-  const imageUrl = news.image
-    ? news.image.startsWith('http')
-      ? news.image
-      : `${config.apiUrl}/${news.image}`
+function NewsCard({
+  news,
+  featured = false,
+  onRead,
+}: {
+  news: News;
+  featured?: boolean;
+  onRead: (item: News) => void;
+}) {
+  const imageSource = news.picture || news.image || '';
+  const imageUrl = imageSource
+    ? imageSource.startsWith('http')
+      ? imageSource
+      : `${config.apiUrl}/${imageSource}`
     : null;
 
-  const isRecent = news.createdAt && 
-    new Date(news.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const dateValue = news.date || news.createdAt;
+  const isRecent = dateValue &&
+    new Date(dateValue) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   if (featured) {
     return (
@@ -67,7 +77,7 @@ function NewsCard({ news, featured = false }: { news: News; featured?: boolean }
           <div className="p-8 lg:p-10 flex flex-col justify-center">
             <div className="flex items-center gap-2 text-sm text-primary-600 font-medium mb-4">
               <Clock className="w-4 h-4" />
-              {news.createdAt ? formatDate(news.createdAt) : 'No date'}
+              {dateValue ? formatDate(dateValue) : 'No date'}
             </div>
             <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 group-hover:text-primary-900 transition-colors">
               {news.title}
@@ -75,7 +85,7 @@ function NewsCard({ news, featured = false }: { news: News; featured?: boolean }
             <p className="text-gray-600 text-lg leading-relaxed mb-6 line-clamp-3">
               {news.content}
             </p>
-            <Button className="self-start group/btn">
+            <Button className="self-start group/btn" onClick={() => onRead(news)}>
               Read Full Article
               <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
             </Button>
@@ -116,7 +126,7 @@ function NewsCard({ news, featured = false }: { news: News; featured?: boolean }
       <div className="p-6">
         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-3">
           <Calendar className="w-3.5 h-3.5" />
-          {news.createdAt ? formatDate(news.createdAt) : 'No date'}
+          {dateValue ? formatDate(dateValue) : 'No date'}
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-700 transition-colors">
           {news.title}
@@ -124,7 +134,11 @@ function NewsCard({ news, featured = false }: { news: News; featured?: boolean }
         <p className="text-gray-500 text-sm mb-4 line-clamp-2">
           {news.content}
         </p>
-        <button className="text-primary-600 text-sm font-semibold inline-flex items-center gap-1 group/btn hover:text-primary-700">
+        <button
+          type="button"
+          onClick={() => onRead(news)}
+          className="text-primary-600 text-sm font-semibold inline-flex items-center gap-1 group/btn hover:text-primary-700"
+        >
           Read more
           <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
         </button>
@@ -137,13 +151,26 @@ export function NewsPage() {
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNews, setSelectedNews] = useState<News | null>(null);
 
   const fetchNews = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await httpClient.get('/api/admin/news');
-      setNews(response.data);
+      const visibleNews = response.data.filter((item: News) => {
+        const statusValue = typeof item.status === 'string'
+          ? item.status.toLowerCase().trim()
+          : 'published';
+        const audienceValue = Array.isArray(item.audience)
+          ? item.audience.map((value: string) => value.toLowerCase().trim())
+          : typeof item.audience === 'string'
+            ? item.audience.split(',').map((value: string) => value.toLowerCase().trim()).filter(Boolean)
+            : ['student', 'company', 'visitor'];
+        const audienceList = audienceValue.length > 0 ? audienceValue : ['student', 'company', 'visitor'];
+        return statusValue !== 'draft' && audienceList.includes('visitor');
+      });
+      setNews(visibleNews);
     } catch (err) {
       setError('Failed to load news. Please try again.');
       console.error(err);
@@ -220,7 +247,7 @@ export function NewsPage() {
         <div className="space-y-10">
           {/* Featured Article (first one) */}
           {news.length > 0 && (
-            <NewsCard news={news[0]} featured />
+            <NewsCard news={news[0]} featured onRead={setSelectedNews} />
           )}
 
           {/* Regular Grid */}
@@ -232,11 +259,65 @@ export function NewsPage() {
               </div>
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {news.slice(1).map((item) => (
-                  <NewsCard key={item._id} news={item} />
+                  <NewsCard key={item._id} news={item} onRead={setSelectedNews} />
                 ))}
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {selectedNews && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedNews(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
+              <h3 className="text-lg font-bold text-white">Full Article</h3>
+              <button
+                type="button"
+                onClick={() => setSelectedNews(null)}
+                className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {(() => {
+                const imageSource = selectedNews.picture || selectedNews.image;
+                const imageUrl = imageSource
+                  ? imageSource.startsWith('http')
+                    ? imageSource
+                    : `${config.apiUrl}/${imageSource}`
+                  : null;
+                return imageUrl ? (
+                  <div className="rounded-2xl overflow-hidden">
+                    <img
+                      src={imageUrl}
+                      alt={selectedNews.title}
+                      className="w-full max-h-96 object-cover"
+                    />
+                  </div>
+                ) : null;
+              })()}
+              <div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedNews.title}</h4>
+                <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
+                  <Calendar className="w-4 h-4" />
+                  {selectedNews.date || selectedNews.createdAt
+                    ? formatDate((selectedNews.date || selectedNews.createdAt)!)
+                    : 'No date'}
+                </div>
+              </div>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {selectedNews.content}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

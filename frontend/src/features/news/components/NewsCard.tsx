@@ -1,4 +1,4 @@
-import { Calendar, FileText } from 'lucide-react';
+import { Calendar, FileText, ArrowRight, Newspaper } from 'lucide-react';
 import type { News } from '@/entities/news/types';
 import { Card, CardContent } from '@/shared/ui/Card';
 import { formatDate } from '@/shared/lib/utils';
@@ -8,40 +8,61 @@ interface NewsCardProps {
   news: News;
   onDelete?: () => void;
   showDeleteButton?: boolean;
+  onRead?: (item: News) => void;
 }
 
-export function NewsCard({ news, onDelete, showDeleteButton }: NewsCardProps) {
-  const imageUrl = news.image
-    ? news.image.startsWith('http')
-      ? news.image
-      : `${config.apiUrl}/${news.image}`
+export function NewsCard({ news, onDelete, showDeleteButton, onRead }: NewsCardProps) {
+  const imageSource = news.picture || news.image || '';
+  const imageUrl = imageSource
+    ? imageSource.startsWith('http')
+      ? imageSource
+      : `${config.apiUrl}/${imageSource}`
     : null;
+  const dateValue = news.date || news.createdAt;
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      {imageUrl && (
-        <img
-          src={imageUrl}
-          alt={news.title}
-          className="w-full h-48 object-cover"
-        />
-      )}
+      <div className="aspect-video overflow-hidden bg-gradient-to-br from-primary-100 to-primary-200">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={news.title}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Newspaper className="w-12 h-12 text-primary-400" />
+          </div>
+        )}
+      </div>
       <CardContent className="p-6">
         <div className="flex items-center text-sm text-gray-500 mb-2">
           <Calendar className="w-4 h-4 mr-1" />
-          {news.createdAt ? formatDate(news.createdAt) : 'No date'}
+          {dateValue ? formatDate(dateValue) : 'No date'}
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{news.title}</h3>
         <p className="text-gray-600 text-sm line-clamp-3">{news.content}</p>
 
-        {showDeleteButton && onDelete && (
-          <button
-            onClick={onDelete}
-            className="mt-4 text-sm text-red-600 hover:text-red-700"
-          >
-            Delete
-          </button>
-        )}
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {onRead && (
+            <button
+              type="button"
+              onClick={() => onRead(news)}
+              className="text-sm font-semibold text-primary-600 inline-flex items-center gap-1 group/btn hover:text-primary-700"
+            >
+              Read more
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+            </button>
+          )}
+          {showDeleteButton && onDelete && (
+            <button
+              onClick={onDelete}
+              className="text-sm text-red-600 hover:text-red-700"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -56,7 +77,7 @@ export function NewsCardSkeleton({ count = 3 }: NewsCardSkeletonProps) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <Card key={i} className="overflow-hidden">
-          <div className="w-full h-48 bg-gray-200 animate-pulse" />
+          <div className="aspect-video bg-gray-200 animate-pulse" />
           <CardContent className="p-6">
             <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
             <div className="h-6 w-3/4 bg-gray-200 rounded animate-pulse mb-2" />

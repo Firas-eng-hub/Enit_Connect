@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
 const { company, offer } = require("../controllers");
+const storage = require('../helpers/storage');
 
 // Rate limiter for authentication endpoints
 const authLimiter = rateLimit({
@@ -30,6 +31,8 @@ router.get("/find", authJwt.verifyToken, company.getByName);
 router.get("/info", authJwt.verifyToken, company.getCompanyById);
 //Edit Company informations
 router.patch("/update", authJwt.verifyToken, authJwt.isCompany, company.updateCompany);
+//Upload logo
+router.post("/upload/:id", authJwt.verifyToken, authJwt.isCompany, storage, company.updateLogo);
 //Delete Company from database
 router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, company.deleteCompany);
 //Get Company's Offers

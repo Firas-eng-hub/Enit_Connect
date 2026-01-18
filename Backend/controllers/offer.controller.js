@@ -111,14 +111,19 @@ exports.getCompanyOffers = (req, res) => {
 };
 
 exports.getCandidacies = (req, res) => {
-    Offer.findById({ _id: req.query.id })
+    const offerId = req.query.id;
+    if (!offerId || !db.mongoose.Types.ObjectId.isValid(offerId)) {
+        return res.status(400).send({ message: "Invalid offer id." });
+    }
+
+    Offer.findById({ _id: offerId })
         .then(docs => {
             if (!docs) {
                 return res.status(404).send({ message: "No Candidacies found." });
             }
             return res.status(200).send(docs);
         }).catch(err => {
-            return res.status(500).send({ message: err });
+            return res.status(500).send({ message: err.message || err });
         });
 };
 
@@ -178,6 +183,5 @@ exports.deleteOffre = (req, res) => {
         });
 
 };
-
 
 

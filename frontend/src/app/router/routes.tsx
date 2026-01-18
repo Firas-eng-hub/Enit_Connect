@@ -205,6 +205,7 @@ export const router = createBrowserRouter([
       { path: 'send', element: withSuspense(SendEmailPage) },
       { path: 'search', element: withSuspense(AdminSearchPage) },
       { path: 'add', element: withSuspense(AddUsersPage) },
+      { path: 'add-users', element: <Navigate to="/admin/add" replace /> },
       { path: 'documents', element: withSuspense(AdminDocumentsPage) },
       { path: 'messages', element: withSuspense(MessagesPage) },
       { path: 'notifications', element: withSuspense(AdminNotificationsPage) },

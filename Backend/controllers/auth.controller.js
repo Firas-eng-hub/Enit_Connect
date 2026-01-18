@@ -26,12 +26,20 @@ exports.checkAuth = async (req, res) => {
       const userType = req.cookies?.userType;
       let user;
 
-      if (userType === 'student') {
-        user = await Student.findById(decoded.id).select('-password');
-      } else if (userType === 'company') {
-        user = await Company.findById(decoded.id).select('-password');
-      } else if (userType === 'admin') {
-        user = await Admin.findById(decoded.id).select('-password');
+      try {
+        if (!decoded?.id || !db.mongoose.Types.ObjectId.isValid(decoded.id)) {
+          return res.status(200).json({ authenticated: false, message: "Invalid user id." });
+        }
+
+        if (userType === 'student') {
+          user = await Student.findById(decoded.id).select('-password');
+        } else if (userType === 'company') {
+          user = await Company.findById(decoded.id).select('-password');
+        } else if (userType === 'admin') {
+          user = await Admin.findById(decoded.id).select('-password');
+        }
+      } catch (err) {
+        return res.status(500).json({ authenticated: false, message: err.message });
       }
 
       if (!user) {
@@ -59,7 +67,8 @@ exports.refreshToken = async (req, res) => {
   const requestToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!requestToken) {
-    return res.status(403).json({ message: "Refresh token is required!" });
+    authJwt.clearAuthCookies(res);
+    return res.sendStatus(401);
   }
 
   try {
@@ -69,16 +78,14 @@ exports.refreshToken = async (req, res) => {
     if (!refreshToken) {
       // Clear invalid cookies
       authJwt.clearAuthCookies(res);
-      return res.status(403).json({ message: "Invalid refresh token!" });
+      return res.sendStatus(401);
     }
 
     // Check if token is expired
     if (RefreshToken.verifyExpiration(refreshToken)) {
       await RefreshToken.findByIdAndDelete(refreshToken._id);
       authJwt.clearAuthCookies(res);
-      return res.status(403).json({
-        message: "Refresh token expired. Please login again."
-      });
+      return res.sendStatus(401);
     }
 
     // Get user based on userType
@@ -98,7 +105,7 @@ exports.refreshToken = async (req, res) => {
 
     if (!user) {
       authJwt.clearAuthCookies(res);
-      return res.status(404).json({ message: "User not found" });
+      return res.sendStatus(401);
     }
 
     // Generate new access token

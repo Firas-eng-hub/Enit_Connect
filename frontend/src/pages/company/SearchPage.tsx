@@ -16,8 +16,14 @@ export function SearchPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const response = await httpClient.post('/api/company/search', { query });
-      setResults(response.data);
+      const response = await httpClient.get('/api/student/find', {
+        params: { q: query }
+      });
+      const normalized = response.data.map((student: Student & { id?: string }) => ({
+        ...student,
+        _id: student._id ?? student.id ?? ''
+      }));
+      setResults(normalized);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);

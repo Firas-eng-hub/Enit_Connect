@@ -15,7 +15,7 @@ const sidebarSections: SidebarSection[] = [
     title: 'User Management',
     items: [
       { path: '/admin/search', label: 'All Users', icon: Users },
-      { path: '/admin/add-users', label: 'Add Users', icon: UserPlus },
+      { path: '/admin/add', label: 'Add Users', icon: UserPlus },
     ],
   },
   {
@@ -23,7 +23,7 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { path: '/admin/documents', label: 'Documents', icon: FileText },
       { path: '/admin/messages', label: 'Messages', icon: MessageSquare },
-      { path: '/admin/send-email', label: 'Send Email', icon: Mail },
+      { path: '/admin/send', label: 'Send Email', icon: Mail },
     ],
   },
 ];
@@ -49,4 +49,3 @@ export function AdminLayout() {
     </div>
   );
 }
-

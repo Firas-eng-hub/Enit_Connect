@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const config = require("../config/auth.config");
 const db = require("../models");
 const nodemailer = require("../config/nodemailer.config");
+const location = require("../config/geocoder.config");
 const Student = db.student;
 const Company = db.company;
 const Admin = db.admin;
@@ -47,13 +48,24 @@ exports.newsDoc = (req, res) => {
 }
 
 exports.addNews = (req, res) => {
+    const dateValue = req.body.date || new Date().toISOString();
+    const audienceValue = Array.isArray(req.body.audience) && req.body.audience.length
+        ? req.body.audience
+        : ['visitor', 'student', 'company'];
+    const statusValue = req.body.status || 'published';
+    const tagsValue = Array.isArray(req.body.tags) ? req.body.tags : [];
+
     const news = new New({
         _id: new db.mongoose.Types.ObjectId(),
         title: req.body.title,
         content: req.body.content,
-        date: req.body.date,
+        date: dateValue,
         picture: req.body.picture,
-        docs: req.body.docs
+        docs: req.body.docs,
+        status: statusValue,
+        audience: audienceValue,
+        category: req.body.category,
+        tags: tagsValue
     });
     news.save()
         .then(document => {
@@ -63,6 +75,35 @@ exports.addNews = (req, res) => {
             res.status(500).send({ message: err.message || err });
         });
 }
+
+exports.updateNews = (req, res) => {
+    const dateValue = req.body.date || new Date().toISOString();
+    const audienceValue = Array.isArray(req.body.audience) && req.body.audience.length
+        ? req.body.audience
+        : ['visitor', 'student', 'company'];
+    const statusValue = req.body.status || 'published';
+    const tagsValue = Array.isArray(req.body.tags) ? req.body.tags : [];
+
+    const updateData = {
+        title: req.body.title,
+        content: req.body.content,
+        date: dateValue,
+        picture: req.body.picture,
+        docs: req.body.docs,
+        status: statusValue,
+        audience: audienceValue,
+        category: req.body.category,
+        tags: tagsValue
+    };
+
+    New.updateOne({ _id: req.params.id }, { $set: updateData })
+        .then(() => {
+            res.status(200).send({ message: "News was updated successfully!" });
+        })
+        .catch(err => {
+            res.status(500).send({ message: err.message || err });
+        });
+};
 
 exports.deleteMessage = (req, res) => {
     Message.deleteOne({ _id: req.params.id }).exec()
@@ -276,6 +317,12 @@ exports.signin = async (req, res) => {
         if (req.body.password !== admin.password) {
             return res.status(401).send({
                 message: "Invalid email or password."
+            });
+        }
+
+        if (!db.mongoose.Types.ObjectId.isValid(admin._id)) {
+            return res.status(400).send({
+                message: "Admin id is invalid. Please recreate the admin record with a valid ObjectId."
             });
         }
 
@@ -644,43 +691,85 @@ exports.deleteCompanies = (req, res, next) => {
 };
 
 exports.addStudents = async (req, res, next) => {
-    const st = req.body.students;
-    st.forEach(function (item, i, array) {
-        bcrypt.hash("123456789", 10, (err, hash) => {
-            if (err) {
-                return res.status(500).json({
-                    message: err
-                });
-            } else {
-                const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                let confirmCode = '';
-                for (let i = 0; i < 25; i++) {
-                    confirmCode += characters[Math.floor(Math.random() * characters.length)];
-                }
-                const student = new Student({
-                    _id: new db.mongoose.Types.ObjectId(),
-                    firstname: item.firstname,
-                    lastname: item.lastname,
-                    email: item.email,
-                    password: hash,
-                    confirmationCode: confirmCode,
-                    type: item.type
-                });
-                student.save()
-                    .then(savedStudent => {
-                        nodemailer.sendConfirmationEmail(
-                            savedStudent.firstname,
-                            savedStudent.email,
-                            savedStudent.confirmationCode
-                        );
-                        return res.status(200).send({ message: "Users was registered successfully! An email is sent" });
-                    })
-                    .catch(err => {
-                        return res.status(500).send({ message: err.message || err });
-                    });
-
+    const st = Array.isArray(req.body.students) ? req.body.students : [req.body];
+    try {
+        for (const item of st) {
+            const plainPassword = item.password || "123456789";
+            const hash = await bcrypt.hash(plainPassword, 10);
+            const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let confirmCode = '';
+            for (let i = 0; i < 25; i++) {
+                confirmCode += characters[Math.floor(Math.random() * characters.length)];
             }
-        })
-    });
+            const student = new Student({
+                _id: new db.mongoose.Types.ObjectId(),
+                firstname: item.firstname,
+                lastname: item.lastname,
+                email: item.email,
+                password: hash,
+                confirmationCode: confirmCode,
+                type: item.type,
+                status: 'Active'
+            });
+            const savedStudent = await student.save();
+            nodemailer.sendConfirmationEmail(
+                savedStudent.firstname,
+                savedStudent.email,
+                savedStudent.confirmationCode
+            );
+        }
+        return res.status(200).send({ message: "Users were registered successfully!" });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
+};
 
+exports.addCompany = async (req, res) => {
+    try {
+        const hash = await bcrypt.hash(req.body.password, 10);
+        const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let confirmCode = '';
+        for (let i = 0; i < 25; i++) {
+            confirmCode += characters[Math.floor(Math.random() * characters.length)];
+        }
+
+        const getLocation = () => {
+            return new Promise((resolve) => {
+                location.latlng(req, res, (result) => {
+                    resolve(result);
+                });
+            });
+        };
+
+        const locationResult = await getLocation();
+        let latitude = null;
+        let longitude = null;
+        if (locationResult) {
+            latitude = locationResult.latitude;
+            longitude = locationResult.longitude;
+        }
+
+        const company = new Company({
+            _id: new db.mongoose.Types.ObjectId(),
+            status: 'Active',
+            name: req.body.name,
+            email: req.body.email,
+            password: hash,
+            confirmationCode: confirmCode,
+            country: req.body.country,
+            address: req.body.address,
+            city: req.body.city,
+            website: req.body.website,
+            phone: req.body.phone,
+            about: req.body.about,
+            logo: req.body.logo,
+            latitude: latitude,
+            longitude: longitude
+        });
+
+        await company.save();
+        return res.status(201).send({ message: "Company was registered successfully!" });
+    } catch (err) {
+        return res.status(500).send({ message: err.message || err });
+    }
 };

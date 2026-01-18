@@ -325,6 +325,28 @@ exports.updateCompany = (req, res) => {
         });
 };
 
+exports.updateLogo = (req, res) => {
+    if (req.id === req.params.id) {
+        const updateFields = {
+            status: 'Active',
+        };
+
+        if (req.file && req.file.filename) {
+            updateFields.logo = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+        }
+
+        Company.updateOne({ _id: req.params.id }, { $set: updateFields })
+            .then(() => {
+                res.status(200).send({ message: "Company updated" });
+            }).catch(err => {
+                console.error(err);
+                res.status(500).send({ message: err });
+            });
+    } else {
+        res.status(404).send({ message: "Unauthorized!" })
+    }
+};
+
 exports.deleteCompany = (req, res) => {
     if (req.id == req.params.id) {
         Company.deleteOne({
