@@ -1,11 +1,13 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
-const db = require("../models");
 const authJwt = require("../middlewares/authJwt");
-const RefreshToken = db.refreshToken;
-const Student = db.student;
-const Company = db.company;
-const Admin = db.admin;
+const {
+  refreshTokenRepository,
+  studentRepository,
+  companyRepository,
+  adminRepository,
+} = require("../repositories");
+const { isUuid } = require("../utils/validation");
 
 // Check authentication status (for frontend guards)
 exports.checkAuth = async (req, res) => {
@@ -27,16 +29,16 @@ exports.checkAuth = async (req, res) => {
       let user;
 
       try {
-        if (!decoded?.id || !db.mongoose.Types.ObjectId.isValid(decoded.id)) {
+        if (!decoded?.id || !isUuid(decoded.id)) {
           return res.status(200).json({ authenticated: false, message: "Invalid user id." });
         }
 
         if (userType === 'student') {
-          user = await Student.findById(decoded.id).select('-password');
+          user = await studentRepository.findById(decoded.id);
         } else if (userType === 'company') {
-          user = await Company.findById(decoded.id).select('-password');
+          user = await companyRepository.findById(decoded.id);
         } else if (userType === 'admin') {
-          user = await Admin.findById(decoded.id).select('-password');
+          user = await adminRepository.findById(decoded.id);
         }
       } catch (err) {
         return res.status(500).json({ authenticated: false, message: err.message });
@@ -46,18 +48,19 @@ exports.checkAuth = async (req, res) => {
         return res.status(200).json({ authenticated: false });
       }
 
-      return res.status(200).json({
+        return res.status(200).json({
         authenticated: true,
         userType: userType,
         user: {
-          id: user._id,
+          id: user.id,
           email: user.email,
           name: user.firstname ? `${user.firstname} ${user.lastname}` : user.name || 'Administrator'
         }
       });
     });
   } catch (err) {
-    return res.status(500).json({ authenticated: false, message: err.message });
+    console.error("Auth check failed:", err);
+    return res.status(500).json({ authenticated: false, message: "Internal server error" });
   }
 };
 
@@ -73,7 +76,7 @@ exports.refreshToken = async (req, res) => {
 
   try {
     // Find refresh token in database
-    const refreshToken = await RefreshToken.findOne({ token: requestToken });
+    const refreshToken = await refreshTokenRepository.findByToken(requestToken);
 
     if (!refreshToken) {
       // Clear invalid cookies
@@ -82,8 +85,8 @@ exports.refreshToken = async (req, res) => {
     }
 
     // Check if token is expired
-    if (RefreshToken.verifyExpiration(refreshToken)) {
-      await RefreshToken.findByIdAndDelete(refreshToken._id);
+    if (new Date(refreshToken.expires_at) < new Date()) {
+      await refreshTokenRepository.deleteById(refreshToken.id);
       authJwt.clearAuthCookies(res);
       return res.sendStatus(401);
     }
@@ -92,14 +95,14 @@ exports.refreshToken = async (req, res) => {
     let user;
     let userType;
 
-    if (refreshToken.userType === 'Student') {
-      user = await Student.findById(refreshToken.userId);
+    if (refreshToken.user_type === 'Student') {
+      user = await studentRepository.findById(refreshToken.user_id);
       userType = 'student';
-    } else if (refreshToken.userType === 'Company') {
-      user = await Company.findById(refreshToken.userId);
+    } else if (refreshToken.user_type === 'Company') {
+      user = await companyRepository.findById(refreshToken.user_id);
       userType = 'company';
-    } else if (refreshToken.userType === 'Admin') {
-      user = await Admin.findById(refreshToken.userId);
+    } else if (refreshToken.user_type === 'Admin') {
+      user = await adminRepository.findById(refreshToken.user_id);
       userType = 'admin';
     }
 
@@ -110,7 +113,7 @@ exports.refreshToken = async (req, res) => {
 
     // Generate new access token
     const newAccessToken = jwt.sign(
-      { email: user.email, id: user._id },
+      { email: user.email, id: user.id },
       config.secret,
       { expiresIn: "24h" }
     );
@@ -124,7 +127,8 @@ exports.refreshToken = async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ message: "Internal server error", error: err.message });
+    console.error("Refresh token failed:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -138,11 +142,12 @@ exports.logout = async (req, res) => {
 
     // Delete refresh token from database if provided
     if (requestToken) {
-      await RefreshToken.findOneAndDelete({ token: requestToken });
+      await refreshTokenRepository.deleteByToken(requestToken);
     }
 
     return res.status(200).json({ message: "Logged out successfully!" });
   } catch (err) {
-    return res.status(500).json({ message: "Internal server error", error: err.message });
+    console.error("Logout failed:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

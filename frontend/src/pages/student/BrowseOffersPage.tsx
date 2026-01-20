@@ -29,7 +29,10 @@ export function BrowseOffersPage() {
   const fetchOffers = async () => {
     try {
       const response = await httpClient.get('/api/offers');
-      const offersData = response.data;
+      const offersData = response.data.map((offer: Offer & { id?: string }) => ({
+        ...offer,
+        _id: offer._id || offer.id || '',
+      }));
       setOffers(offersData);
 
       // Fetch company info for all offers

@@ -17,12 +17,21 @@ export interface Offer {
 }
 
 export interface Candidacy {
-  _id: string;
-  studentId: string;
+  _id?: string;
+  studentId?: string;
   body: string;
   documents?: string[];
   status?: 'pending' | 'accepted' | 'rejected';
   createdAt?: string;
+  studentSnapshot?: {
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    class?: string;
+    promotion?: string;
+    picture?: string;
+    type?: string;
+  };
 }
 
 export interface CreateOfferRequest {

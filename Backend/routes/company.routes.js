@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
 const { company, offer } = require("../controllers");
+const notifications = require("../controllers/notification.controller");
 const storage = require('../helpers/storage');
 
 // Rate limiter for authentication endpoints
@@ -27,6 +28,12 @@ router.get("/location", authJwt.verifyToken, company.getCompanyLocations);
 router.get("/search", authJwt.verifyToken, company.getByKey);
 //Search for Companies by Name using String Similarity
 router.get("/find", authJwt.verifyToken, company.getByName);
+//Company Notifications
+router.get("/notifications", authJwt.verifyToken, authJwt.isCompany, notifications.getCompanyNotifications);
+router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isCompany, notifications.getCompanyUnreadCount);
+router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isCompany, notifications.markCompanyReadAll);
+router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isCompany, notifications.markCompanyRead);
+router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isCompany, notifications.deleteCompanyNotification);
 //Get Company informations by ID
 router.get("/info", authJwt.verifyToken, company.getCompanyById);
 //Edit Company informations

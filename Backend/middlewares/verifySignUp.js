@@ -1,10 +1,8 @@
-const db = require("../models");
-const Student = db.student;
-const Company = db.company;
+const { studentRepository, companyRepository } = require("../repositories");
 
 exports.checkDuplicateEmail = async (req, res, next) => {
     try {
-        const student = await Student.findOne({ email: req.body.email }).exec();
+        const student = await studentRepository.findByEmail(req.body.email);
 
         if (student) {
             return res.status(400).send({ message: "Failed! Email is already in use!" });
@@ -18,7 +16,7 @@ exports.checkDuplicateEmail = async (req, res, next) => {
 
 exports.checkDuplicateCompany = async (req, res, next) => {
     try {
-        const company = await Company.findOne({ name: req.body.name }).exec();
+        const company = await companyRepository.findByName(req.body.name);
 
         if (company) {
             return res.status(400).send({ message: "Failed! Company is already registered" });
@@ -29,4 +27,3 @@ exports.checkDuplicateCompany = async (req, res, next) => {
         return res.status(500).send({ message: err.message || err });
     }
 };
-

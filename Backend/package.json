@@ -14,7 +14,7 @@
   "keywords": [
     "NodeJs",
     "Express",
-    "MongoDB"
+    "PostgreSQL"
   ],
   "author": "DABBABI Elaid",
   "license": "ISC",
@@ -27,16 +27,15 @@
     "dotenv": "^16.4.5",
     "email-templates": "^12.0.1",
     "express": "^4.21.2",
-    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
     "express-trimmer": "^0.0.3",
     "helmet": "^8.0.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.3",
     "multer": "^1.4.5-lts.1",
     "node-geocoder": "^4.4.0",
     "nodemailer": "^6.9.16",
+    "pg": "^8.12.0",
     "string-similarity": "^4.0.4"
   },
   "devDependencies": {

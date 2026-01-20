@@ -1,13 +1,58 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { 
   GraduationCap, Building2, Handshake, Target, Heart, Globe, Users, 
   Award, CheckCircle, ArrowRight, Mail, MapPin, Phone, Clock,
-  Briefcase, Lightbulb, Shield, Zap
+  Lightbulb, Shield, Zap, Send
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Alert } from '@/shared/ui/Alert';
+import httpClient from '@/shared/api/httpClient';
+import { getApiErrorMessage } from '@/shared/lib/utils';
 import enitLogo from '@/assets/img/ENIT.png';
 
 export function AboutPage() {
+  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const contactSchema = z.object({
+    name: z.string().min(2, 'Name is required'),
+    email: z.string().email('Please enter a valid email'),
+    message: z.string().min(10, 'Message must be at least 10 characters'),
+  });
+
+  type ContactFormData = z.infer<typeof contactSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ContactFormData>({
+    resolver: zodResolver(contactSchema),
+  });
+
+  const onSubmit = async (data: ContactFormData) => {
+    setSubmitStatus(null);
+    try {
+      await httpClient.post('/api/admin/message', {
+        name: data.name,
+        email: data.email,
+        message: data.message,
+        date: new Date().toISOString(),
+      });
+      setSubmitStatus({ type: 'success', message: 'Message sent! Our team will get back to you soon.' });
+      reset();
+    } catch (err) {
+      setSubmitStatus({
+        type: 'error',
+        message: getApiErrorMessage(err, 'Failed to send message. Please try again.'),
+      });
+    }
+  };
+
   const features = [
     {
       icon: GraduationCap,
@@ -254,30 +299,77 @@ export function AboutPage() {
           </div>
         </div>
 
-        {/* CTA Card */}
-        <div className="bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl p-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          
-          <div className="relative z-10">
-            <Briefcase className="w-12 h-12 mb-6 opacity-80" />
-            <h3 className="text-2xl font-bold mb-3">Ready to Start?</h3>
-            <p className="text-white/80 mb-8 leading-relaxed">
-              Join hundreds of students and companies already using ENIT Connect to build their future.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/register">
-                <Button size="lg" className="bg-white text-accent-700 hover:bg-white/90 w-full sm:w-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
+              <Send className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Contact Form</h3>
+              <p className="text-sm text-gray-500">We usually reply within 1-2 business days.</p>
+            </div>
+          </div>
+
+          {submitStatus && (
+            <Alert
+              variant={submitStatus.type === 'success' ? 'success' : 'danger'}
+              className="mb-5"
+              onClose={() => setSubmitStatus(null)}
+            >
+              {submitStatus.message}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
+              <input
+                {...register('name')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                placeholder="Your full name"
+              />
+              {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+              <input
+                type="email"
+                {...register('email')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                placeholder="you@example.com"
+              />
+              {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Message *</label>
+              <textarea
+                {...register('message')}
+                rows={5}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none"
+                placeholder="Tell us how we can help..."
+              />
+              {errors.message && <p className="mt-2 text-sm text-red-600">{errors.message.message}</p>}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Sending...' : 'Send Message'}
+              </Button>
+              <Link to="/register" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full">
                   Create Account
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
-                  Sign In
-                </Button>
-              </Link>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

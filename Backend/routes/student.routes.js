@@ -6,6 +6,7 @@ const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
 const controller = require("../controllers/student.controller");
 const company = require("../controllers/company.controller");
+const notifications = require("../controllers/notification.controller");
 const storage = require('../helpers/storage');
 const savedoc = require('../helpers/savedoc');
 
@@ -36,6 +37,14 @@ router.get("/companies", authJwt.verifyToken, company.getAllCompanies);
 router.get("/location", authJwt.verifyToken, controller.getStudentLocations);
 //Search for Students by Property & Key
 router.get("/search", authJwt.verifyToken, controller.getByKey);
+//Student Notifications
+router.get("/notifications", authJwt.verifyToken, authJwt.isStudent, notifications.getStudentNotifications);
+router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isStudent, notifications.getStudentUnreadCount);
+router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isStudent, notifications.markStudentReadAll);
+router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isStudent, notifications.markStudentRead);
+router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isStudent, notifications.deleteStudentNotification);
+//Search for Students by multiple filters
+router.get("/filter", authJwt.verifyToken, controller.getByFilters);
 //Search for Students by Name using String Similarity
 router.get("/find", authJwt.verifyToken, controller.getByName);
 //Get Student informations by ID
@@ -62,6 +71,4 @@ router.post('/companiesinfo', authJwt.verifyToken, controller.companiesInfo);
 router.post('/apply/:id', authJwt.verifyToken, controller.apply);
 
 module.exports = router;
-
-
 

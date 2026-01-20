@@ -23,10 +23,20 @@ export function CandidaciesListPage() {
   const fetchOffers = async () => {
     try {
       const companyId = localStorage.getItem('company_id');
-      const response = await httpClient.get(`/api/offers?companyId=${companyId}`);
-      const allOffers = response.data;
-      const myOffers = allOffers.filter((o: Offer) => o.companyid === companyId);
-      setOffers(myOffers);
+      if (!companyId) {
+        setOffers([]);
+        return;
+      }
+      const response = await httpClient.get('/api/offers/myoffers', {
+        params: { id: companyId },
+      });
+      const normalized = response.data
+        .map((o: Offer & { id?: string }) => ({
+          ...o,
+          _id: o._id || o.id || '',
+        }))
+        .filter((o: Offer) => o._id);
+      setOffers(normalized);
     } catch (err) {
       console.error('Failed to fetch offers:', err);
     } finally {
@@ -125,11 +135,12 @@ export function CandidaciesListPage() {
           </div>
           
           <div className="grid gap-6">
-            {offers.map((offer) => {
+            {offers.map((offer, index) => {
               const candidacyCount = offer.candidacies?.length || 0;
+              const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${offer.title}-${index}`;
               
               return (
-                <div key={offer._id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
                   {/* Colored top bar based on type */}
                   <div className={cn(
                     'h-1.5',
@@ -168,7 +179,7 @@ export function CandidaciesListPage() {
                       </div>
 
                       <Link
-                        to={`/company/candidacies/${offer._id}`}
+                        to={`/company/candidacies/${offer._id || (offer as { id?: string }).id}`}
                         className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform shrink-0"
                       >
                         View Applications
@@ -181,14 +192,20 @@ export function CandidaciesListPage() {
                         <div className="flex items-center gap-4">
                           <span className="text-sm font-semibold text-gray-700">Recent applicants:</span>
                           <div className="flex -space-x-3">
-                            {offer.candidacies?.slice(0, 5).map((_, i) => (
+                            {offer.candidacies?.slice(0, 5).map((candidacy, i) => {
+                              const candidacyKey =
+                                (typeof candidacy === 'object' && candidacy && '_id' in candidacy && candidacy._id)
+                                  ? candidacy._id
+                                  : `${offer._id}-candidacy-${i}`;
+                              return (
                               <div
-                                key={i}
+                                key={candidacyKey}
                                 className="w-11 h-11 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 border-3 border-white flex items-center justify-center text-white text-sm font-bold shadow-lg"
                               >
                                 {String.fromCharCode(65 + i)}
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           {candidacyCount > 5 && (
                             <span className="text-sm font-medium text-gray-600 px-3 py-1 bg-gray-100 rounded-full">+{candidacyCount - 5} more</span>

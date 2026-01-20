@@ -1,55 +1,71 @@
 import { Bell, CheckCircle, AlertCircle, Info, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import httpClient from '@/shared/api/httpClient';
+import { formatDateTime } from '@/shared/lib/utils';
 
 interface Notification {
   id: string;
   type: 'success' | 'info' | 'warning';
   title: string;
   message: string;
-  time: string;
+  createdAt?: string;
   read: boolean;
 }
 
 export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'success',
-      title: 'New Application',
-      message: 'A student has applied for your "Senior Backend Developer" position.',
-      time: '1 hour ago',
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'info',
-      title: 'Offer Published',
-      message: 'Your offer "Full Stack Developer Intern" has been published successfully.',
-      time: '3 hours ago',
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'warning',
-      title: 'Profile Verification',
-      message: 'Please verify your company email address to continue posting offers.',
-      time: '2 days ago',
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await httpClient.get('/api/company/notifications');
+      setNotifications(response.data);
+      window.dispatchEvent(new Event('notifications:refresh'));
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+      setError('Failed to load notifications.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const markAsRead = async (id: string) => {
+    try {
+      await httpClient.patch(`/api/company/notifications/${id}/read`);
+      setNotifications(notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ));
+      window.dispatchEvent(new Event('notifications:refresh'));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const deleteNotification = async (id: string) => {
+    try {
+      await httpClient.delete(`/api/company/notifications/${id}`);
+      setNotifications(notifications.filter((n) => n.id !== id));
+      window.dispatchEvent(new Event('notifications:refresh'));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await httpClient.patch('/api/company/notifications/read-all');
+      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+      window.dispatchEvent(new Event('notifications:refresh'));
+    } catch (err) {
+      console.error('Failed to mark all notifications read:', err);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -61,6 +77,18 @@ export function NotificationsPage() {
       default: return <Info className="w-6 h-6 text-blue-500" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>;
+  }
 
   return (
     <div>
@@ -119,7 +147,9 @@ export function NotificationsPage() {
                       )}
                     </div>
                     <p className="text-gray-600 mb-3">{notification.message}</p>
-                    <p className="text-sm text-gray-500">{notification.time}</p>
+                    <p className="text-sm text-gray-500">
+                      {notification.createdAt ? formatDateTime(notification.createdAt) : 'Just now'}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     {!notification.read && (

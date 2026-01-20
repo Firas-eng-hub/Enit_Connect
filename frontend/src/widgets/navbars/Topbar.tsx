@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/shared/ui/Dropdown';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import httpClient from '@/shared/api/httpClient';
 
 // Import the actual ENIT logo
 import enitLogo from '@/assets/img/ENIT.png';
@@ -16,7 +17,38 @@ interface TopbarProps {
 export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
   const { user, userName, userType, logout } = useAuth();
   const navigate = useNavigate();
-  const [notificationCount] = useState(3); // Mock notification count
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    if (!userType) return;
+
+    const fetchUnreadCount = () => {
+      const endpoint = userType === 'admin'
+        ? '/api/admin/notifications/unread-count'
+        : userType === 'company'
+          ? '/api/company/notifications/unread-count'
+          : '/api/student/notifications/unread-count';
+
+      httpClient.get(endpoint)
+        .then((response) => {
+          setNotificationCount(response.data?.count ?? 0);
+        })
+        .catch(() => {
+          setNotificationCount(0);
+        });
+    };
+
+    fetchUnreadCount();
+
+    const handleRefresh = () => fetchUnreadCount();
+    window.addEventListener('notifications:refresh', handleRefresh);
+
+    const intervalId = window.setInterval(fetchUnreadCount, 30000);
+    return () => {
+      window.removeEventListener('notifications:refresh', handleRefresh);
+      window.clearInterval(intervalId);
+    };
+  }, [userType]);
 
   const handleLogout = async () => {
     await logout();

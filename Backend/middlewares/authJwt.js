@@ -1,28 +1,29 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
-const db = require("../models");
-const Company = db.company;
-const Student = db.student;
-const Admin = db.admin;
+const { adminRepository, studentRepository, companyRepository } = require("../repositories");
+const { isUuid } = require("../utils/validation");
 
-// Cookie configuration for JWT tokens
-const cookieOptions = {
-  httpOnly: true,        // Prevents JavaScript access (XSS protection)
-  secure: false,         // Set to true only if using HTTPS
-  sameSite: 'lax',      // CSRF protection
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-  path: '/'
+const getCookieOptions = () => {
+  const secure = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,        // Prevents JavaScript access (XSS protection)
+    secure,               // Only use secure cookies over HTTPS
+    sameSite: 'lax',      // CSRF protection
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    path: '/'
+  };
 };
 
-const refreshCookieOptions = {
-  ...cookieOptions,
+const getRefreshCookieOptions = () => ({
+  ...getCookieOptions(),
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days for refresh token
-};
+});
 
 // Helper function to set auth cookies
 exports.setAuthCookies = (res, accessToken, refreshToken, userType) => {
+  const cookieOptions = getCookieOptions();
   res.cookie('accessToken', accessToken, cookieOptions);
-  res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+  res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
   res.cookie('userType', userType, { ...cookieOptions, httpOnly: false }); // Allow JS to read user type
 };
 
@@ -52,6 +53,9 @@ exports.verifyToken = (req, res, next) => {
       // Token expired or invalid
       return res.status(401).send({ message: "Unauthorized! Token invalid or expired." });
     }
+    if (!isUuid(decoded.id)) {
+      return res.status(401).send({ message: "Unauthorized! Token invalid or expired." });
+    }
     req.id = decoded.id;
     req.email = decoded.email;
     next();
@@ -59,39 +63,55 @@ exports.verifyToken = (req, res, next) => {
 };
 
 exports.isAdmin = (req, res, next) => {
-  Admin.findById({ _id: req.id }).then((admin) => {
-    if (!admin) {
-      res.status(401).send({ message: "Unauthorized!" });
-    } else {
-      next();
-    }
-  }).catch(err => {
-    res.status(500).send({ message: "error" + err });
-  });
+  if (!isUuid(req.id)) {
+    return res.status(401).send({ message: "Unauthorized!" });
+  }
+  adminRepository.findById(req.id)
+    .then((admin) => {
+      if (!admin) {
+        res.status(401).send({ message: "Unauthorized!" });
+      } else {
+        next();
+      }
+    })
+    .catch((err) => {
+      res.status(500).send({ message: "error" + err.message });
+    });
 };
 
 exports.isStudent = (req, res, next) => {
-  Student.findById({ _id: req.id }).then((student) => {
-    if (!student) {
-      res.status(401).send({ message: "Unauthorized!" });
-    } else {
-      next();
-    }
-  }).catch(err => {
-    res.status(500).send({ message: "error" + err });
-  });
+  if (!isUuid(req.id)) {
+    return res.status(401).send({ message: "Unauthorized!" });
+  }
+  studentRepository.findById(req.id)
+    .then((student) => {
+      if (!student) {
+        res.status(401).send({ message: "Unauthorized!" });
+      } else {
+        next();
+      }
+    })
+    .catch((err) => {
+      res.status(500).send({ message: "error" + err.message });
+    });
 };
 
 exports.isCompany = (req, res, next) => {
-  Company.findById({ _id: req.query.id || req.id }).then((company) => {
-    if (!company) {
-      res.status(401).send({ message: "Unauthorized!" });
-    } else {
-      next();
-    }
-  }).catch(err => {
-    res.status(500).send({ message: "error " + err });
-  });
+  const companyId = req.query.id || req.id;
+  if (!isUuid(companyId)) {
+    return res.status(401).send({ message: "Unauthorized!" });
+  }
+  companyRepository.findById(companyId)
+    .then((company) => {
+      if (!company) {
+        res.status(401).send({ message: "Unauthorized!" });
+      } else {
+        next();
+      }
+    })
+    .catch((err) => {
+      res.status(500).send({ message: "error " + err.message });
+    });
 };
 
 module.exports = exports;

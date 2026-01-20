@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 
 const { authJwt } = require("../middlewares");
 const controller = require("../controllers/admin.controller");
+const notifications = require("../controllers/notification.controller");
 const savedoc = require('../helpers/savedoc');
 const newsdoc = require('../helpers/newsdoc');
 
@@ -26,6 +27,12 @@ router.get("/allcompanies", authJwt.verifyToken, controller.getAllCompanies);
 router.get("/search/student", authJwt.verifyToken, controller.getStudentsByKey);
 //Get Companies by key
 router.get("/search/company", authJwt.verifyToken, controller.getCompaniesByKey);
+//Admin Notifications
+router.get("/notifications", authJwt.verifyToken, authJwt.isAdmin, notifications.getAdminNotifications);
+router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isAdmin, notifications.getAdminUnreadCount);
+router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isAdmin, notifications.markAdminReadAll);
+router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isAdmin, notifications.markAdminRead);
+router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isAdmin, notifications.deleteAdminNotification);
 //Send Email
 router.post("/contact", authJwt.verifyToken, controller.sendEmail);
 //Delete Students from database
@@ -62,6 +69,15 @@ router.post('/searchdoc', authJwt.verifyToken, controller.searchDocument);
 router.post('/message', controller.saveMessage);
 //Get messages
 router.get('/message', authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
+//Mark message read/unread
+router.patch('/message/:id/read', authJwt.verifyToken, authJwt.isAdmin, controller.markMessageRead);
+//Archive/unarchive message
+router.patch('/message/:id/archive', authJwt.verifyToken, authJwt.isAdmin, controller.archiveMessage);
+//Bulk update messages
+router.patch('/message/bulk', authJwt.verifyToken, authJwt.isAdmin, controller.bulkUpdateMessages);
+//Mark all as read/unread
+router.patch('/message/read-all', authJwt.verifyToken, authJwt.isAdmin, controller.markAllMessagesRead);
+router.patch('/message/unread-all', authJwt.verifyToken, authJwt.isAdmin, controller.markAllMessagesUnread);
 //Get number of unread messages
 router.get('/nbmessage', authJwt.verifyToken, controller.getNbMessage);
 //Delete message
@@ -79,4 +95,3 @@ router.get('/news', controller.getNews);
 
 
 module.exports = router;
-

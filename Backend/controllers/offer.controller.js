@@ -1,187 +1,258 @@
-const db = require("../models");
-const capitalize = require('capitalize');
-const Offer = db.offer;
-const Company = db.company;
+const {
+  offerRepository,
+  companyRepository,
+  studentRepository,
+  notificationRepository,
+} = require("../repositories");
+const { isUuid } = require("../utils/validation");
 
-exports.addOffer = (req, res) => {
-    const offer = new Offer({
-        _id: new db.mongoose.Types.ObjectId(),
-        title: req.body.title,
-        type: req.body.type,
-        start: req.body.start,
-        end: req.body.end,
-        content: req.body.content,
-        companyid: req.body.companyid,
-        createdat: req.body.createdat,
-        docs: req.body.docs,
-        candidacies: [],
-    });
-
-    offer.save()
-        .then(savedOffer => {
-            res.status(201).send({ message: "Offer added successfully!" });
-        })
-        .catch(error => {
-            res.status(500).send({ message: error.message || error });
-        });
+const allowedSearchFields = {
+  title: "title",
+  type: "type",
+  content: "content",
+  start: "start_date",
+  end: "end_date",
 };
 
-exports.getAll = (req, res) => {
-    Offer.find().exec()
-        .then(docs => {
-            if (!docs) {
-                return res.status(404).send({ message: "No Offers found." });
-            }
-            const response = [];
-            docs.forEach((doc) => {
-                response.push({
-                    title: doc.title,
-                    type: doc.type,
-                    start: doc.start,
-                    end: doc.end,
-                    docs: doc.docs,
-                    content: doc.content,
-                    companyid: doc.companyid,
-                    createdat: doc.createdat,
-                    id: doc._id,
-                    candidacies: doc.candidacies
-                });
-            });
-            return res.status(200).send(response);
-        }).catch(err => {
-            return res.status(500).send({ message: err });
-        });
+const buildOffersWithCandidacies = async (offers) => {
+  if (!offers.length) return [];
+  const offerIds = offers.map((offer) => offer.id);
+  const candidacyRows = await offerRepository.listCandidaciesByOfferIds(offerIds);
+  const candidacyMap = new Map();
+  candidacyRows.forEach((row) => {
+    const list = candidacyMap.get(row.offer_id) || [];
+    list.push(offerRepository.mapCandidacyRow(row));
+    candidacyMap.set(row.offer_id, list);
+  });
+
+  return offers.map((offer) =>
+    offerRepository.mapOfferRow(offer, candidacyMap.get(offer.id) || [])
+  );
 };
 
-exports.getByKey = (req, res, next) => {
-    Offer.find({ [req.query.property]: { $regex: new RegExp("^" + req.query.key, "i") } }).exec()
-        .then(docs => {
-            const response = [];
-            docs.forEach((doc) => {
-                response.push({
-                    title: doc.title,
-                    type: doc.type,
-                    start: doc.start,
-                    end: doc.end,
-                    docs: doc.docs,
-                    content: doc.content,
-                    companyid: doc.companyid,
-                    createdat: doc.createdat,
-                    id: doc._id,
-                    candidacies: doc.candidacies
-                });
-            });
-            if (docs.length >= 0) {
-                res.status(200).send(response);
-            } else {
-                res.status(404).send({ message: 'No entries found' });
-            }
-
-        }).catch(err => {
-            res.status(500).send({ message: err });
-        });
-};
-
-exports.getCompanyOffers = (req, res) => {
-    Offer.find({ companyid: req.query.id })
-        .exec()
-        .then(docs => {
-            if (!docs) {
-                return res.status(404).send({ message: "No Offers found." });
-            }
-            const response = [];
-            docs.forEach((doc) => {
-                response.push({
-                    id: doc._id,
-                    title: doc.title,
-                    type: doc.type,
-                    start: doc.start,
-                    end: doc.end,
-                    docs: doc.docs,
-                    content: doc.content,
-                    companyid: doc.companyid,
-                    createdat: doc.createdat,
-                    candidacies: doc.candidacies
-                });
-            });
-            return res.status(200).send(response);
-        }).catch(err => {
-            return res.status(500).send({ message: err });
-        });
-};
-
-exports.getCandidacies = (req, res) => {
-    const offerId = req.query.id;
-    if (!offerId || !db.mongoose.Types.ObjectId.isValid(offerId)) {
-        return res.status(400).send({ message: "Invalid offer id." });
+exports.addOffer = async (req, res) => {
+  try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
     }
 
-    Offer.findById({ _id: offerId })
-        .then(docs => {
-            if (!docs) {
-                return res.status(404).send({ message: "No Candidacies found." });
-            }
-            return res.status(200).send(docs);
-        }).catch(err => {
-            return res.status(500).send({ message: err.message || err });
-        });
-};
-
-exports.getOfferById = (req, res) => {
-    Offer.findById({ _id: req.params.id })
-        .then((offer) => {
-            if (!offer) {
-                return res.status(404).send({ message: "Offer not found." });
-            }
-            return res.status(200).send({
-                title: offer.title,
-                type: offer.type,
-                start: doc.start,
-                end: doc.end,
-                docs: doc.docs,
-                content: offer.content,
-                companyid: offer.companyid,
-                createdat: offer.createdat,
-                id: doc._id,
-                candidacies: doc.candidacies
-            });
-        }).catch(err => {
-            return res.status(500).send({ message: "error" + err });
-        });
-};
-
-exports.updateOffer = (req, res) => {
-    const newData = new Offer();
-
-    newData.title = req.body.title;
-    newData.type = req.body.type;
-    newData.start = req.body.start;
-    newData.end = req.body.end;
-    newData.content = req.body.content;
-
-
-
-    Offer.updateOne({ _id: req.query.id }, newData).then(() => {
-        return res.status(200).send({ message: "Offer updated" });
-    }).catch(err => {
-        console.error(err);
-        return res.status(500).send({ message: err });
+    const offer = await offerRepository.createOffer({
+      title: req.body.title,
+      type: req.body.type,
+      start: req.body.start,
+      end: req.body.end,
+      content: req.body.content,
+      companyId: req.id,
+      createdAt: req.body.createdat || new Date(),
+      docs: req.body.docs || [],
     });
 
+    try {
+      const students = await studentRepository.listIds();
+      if (students.length > 0) {
+        let companyName = "A company";
+        const company = await companyRepository.findById(req.id);
+        if (company?.name) {
+          companyName = company.name;
+        }
+
+        await notificationRepository.createMany(
+          students.map((studentId) => ({
+            recipientType: "student",
+            recipientId: studentId,
+            title: "New Offer Published",
+            message: `${companyName} published a new offer: "${offer.title}".`,
+            type: "info",
+          }))
+        );
+      }
+    } catch (notifyError) {
+      console.warn("Offer created but notifications failed:", notifyError.message || notifyError);
+    }
+
+    res.status(201).send({ message: "Offer added successfully!" });
+  } catch (error) {
+    res.status(500).send({ message: error.message || error });
+  }
 };
 
-exports.deleteOffre = (req, res) => {
-    Offer.deleteOne({
-        _id: req.query.id
-    }).exec()
-        .then(() => {
-            return res.status(200).send({ message: "Offer deleted" });
-        })
-        .catch(error => {
-            console.error(error);
-            return res.status(500).send({ message: error });
-        });
-
+exports.getAll = async (req, res) => {
+  try {
+    const offers = await offerRepository.listOffers();
+    const response = await buildOffersWithCandidacies(offers);
+    res.status(200).send(response);
+  } catch (err) {
+    res.status(500).send({ message: err.message || err });
+  }
 };
 
+exports.getByKey = async (req, res) => {
+  try {
+    const { property, key } = req.query;
+    const column = allowedSearchFields[property];
+    if (!column || !key) {
+      return res.status(400).send({ message: "Invalid search parameters." });
+    }
+    const offers = await offerRepository.searchByKey(column, key);
+    const response = await buildOffersWithCandidacies(offers);
+    res.status(200).send(response);
+  } catch (err) {
+    res.status(500).send({ message: err.message || err });
+  }
+};
 
+exports.getCompanyOffers = async (req, res) => {
+  try {
+    const companyId = req.query.id || req.params.id;
+    if (!companyId || !isUuid(companyId)) {
+      return res.status(400).send({ message: "Invalid company id." });
+    }
+    const offers = await offerRepository.listOffersByCompany(companyId);
+    const response = await buildOffersWithCandidacies(offers);
+    res.status(200).send(response);
+  } catch (err) {
+    res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.getCandidacies = async (req, res) => {
+  try {
+    const offerId = req.query.id;
+    if (!offerId || !isUuid(offerId)) {
+      return res.status(400).send({ message: "Invalid offer id." });
+    }
+
+    const offer = await offerRepository.findById(offerId);
+    if (!offer) {
+      return res.status(404).send({ message: "No Candidacies found." });
+    }
+
+    const candidacies = await offerRepository.listCandidacies(offerId);
+    const response = offerRepository.mapOfferRow(
+      offer,
+      candidacies.map(offerRepository.mapCandidacyRow)
+    );
+    res.status(200).send(response);
+  } catch (err) {
+    res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.updateCandidacyStatus = async (req, res) => {
+  const { offerId } = req.params;
+  const { status, candidacyId, candidacyIndex } = req.body;
+
+  if (!offerId || !isUuid(offerId)) {
+    return res.status(400).send({ message: "Invalid offer id." });
+  }
+  if (!status || !["pending", "accepted", "rejected"].includes(status)) {
+    return res.status(400).send({ message: "Invalid status." });
+  }
+
+  try {
+    const offer = await offerRepository.findById(offerId);
+    if (!offer) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    if (String(offer.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
+
+    const candidacies = await offerRepository.listCandidacies(offerId);
+    if (!candidacies.length) {
+      return res.status(404).send({ message: "No candidacies found." });
+    }
+
+    let candidacy = null;
+    if (candidacyId && isUuid(candidacyId)) {
+      candidacy = candidacies.find((entry) => entry.id === candidacyId);
+    } else if (
+      Number.isInteger(candidacyIndex) &&
+      candidacyIndex >= 0 &&
+      candidacyIndex < candidacies.length
+    ) {
+      candidacy = candidacies[candidacyIndex];
+    }
+
+    if (!candidacy) {
+      return res.status(404).send({ message: "Candidacy not found." });
+    }
+
+    const updated = await offerRepository.updateCandidacyStatus(candidacy.id, status);
+    if (updated?.student_id) {
+      await notificationRepository.createNotification({
+        recipientType: "student",
+        recipientId: updated.student_id,
+        title: "Application Update",
+        message: `Your application for \"${offer.title}\" was ${status}.`,
+        type: status === "accepted" ? "success" : status === "rejected" ? "warning" : "info",
+      });
+    }
+
+    return res.status(200).send({ message: "Candidacy updated." });
+  } catch (err) {
+    return res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.getOfferById = async (req, res) => {
+  try {
+    if (!isUuid(req.params.id)) {
+      return res.status(400).send({ message: "Invalid offer id." });
+    }
+    const offer = await offerRepository.findById(req.params.id);
+    if (!offer) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    const candidacies = await offerRepository.listCandidacies(offer.id);
+    const response = offerRepository.mapOfferRow(
+      offer,
+      candidacies.map(offerRepository.mapCandidacyRow)
+    );
+    return res.status(200).send(response);
+  } catch (err) {
+    return res.status(500).send({ message: "error" + err.message });
+  }
+};
+
+exports.updateOffer = async (req, res) => {
+  const offerId = req.query.id || req.params.id;
+  if (!offerId || !isUuid(offerId)) {
+    return res.status(400).send({ message: "Invalid offer id." });
+  }
+
+  try {
+    const updated = await offerRepository.updateOffer(offerId, {
+      title: req.body.title,
+      type: req.body.type,
+      start: req.body.start,
+      end: req.body.end,
+      content: req.body.content,
+      docs: req.body.docs,
+    });
+    if (!updated) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    return res.status(200).send({ message: "Offer updated" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.deleteOffre = async (req, res) => {
+  const offerId = req.query.id || req.params.id;
+  if (!offerId || !isUuid(offerId)) {
+    return res.status(400).send({ message: "Invalid offer id." });
+  }
+  try {
+    const deleted = await offerRepository.deleteOffer(offerId);
+    if (!deleted) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    return res.status(200).send({ message: "Offer deleted" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: error.message || error });
+  }
+};

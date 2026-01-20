@@ -5,20 +5,34 @@ import type { Student } from '@/entities/student/types';
 
 export function SearchPage() {
   const [query, setQuery] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [promotion, setPromotion] = useState('');
+  const [studentClass, setStudentClass] = useState('');
   const [results, setResults] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    const hasFilters = [country, city, promotion, studentClass].some((value) => value.trim());
+    if (!query.trim() && !hasFilters) return;
 
     setLoading(true);
     setSearched(true);
     try {
-      const response = await httpClient.get('/api/student/find', {
-        params: { q: query }
-      });
+      const response = hasFilters
+        ? await httpClient.get('/api/student/filter', {
+          params: {
+            country: country.trim() || undefined,
+            city: city.trim() || undefined,
+            promotion: promotion.trim() || undefined,
+            class: studentClass.trim() || undefined,
+          },
+        })
+        : await httpClient.get('/api/student/find', {
+          params: { q: query },
+        });
       const normalized = response.data.map((student: Student & { id?: string }) => ({
         ...student,
         _id: student._id ?? student.id ?? ''
@@ -41,24 +55,73 @@ export function SearchPage() {
 
       {/* Search form */}
       <form onSubmit={handleSearch} className="mb-8">
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, skills, class..."
-              className="w-full pl-14 pr-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-lg"
-            />
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="flex-1 relative">
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name..."
+                className="w-full pl-14 pr-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-lg"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
+              ) : (
+                <span className="text-lg">Search</span>
+              )}
+            </button>
           </div>
-          <button type="submit" disabled={loading} className="px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl disabled:opacity-50">
-            {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
-            ) : (
-              <span className="text-lg">Search</span>
-            )}
-          </button>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="e.g., Tunisia"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g., Tunis"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Promotion</label>
+              <input
+                type="text"
+                value={promotion}
+                onChange={(e) => setPromotion(e.target.value)}
+                placeholder="e.g., 2026"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
+              <input
+                type="text"
+                value={studentClass}
+                onChange={(e) => setStudentClass(e.target.value)}
+                placeholder="e.g., 2nd Tel 1"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              />
+            </div>
+          </div>
         </div>
       </form>
 

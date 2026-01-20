@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Building2, Mail, Phone, Globe, MapPin, Camera } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { getApiErrorMessage, validateFile } from '@/shared/lib/utils';
+import { config } from '@/app/config/env';
 import type { Company } from '@/entities/company/types';
 
 export function ProfilePage() {
@@ -16,6 +17,35 @@ export function ProfilePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const { register, handleSubmit, reset } = useForm<Partial<Company>>();
+
+  const resolveLogoSrc = (logo?: string | null) => {
+    if (!logo) return null;
+    const trimmed = logo.trim();
+    if (!trimmed) return null;
+    const apiBase = config.apiUrl || window.location.origin;
+
+    if (trimmed.startsWith('/uploads')) {
+      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
+    }
+    if (trimmed.startsWith('uploads/')) {
+      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
+    }
+    if (
+      trimmed.startsWith('http://localhost') ||
+      trimmed.startsWith('http://127.0.0.1') ||
+      trimmed.startsWith('http://0.0.0.0') ||
+      trimmed.startsWith('https://localhost') ||
+      trimmed.startsWith('https://127.0.0.1')
+    ) {
+      try {
+        const url = new URL(trimmed);
+        return `${apiBase}${url.pathname}`;
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -133,9 +163,9 @@ export function ProfilePage() {
           <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="flex flex-col items-center md:items-start">
               <div className="relative group">
-                {profile?.logo ? (
+                {resolveLogoSrc(profile?.logo) ? (
                   <img
-                    src={profile.logo}
+                    src={resolveLogoSrc(profile?.logo) as string}
                     alt="Company Logo"
                     className="w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-2xl"
                   />

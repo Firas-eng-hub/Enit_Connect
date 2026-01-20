@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Newspaper, Trash2, Calendar, Image, Filter, Search, Users, Pencil } from 'lucide-react';
+import { Plus, Newspaper, Trash2, Calendar, Image, Filter, Search, Users, Pencil, MessageSquare } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { News } from '@/entities/news/types';
 import { formatDate, getApiErrorMessage } from '@/shared/lib/utils';
 import { config } from '@/app/config/env';
+import { Button } from '@/shared/ui/Button';
 
 const newsSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -20,9 +22,23 @@ const newsSchema = z.object({
 
 type NewsFormData = z.infer<typeof newsSchema>;
 
+type MessagePreview = {
+  id: string;
+  _id?: string;
+  name: string;
+  email: string;
+  message: string;
+  date?: string;
+  read?: boolean;
+  archived?: boolean;
+};
+
 export function HomePage() {
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
+  const [recentUnread, setRecentUnread] = useState<MessagePreview[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingNews, setEditingNews] = useState<News | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +69,7 @@ export function HomePage() {
 
   useEffect(() => {
     fetchNews();
+    fetchMessages();
   }, []);
 
   const fetchNews = async () => {
@@ -63,6 +80,24 @@ export function HomePage() {
       console.error('Failed to fetch news:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMessages = async () => {
+    setMessagesLoading(true);
+    setMessagesError(null);
+    try {
+      const response = await httpClient.get('/api/admin/message');
+      const unread = (response.data as MessagePreview[])
+        .filter((msg) => !msg.read && !msg.archived)
+        .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+        .slice(0, 3);
+      setRecentUnread(unread);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+      setMessagesError(getApiErrorMessage(err, 'Failed to load messages.'));
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -588,6 +623,51 @@ export function HomePage() {
           </div>
         </div>
       )}
+
+      <div className="mt-12 bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Messages Center</h2>
+              <p className="mt-2 text-gray-600">Manage incoming contact messages, reply quickly, and keep your inbox organized.</p>
+            </div>
+          </div>
+          <Link to="/admin/messages">
+            <Button variant="outline" size="sm">Open Inbox</Button>
+          </Link>
+        </div>
+
+        <div className="mt-6">
+          {messagesLoading ? (
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600" />
+              Loading recent messages...
+            </div>
+          ) : messagesError ? (
+            <div className="text-sm text-red-600">{messagesError}</div>
+          ) : recentUnread.length === 0 ? (
+            <div className="text-sm text-gray-500">No unread messages right now.</div>
+          ) : (
+            <div className="grid gap-3">
+              {recentUnread.map((msg) => (
+                <div key={msg.id || msg._id} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                    <span className="font-semibold text-gray-900">{msg.name}</span>
+                    <span>•</span>
+                    <span>{msg.email}</span>
+                    <span>•</span>
+                    <span>{msg.date ? formatDate(msg.date) : 'N/A'}</span>
+                  </div>
+                  <p className="mt-2 text-gray-700 line-clamp-2">{msg.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

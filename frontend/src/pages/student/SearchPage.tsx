@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, Map as MapIcon, List, User, Mail, Phone, MapPin } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { StudentMap } from '@/widgets/maps/StudentMap';
+import { config } from '@/app/config/env';
 
 interface StudentResult {
   id: string;
@@ -37,6 +38,35 @@ export function SearchPage() {
   const [searched, setSearched] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [showMap, setShowMap] = useState(false);
+
+  const resolvePictureSrc = (picture?: string | null) => {
+    if (!picture) return null;
+    const trimmed = picture.trim();
+    if (!trimmed) return null;
+    const apiBase = config.apiUrl || window.location.origin;
+
+    if (trimmed.startsWith('/uploads')) {
+      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
+    }
+    if (trimmed.startsWith('uploads/')) {
+      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
+    }
+    if (
+      trimmed.startsWith('http://localhost') ||
+      trimmed.startsWith('http://127.0.0.1') ||
+      trimmed.startsWith('http://0.0.0.0') ||
+      trimmed.startsWith('https://localhost') ||
+      trimmed.startsWith('https://127.0.0.1')
+    ) {
+      try {
+        const url = new URL(trimmed);
+        return `${apiBase}${url.pathname}`;
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  };
 
   // Load all student locations on mount
   useEffect(() => {
@@ -228,9 +258,9 @@ export function SearchPage() {
                   <div className="p-6">
                     {/* Profile header */}
                     <div className="flex items-start gap-4 mb-4">
-                      {student.picture ? (
+                      {resolvePictureSrc(student.picture) ? (
                         <img 
-                          src={student.picture} 
+                          src={resolvePictureSrc(student.picture) as string}
                           alt={`${student.firstname} ${student.lastname}`}
                           className="w-16 h-16 rounded-xl object-cover shadow-md"
                         />

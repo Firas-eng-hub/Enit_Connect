@@ -3,12 +3,42 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Building2, Mail, MapPin, Phone, User } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Student } from '@/entities/student/types';
+import { config } from '@/app/config/env';
 
 export function StudentPublicProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const resolvePictureSrc = (picture?: string | null) => {
+    if (!picture) return null;
+    const trimmed = picture.trim();
+    if (!trimmed) return null;
+    const apiBase = config.apiUrl || window.location.origin;
+
+    if (trimmed.startsWith('/uploads')) {
+      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
+    }
+    if (trimmed.startsWith('uploads/')) {
+      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
+    }
+    if (
+      trimmed.startsWith('http://localhost') ||
+      trimmed.startsWith('http://127.0.0.1') ||
+      trimmed.startsWith('http://0.0.0.0') ||
+      trimmed.startsWith('https://localhost') ||
+      trimmed.startsWith('https://127.0.0.1')
+    ) {
+      try {
+        const url = new URL(trimmed);
+        return `${apiBase}${url.pathname}`;
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -64,8 +94,12 @@ export function StudentPublicProfilePage() {
         <div className="bg-gradient-to-r from-primary-50 to-emerald-50 px-8 py-8 border-b border-gray-200">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-2xl bg-white shadow-lg border border-gray-200 flex items-center justify-center">
-              {student.picture ? (
-                <img src={student.picture} alt={`${student.firstname} ${student.lastname}`} className="w-full h-full object-cover rounded-2xl" />
+              {resolvePictureSrc(student.picture) ? (
+                <img
+                  src={resolvePictureSrc(student.picture) as string}
+                  alt={`${student.firstname} ${student.lastname}`}
+                  className="w-full h-full object-cover rounded-2xl"
+                />
               ) : (
                 <User className="w-10 h-10 text-gray-400" />
               )}

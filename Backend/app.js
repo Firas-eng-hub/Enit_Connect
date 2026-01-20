@@ -5,7 +5,6 @@ const dotenv = require('dotenv');
 const trimmer = require('express-trimmer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 
@@ -34,9 +33,6 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-
-// Data sanitization against NoSQL injection
-app.use(mongoSanitize());
 
 // Prevent HTTP Parameter Pollution
 app.use(hpp());
@@ -78,22 +74,6 @@ const authLimiter = rateLimit({
 
 // Trim whitespace from request body
 app.use(trimmer);
-
-const db = require("./models");
-const dbConfig = require("./config/db.config");
-//`mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`
-//`mongodb+srv://${dbConfig.user}:${dbConfig.pwd}@${dbConfig.domain}/${dbConfig.DB}?retryWrites=true&w=majority`
-db.mongoose
-  .connect(`mongodb+srv://${dbConfig.user}:${dbConfig.pwd}@${dbConfig.domain}/${dbConfig.DB}?retryWrites=true&w=majority`)
-  .then(() => {
-    console.log("Successfully connect to MongoDB.");
-  })
-  .catch(err => {
-    console.error("Connection error", err);
-    process.exit();
-  });
-
-// Note: useCreateIndex removed in Mongoose 6+, no longer needed
 
 //Home Page
 app.get("/", (req, res) => {

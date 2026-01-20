@@ -5,6 +5,28 @@
 
 services:
   # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  db:
+    container_name: tic-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: enit_connect
+      POSTGRES_USER: enit_user
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tic-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ==========================================
   # Backend API Service (Node.js/Express)
   # ==========================================
   backend:
@@ -19,6 +41,9 @@ services:
     volumes:
       # Persist uploads across container restarts
       - ./Backend/uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - tic-network
     healthcheck:
@@ -72,3 +97,11 @@ networks:
   tic-network:
     driver: bridge
     name: tic-connect-network
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  postgres_data:
+    name: tic-postgres
+    driver: local

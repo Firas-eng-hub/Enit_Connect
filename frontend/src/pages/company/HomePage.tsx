@@ -50,11 +50,20 @@ export function HomePage() {
   const fetchOffers = async () => {
     try {
       const companyId = localStorage.getItem('company_id');
-      const response = await httpClient.get(`/api/offers?companyId=${companyId}`);
-      // Filter to only show this company's offers
-      const allOffers = response.data;
-      const myOffers = allOffers.filter((o: Offer) => o.companyid === companyId);
-      setOffers(myOffers);
+      if (!companyId) {
+        setOffers([]);
+        return;
+      }
+      const response = await httpClient.get('/api/offers/myoffers', {
+        params: { id: companyId },
+      });
+      const normalized = response.data
+        .map((o: Offer & { id?: string }) => ({
+          ...o,
+          _id: o._id || o.id || '',
+        }))
+        .filter((o: Offer) => o._id);
+      setOffers(normalized);
     } catch (err) {
       console.error('Failed to fetch offers:', err);
     } finally {
@@ -114,7 +123,7 @@ export function HomePage() {
     if (!confirm('Are you sure you want to delete this offer?')) return;
 
     try {
-      await httpClient.delete(`/api/offers/${offerId}`);
+      await httpClient.delete('/api/offers', { params: { id: offerId } });
       setOffers(offers.filter((o) => o._id !== offerId));
     } catch (err) {
       console.error('Failed to delete offer:', err);
@@ -511,10 +520,10 @@ export function HomePage() {
 
                     {/* Right side - Actions */}
                     <div className="flex flex-col gap-3 shrink-0">
-                      <Link
-                        to={`/company/candidacies/${offer._id}`}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold text-sm shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
-                      >
+                    <Link
+                      to={`/company/candidacies/${offer._id || (offer as { id?: string }).id}`}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold text-sm shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
+                    >
                         <Eye className="w-5 h-5" />
                         View Applications
                       </Link>
