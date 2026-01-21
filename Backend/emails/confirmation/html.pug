@@ -1,63 +1,50 @@
 doctype html
-head
-  meta(http-equiv='Content-Type' content='text/html; charset=UTF-8')
-  title Please Verify Your Email Address
-table#main(width='100%' height='100%' cellpadding='0' cellspacing='0' border='0' bgcolor='#F4F7FA')
-  tbody
-    tr
-      td(valign='top')
-        table.innermain(cellpadding='0' width='580' cellspacing='0' border='0' bgcolor='#F4F7FA' align='center' style='margin:0 auto; table-layout: fixed;')
-          tbody
-            // START of MAIL Content
+html
+  head
+    meta(http-equiv='Content-Type' content='text/html; charset=UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title Welcome to ENIT Connect - Verify Your Email
+  body(style='margin:0; padding:0; background-color:#f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;')
+    table(width='100%' cellpadding='0' cellspacing='0' border='0' bgcolor='#f3f4f6')
+      tr
+        td(align='center' style='padding: 40px 20px;')
+          // Main Container
+          table(width='600' cellpadding='0' cellspacing='0' border='0' style='max-width:600px; background-color:#ffffff; border-radius:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow:hidden;')
+            // Header with gradient
             tr
-              td(colspan='4')
-                // Main CONTENT
-                table(width='100%' cellpadding='0' cellspacing='0' border='0' bgcolor='#ffffff' style='border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);')
-                  tbody
-                    tr
-                      td(height='40')
-                    tr(style='font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu;,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif; color:#4E5C6E; font-size:14px; line-height:20px; margin-top:20px;')
-                      td.content(colspan='2' valign='top' align='center' style='padding-left:90px; padding-right:90px;')
-                        table(width='100%' cellpadding='0' cellspacing='0' border='0' bgcolor='#ffffff')
-                          tbody
-                            tr
-                              td(align='center' valign='bottom' colspan='2' cellpadding='3')
-                                img(alt='Coinbase' width='80' src='https://www.coinbase.com/assets/app/icon_email-e8c6b940e8f3ec61dcd56b60c27daed1a6f8b169d73d9e79b8999ff54092a111.png')
-                            tr
-                              td(height='30')
-                            tr
-                              td(align='center')
-                                span(style='color:#48545d;font-size:22px;line-height: 24px;')
-                                  | Verify your email address
-                            tr
-                              td(height='24')
-                            tr
-                              td(height='1' bgcolor='#DAE1E9')
-                            tr
-                              td(height='24')
-                            tr
-                              td(align='center')
-                                span(style='color:#48545d;font-size:14px;line-height:24px;')
-                                  | Hello #{name},
-                                  | Thank you for subscribing. In order to start using your ENIT TIC account, you need to confirm your email address.
-                            tr
-                              td(height='20')
-                            tr
-                              td(valign='top' width='48%' align='center')
-                                span
-                                  a(href=`${appUrl}/api/student/confirm/${confirmationCode}` style='display:block; padding:15px 25px; background-color:#0087D1; color:#ffffff; border-radius:3px; text-decoration:none;') Verify Email Address
-                            tr
-                              td(height='20')
-                            tr
-                              td(align='center')
-                                img(src='https://s3.amazonaws.com/app-public/Coinbase-notification/hr.png' width='54' height='2' border='0')
-                            tr
-                              td(height='20')
-                            tr
-                              td(align='center')
-                                p(style='color:#a2a2a2; font-size:12px; line-height:17px; font-style:italic;')
-                                  | If you did not sign up for this account you can ignore this email and the account
-                                  | will be deleted.
-                    tr
-                      td(height='60')
-                // Main CONTENT end here
+              td(align='center' style='background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 40px 30px;')
+                h1(style='margin:0; color:#ffffff; font-size:28px; font-weight:bold; letter-spacing:-0.5px;') ENIT Connect
+                p(style='margin:8px 0 0 0; color:#dbeafe; font-size:14px;') École Nationale d\'Ingénieurs de Tunis
+            
+            // Content
+            tr
+              td(style='padding: 50px 40px;')
+                table(width='100%' cellpadding='0' cellspacing='0' border='0')
+                  tr
+                    td(align='center')
+                      // Icon
+                      div(style='width:80px; height:80px; margin:0 auto 30px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 20px rgba(59,130,246,0.3);')
+                        span(style='font-size:40px; color:#ffffff;') ✓
+                      
+                      // Welcome message
+                      h2(style='margin:0 0 16px 0; color:#111827; font-size:26px; font-weight:bold;') Welcome, #{name}!
+                      p(style='margin:0 0 30px 0; color:#6b7280; font-size:16px; line-height:24px;') Thank you for joining ENIT Connect. Please verify your email address to activate your account and start connecting with students and companies.
+                      
+                      // Verification code box
+                      div(style='background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:2px solid #3b82f6; border-radius:12px; padding:30px; margin:30px 0;')
+                        p(style='margin:0 0 12px 0; color:#1e40af; font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:1px;') Your Verification Code
+                        div(style='background:#ffffff; border-radius:8px; padding:20px; box-shadow: 0 4px 12px rgba(59,130,246,0.15);')
+                          span(style='color:#1e40af; font-size:32px; font-weight:bold; letter-spacing:8px; font-family: "Courier New", monospace;') #{confirmationCode}
+                      
+                      // Instructions
+                      p(style='margin:30px 0 0 0; color:#6b7280; font-size:14px; line-height:22px;') Enter this code in the verification page to complete your registration. This code will expire in 24 hours.
+            
+            // Footer
+            tr
+              td(style='background:#f9fafb; padding:30px 40px; border-top:1px solid #e5e7eb;')
+                p(style='margin:0 0 12px 0; color:#9ca3af; font-size:13px; line-height:20px; text-align:center;') If you didn\'t create an account with ENIT Connect, you can safely ignore this email.
+                p(style='margin:0; color:#d1d5db; font-size:12px; text-align:center;') © 2026 ENIT Connect. All rights reserved.
+            
+            // Spacer
+            tr
+              td(height='20')

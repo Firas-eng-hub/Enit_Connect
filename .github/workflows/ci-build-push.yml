@@ -11,7 +11,8 @@ on:
 env:
   DOCKER_HUB_USERNAME: firaskali
   BACKEND_IMAGE: firaskali/enit-connect-backend
-  FRONTEND_IMAGE: firaskali/enit-connect-frontend 
+  FRONTEND_IMAGE: firaskali/enit-connect-frontend
+  
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

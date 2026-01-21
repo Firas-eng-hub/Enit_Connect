@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS students (
   password TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'Pending',
   confirmation_code TEXT,
+  verification_expires_at TIMESTAMPTZ,
+  verification_attempts INTEGER NOT NULL DEFAULT 0,
   country TEXT,
   city TEXT,
   address TEXT,
@@ -40,6 +42,8 @@ CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   status TEXT NOT NULL DEFAULT 'Active',
   confirmation_code TEXT,
+  verification_expires_at TIMESTAMPTZ,
+  verification_attempts INTEGER NOT NULL DEFAULT 0,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   password TEXT NOT NULL,
@@ -122,17 +126,102 @@ CREATE TABLE IF NOT EXISTS documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID,
   creator_name TEXT NOT NULL,
+  creator_type TEXT,
   date TIMESTAMPTZ,
   title TEXT NOT NULL,
+  description TEXT,
+  tags TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
   type TEXT NOT NULL,
+  access_level TEXT NOT NULL DEFAULT 'private',
   link TEXT,
+  thumbnail_url TEXT,
   emplacement TEXT NOT NULL,
   extension TEXT,
+  mime_type TEXT,
   size TEXT,
+  size_bytes BIGINT,
+  version INTEGER NOT NULL DEFAULT 1,
+  pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  last_opened_at TIMESTAMPTZ,
+  scan_status TEXT NOT NULL DEFAULT 'clean',
+  scan_checked_at TIMESTAMPTZ,
+  scan_error TEXT,
+  quarantined BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
   extra JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX IF NOT EXISTS documents_creator_id_idx ON documents (creator_id);
+CREATE INDEX IF NOT EXISTS documents_access_level_idx ON documents (access_level);
+CREATE INDEX IF NOT EXISTS documents_scan_status_idx ON documents (scan_status);
+
+CREATE TABLE IF NOT EXISTS document_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL,
+  version INTEGER NOT NULL,
+  link TEXT NOT NULL,
+  extension TEXT,
+  mime_type TEXT,
+  size TEXT,
+  size_bytes BIGINT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  extra JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS document_versions_document_idx ON document_versions (document_id);
+
+CREATE TABLE IF NOT EXISTS document_access (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  user_type TEXT NOT NULL,
+  access TEXT NOT NULL DEFAULT 'view',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS document_access_unique_idx ON document_access (document_id, user_id, user_type);
+CREATE INDEX IF NOT EXISTS document_access_user_idx ON document_access (user_id, user_type);
+
+CREATE TABLE IF NOT EXISTS document_shares (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ,
+  password_hash TEXT,
+  access TEXT NOT NULL DEFAULT 'view',
+  created_by UUID,
+  created_by_type TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoked_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS document_shares_document_idx ON document_shares (document_id);
+
+CREATE TABLE IF NOT EXISTS document_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  requester_id UUID,
+  requester_type TEXT NOT NULL,
+  target_id UUID,
+  target_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  due_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS document_requests_target_idx ON document_requests (target_id, target_type);
+CREATE INDEX IF NOT EXISTS document_requests_requester_idx ON document_requests (requester_id, requester_type);
+
+CREATE TABLE IF NOT EXISTS document_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID,
+  actor_id UUID,
+  actor_type TEXT,
+  action TEXT NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS document_audit_logs_document_idx ON document_audit_logs (document_id);
+CREATE INDEX IF NOT EXISTS document_audit_logs_actor_idx ON document_audit_logs (actor_id, actor_type);
+CREATE INDEX IF NOT EXISTS document_audit_logs_action_idx ON document_audit_logs (action);
 
 CREATE TABLE IF NOT EXISTS posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

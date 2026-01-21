@@ -1,0 +1,11 @@
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMPTZ;
+
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS verification_attempts INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMPTZ;
+
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS verification_attempts INTEGER NOT NULL DEFAULT 0;

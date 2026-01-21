@@ -45,6 +45,7 @@ const MembersPage = lazy(() => import('@/pages/visitor/MembersPage').then(m => (
 const AboutPage = lazy(() => import('@/pages/visitor/AboutPage').then(m => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('@/pages/visitor/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/visitor/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const VerifyPage = lazy(() => import('@/pages/visitor/VerifyPage').then(m => ({ default: m.VerifyPage })));
 
 const StudentHomePage = lazy(() => import('@/pages/student/HomePage').then(m => ({ default: m.HomePage })));
 const StudentProfilePage = lazy(() => import('@/pages/student/ProfilePage').then(m => ({ default: m.ProfilePage })));
@@ -146,6 +147,14 @@ export const router = createBrowserRouter([
     element: (
       <RequireVisitor>
         {withSuspense(RegisterPage)}
+      </RequireVisitor>
+    ),
+  },
+  {
+    path: '/verify',
+    element: (
+      <RequireVisitor>
+        {withSuspense(VerifyPage)}
       </RequireVisitor>
     ),
   },

@@ -6,13 +6,14 @@ const createStudent = async (data) => {
   const result = await db.query(
     `INSERT INTO students (
       firstname, lastname, email, password, status, confirmation_code,
+      verification_expires_at, verification_attempts,
       country, city, address, phone, type, work_at, class, promotion, linkedin,
       picture, aboutme, latitude, longitude, created_at, updated_at, extra
     )
     VALUES (
       $1,$2,$3,$4,$5,$6,
       $7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
-      $17,$18,$19,$20,$21,$22
+      $17,$18,$19,$20,$21,$22,$23,$24
     )
     RETURNING *`,
     [
@@ -22,6 +23,8 @@ const createStudent = async (data) => {
       data.password,
       data.status || "Pending",
       data.confirmationCode || null,
+      data.verificationExpiresAt || null,
+      data.verificationAttempts || 0,
       data.country || null,
       data.city || null,
       data.address || null,
@@ -158,6 +161,34 @@ const updateStudent = async (id, data) => {
   return result.rows[0] || null;
 };
 
+const updateConfirmationCodeByEmail = async (email, confirmationCode, expiresAt) => {
+  const result = await db.query(
+    `UPDATE students
+     SET confirmation_code = $1,
+         verification_expires_at = $2,
+         verification_attempts = 0,
+         status = CASE WHEN status = 'Active' THEN status ELSE 'Pending' END,
+         updated_at = now()
+     WHERE LOWER(email) = LOWER($3)
+       AND status <> 'Active'
+     RETURNING *`,
+    [confirmationCode, expiresAt || null, email]
+  );
+  return result.rows[0] || null;
+};
+
+const incrementVerificationAttempts = async (id) => {
+  const result = await db.query(
+    `UPDATE students
+     SET verification_attempts = COALESCE(verification_attempts, 0) + 1,
+         updated_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+};
+
 const updatePicture = async (id, picture) => {
   const result = await db.query(
     `UPDATE students
@@ -171,7 +202,12 @@ const updatePicture = async (id, picture) => {
 
 const verifyStudent = async (id) => {
   const result = await db.query(
-    `UPDATE students SET status = 'Active', updated_at = now()
+    `UPDATE students
+     SET status = 'Active',
+         confirmation_code = NULL,
+         verification_expires_at = NULL,
+         verification_attempts = 0,
+         updated_at = now()
      WHERE id = $1 RETURNING *`,
     [id]
   );
@@ -193,6 +229,8 @@ module.exports = {
   searchByKey,
   searchByFilters,
   updateStudent,
+  updateConfirmationCodeByEmail,
+  incrementVerificationAttempts,
   updatePicture,
   verifyStudent,
   deleteStudent,

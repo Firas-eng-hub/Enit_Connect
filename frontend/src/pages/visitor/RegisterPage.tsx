@@ -118,13 +118,20 @@ export function RegisterPage() {
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-3">You're all set!</h2>
             <p className="text-gray-500 mb-8 leading-relaxed">
-              We've sent a verification email to your inbox. Please verify your email to activate your account.
+              We've sent a 6-digit verification code to your inbox. Enter it to activate your account.
             </p>
-            <Link to="/login">
-              <Button className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30" size="lg">
-                Continue to Sign In
-              </Button>
-            </Link>
+            <div className="space-y-3">
+              <Link to={`/verify?type=${selectedType}`}>
+                <Button className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30" size="lg">
+                  Enter Verification Code
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="secondary" className="w-full py-4 rounded-xl font-bold" size="lg">
+                  Continue to Sign In
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

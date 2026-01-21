@@ -1,0 +1,17 @@
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS creator_type TEXT;
+
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS description TEXT;
+
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT ARRAY[]::text[];
+
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS mime_type TEXT;
+
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS size_bytes BIGINT;
+
+ALTER TABLE documents
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;

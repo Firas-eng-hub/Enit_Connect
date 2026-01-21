@@ -144,7 +144,7 @@ export function SearchPage() {
               <select
                 value={searchProperty}
                 onChange={(e) => setSearchProperty(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-all bg-white"
               >
                 {searchProperties.map((prop) => (
                   <option key={prop.value} value={prop.value}>{prop.label}</option>
@@ -160,7 +160,7 @@ export function SearchPage() {
                   value={searchKey}
                   onChange={(e) => setSearchKey(e.target.value)}
                   placeholder={`Enter ${searchProperties.find(p => p.value === searchProperty)?.label.toLowerCase()}...`}
-                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-all"
                 />
               </div>
             </div>

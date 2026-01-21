@@ -19,7 +19,8 @@ const authLimiter = rateLimit({
 //Register Company
 router.post("/signup", authLimiter, verifySignUp.checkDuplicateCompany, company.signup);
 //Confirm Email
-router.get("/confirm/:confirmationCode", company.verifyCompany);
+router.post("/confirm", company.verifyCompany);
+router.post("/resend-confirmation", authLimiter, company.resendVerificationCode);
 //Login Company
 router.post("/login", authLimiter, company.signin);
 //Get Companies Locations
@@ -46,5 +47,10 @@ router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, company.deleteComp
 router.get("/:id/offers", authJwt.verifyToken, offer.getCompanyOffers);
 //Get User info
 router.get("/user/:id", authJwt.verifyToken, company.getUserInfo);
+//Shared documents
+router.get("/documents/shared", authJwt.verifyToken, authJwt.isCompany, company.listSharedDocuments);
+//Document requests
+router.post("/document-requests", authJwt.verifyToken, authJwt.isCompany, company.createDocumentRequest);
+router.get("/document-requests", authJwt.verifyToken, authJwt.isCompany, company.listDocumentRequests);
 
 module.exports = router;

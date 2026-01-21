@@ -25,7 +25,8 @@ router.post('/posts',controller.addPost);
 //Register Student
 router.post("/signup", authLimiter, verifySignUp.checkDuplicateEmail, controller.signup);
 //Confirm Email
-router.get("/confirm/:confirmationCode", controller.verifyUser);
+router.post("/confirm", controller.verifyUser);
+router.post("/resend-confirmation", authLimiter, controller.resendVerificationCode);
 //Login Student
 router.post("/login", authLimiter, controller.signin);
 //Get All Student
@@ -47,12 +48,6 @@ router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isStudent, noti
 router.get("/filter", authJwt.verifyToken, controller.getByFilters);
 //Search for Students by Name using String Similarity
 router.get("/find", authJwt.verifyToken, controller.getByName);
-//Get Student informations by ID
-router.get("/:id", authJwt.verifyToken, controller.getStudentById);
-//Update Student informations
-router.patch("/:id", authJwt.verifyToken, authJwt.isStudent, controller.updateStudent);
-//Delete Student from database
-router.delete("/:id", authJwt.verifyToken, authJwt.isStudent, controller.deleteStudent);
 //Upload picture
 router.post("/upload/:id",  authJwt.verifyToken, authJwt.isStudent,storage, controller.updatePicture);
 //Add folder
@@ -60,7 +55,33 @@ router.post('/folder',authJwt.verifyToken, authJwt.isStudent, controller.createF
 //Add file
 router.post('/file', savedoc, controller.createFile);
 //Get documents
-router.post('/documents',authJwt.verifyToken, controller.getDocuments);
+router.get('/documents', authJwt.verifyToken, authJwt.isStudent, controller.listDocuments);
+router.post('/documents', authJwt.verifyToken, controller.getDocuments);
+//Upload document
+router.post('/documents/upload', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.uploadDocument);
+//Create folder
+router.post('/documents/folders', authJwt.verifyToken, authJwt.isStudent, controller.createDocumentFolder);
+//Update document metadata
+router.patch('/documents/:id', authJwt.verifyToken, authJwt.isStudent, controller.updateDocumentMeta);
+router.patch('/documents/:id/pin', authJwt.verifyToken, authJwt.isStudent, controller.updateDocumentPin);
+router.post('/documents/:id/open', authJwt.verifyToken, authJwt.isStudent, controller.markDocumentOpened);
+//Delete document
+router.delete('/documents/:id', authJwt.verifyToken, authJwt.isStudent, controller.deleteDocumentById);
+//Versioning
+router.post('/documents/:id/replace', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.replaceDocumentFile);
+router.get('/documents/:id/versions', authJwt.verifyToken, authJwt.isStudent, controller.listDocumentVersions);
+router.post('/documents/:id/versions/:versionId/restore', authJwt.verifyToken, authJwt.isStudent, controller.restoreDocumentVersion);
+//Batch actions
+router.post('/documents/batch-delete', authJwt.verifyToken, authJwt.isStudent, controller.batchDeleteDocuments);
+router.post('/documents/batch-download', authJwt.verifyToken, authJwt.isStudent, controller.batchDownloadDocuments);
+//Sharing
+router.post('/documents/:id/share', authJwt.verifyToken, authJwt.isStudent, controller.shareDocument);
+router.get('/documents/:id/shares', authJwt.verifyToken, authJwt.isStudent, controller.listDocumentShares);
+router.patch('/documents/shares/:id/revoke', authJwt.verifyToken, authJwt.isStudent, controller.revokeDocumentShare);
+router.get('/documents/shared', authJwt.verifyToken, authJwt.isStudent, controller.listSharedDocuments);
+//Requests
+router.get('/document-requests', authJwt.verifyToken, authJwt.isStudent, controller.listDocumentRequests);
+router.patch('/document-requests/:id', authJwt.verifyToken, authJwt.isStudent, controller.updateDocumentRequestStatus);
 //Delete document
 router.post('/deldoc', authJwt.verifyToken, controller.deleteDocument);
 //Search for document
@@ -70,5 +91,11 @@ router.post('/companiesinfo', authJwt.verifyToken, controller.companiesInfo);
 // Add Candidacy
 router.post('/apply/:id', authJwt.verifyToken, controller.apply);
 
-module.exports = router;
+//Get Student informations by ID
+router.get("/:id", authJwt.verifyToken, controller.getStudentById);
+//Update Student informations
+router.patch("/:id", authJwt.verifyToken, authJwt.isStudent, controller.updateStudent);
+//Delete Student from database
+router.delete("/:id", authJwt.verifyToken, authJwt.isStudent, controller.deleteStudent);
 
+module.exports = router;

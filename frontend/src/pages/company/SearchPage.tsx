@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Search as SearchIcon, User, GraduationCap, Calendar } from 'lucide-react';
+import { Search as SearchIcon, User, GraduationCap, Calendar, FileText, Send } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Student } from '@/entities/student/types';
+import { Button } from '@/shared/ui/Button';
+import { Alert } from '@/shared/ui/Alert';
+import { Dialog, DialogFooter } from '@/shared/ui/Dialog';
 
 export function SearchPage() {
   const [query, setQuery] = useState('');
@@ -12,6 +15,11 @@ export function SearchPage() {
   const [results, setResults] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [requestStudent, setRequestStudent] = useState<Student | null>(null);
+  const [requestForm, setRequestForm] = useState({ title: '', message: '', dueDate: '' });
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +51,43 @@ export function SearchPage() {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenRequest = (student: Student) => {
+    setRequestStudent(student);
+    setRequestForm({
+      title: `Documents request for ${student.firstname} ${student.lastname}`,
+      message: '',
+      dueDate: '',
+    });
+    setRequestError(null);
+    setRequestSuccess(null);
+  };
+
+  const handleSendRequest = async () => {
+    if (!requestStudent) return;
+    if (!requestForm.title.trim()) {
+      setRequestError('Request title is required.');
+      return;
+    }
+
+    setIsRequesting(true);
+    setRequestError(null);
+    setRequestSuccess(null);
+
+    try {
+      await httpClient.post('/api/company/document-requests', {
+        studentId: requestStudent._id,
+        title: requestForm.title,
+        message: requestForm.message,
+        dueDate: requestForm.dueDate || undefined,
+      });
+      setRequestSuccess('Request sent successfully.');
+    } catch (err: any) {
+      setRequestError(err.response?.data?.message || 'Failed to send request.');
+    } finally {
+      setIsRequesting(false);
     }
   };
 
@@ -182,6 +227,15 @@ export function SearchPage() {
                       </div>
                     )}
                   </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => handleOpenRequest(student)}>
+                      <span className="inline-flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Request documents
+                      </span>
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -197,6 +251,64 @@ export function SearchPage() {
           <p className="text-gray-500">Enter keywords to find students</p>
         </div>
       )}
+
+      <Dialog
+        open={Boolean(requestStudent)}
+        onClose={() => setRequestStudent(null)}
+        title="Request documents"
+        description="Ask a student to upload specific documents."
+        size="lg"
+      >
+        <div className="space-y-4">
+          {requestError && (
+            <Alert variant="danger" className="text-sm rounded-xl">
+              {requestError}
+            </Alert>
+          )}
+          {requestSuccess && (
+            <Alert variant="success" className="text-sm rounded-xl">
+              {requestSuccess}
+            </Alert>
+          )}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Title</label>
+            <input
+              value={requestForm.title}
+              onChange={(event) => setRequestForm((prev) => ({ ...prev, title: event.target.value }))}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Message</label>
+            <textarea
+              value={requestForm.message}
+              onChange={(event) => setRequestForm((prev) => ({ ...prev, message: event.target.value }))}
+              rows={4}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Due date (optional)</label>
+            <input
+              type="date"
+              value={requestForm.dueDate}
+              onChange={(event) => setRequestForm((prev) => ({ ...prev, dueDate: event.target.value }))}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRequestStudent(null)}>
+            Close
+          </Button>
+          <Button onClick={handleSendRequest} isLoading={isRequesting}>
+            <span className="inline-flex items-center gap-2">
+              <Send className="w-4 h-4" />
+              Send request
+            </span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

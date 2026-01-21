@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { generateVerificationCode, getVerificationExpiry } = require("../utils/verification");
 const config = require("../config/auth.config");
 const nodemailer = require("../config/nodemailer.config");
 const location = require("../config/geocoder.config");
@@ -690,10 +691,10 @@ exports.addStudents = async (req, res) => {
     for (const item of st) {
       const plainPassword = item.password || "123456789";
       const hash = await bcrypt.hash(plainPassword, 10);
-      const characters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      let confirmCode = "";
-      for (let i = 0; i < 25; i += 1) {
-        confirmCode += characters[Math.floor(Math.random() * characters.length)];
+      let confirmCode = generateVerificationCode();
+      const verificationExpiresAt = getVerificationExpiry();
+      while (await studentRepository.findByConfirmationCode(confirmCode)) {
+        confirmCode = generateVerificationCode();
       }
       const student = await studentRepository.createStudent({
         firstname: item.firstname,
@@ -701,8 +702,10 @@ exports.addStudents = async (req, res) => {
         email: item.email,
         password: hash,
         confirmationCode: confirmCode,
+        verificationExpiresAt,
+        verificationAttempts: 0,
         type: item.type,
-        status: "Active",
+        status: "Pending",
       });
       nodemailer.sendConfirmationEmail(
         student.firstname,
@@ -719,10 +722,10 @@ exports.addStudents = async (req, res) => {
 exports.addCompany = async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, 10);
-    const characters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let confirmCode = "";
-    for (let i = 0; i < 25; i += 1) {
-      confirmCode += characters[Math.floor(Math.random() * characters.length)];
+    let confirmCode = generateVerificationCode();
+    const verificationExpiresAt = getVerificationExpiry();
+    while (await companyRepository.findByConfirmationCode(confirmCode)) {
+      confirmCode = generateVerificationCode();
     }
 
     const getLocation = () =>
@@ -737,11 +740,13 @@ exports.addCompany = async (req, res) => {
     const longitude = locationResult ? locationResult.longitude : null;
 
     await companyRepository.createCompany({
-      status: "Active",
+      status: "Pending",
       name: req.body.name,
       email: req.body.email,
       password: hash,
       confirmationCode: confirmCode,
+      verificationExpiresAt,
+      verificationAttempts: 0,
       country: req.body.country,
       address: req.body.address,
       city: req.body.city,
@@ -752,6 +757,12 @@ exports.addCompany = async (req, res) => {
       latitude,
       longitude,
     });
+
+    nodemailer.sendConfirmationEmail(
+      req.body.name,
+      req.body.email,
+      confirmCode
+    );
 
     return res.status(201).send({ message: "Company was registered successfully!" });
   } catch (err) {

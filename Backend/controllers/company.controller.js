@@ -1,8 +1,10 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
 const stringSimilarity = require("string-similarity");
 const location = require("../config/geocoder.config");
 const config = require("../config/auth.config");
+const nodemailer = require("../config/nodemailer.config");
 const {
   companyRepository,
   offerRepository,
@@ -10,6 +12,9 @@ const {
   notificationRepository,
   adminRepository,
   refreshTokenRepository,
+  documentRepository,
+  documentAccessRepository,
+  documentRequestRepository,
 } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
@@ -79,11 +84,18 @@ exports.signup = async (req, res) => {
     const latitude = locationResult ? locationResult.latitude : null;
     const longitude = locationResult ? locationResult.longitude : null;
 
+    let confirmCode = generateVerificationCode();
+    const verificationExpiresAt = getVerificationExpiry();
+    while (await companyRepository.findByConfirmationCode(confirmCode)) {
+      confirmCode = generateVerificationCode();
+    }
     const company = await companyRepository.createCompany({
       name: req.body.name,
       email,
       password: hash,
-      confirmationCode: null,
+      confirmationCode: confirmCode,
+      verificationExpiresAt,
+      verificationAttempts: 0,
       country: req.body.country,
       address: req.body.address,
       city: req.body.city,
@@ -93,7 +105,7 @@ exports.signup = async (req, res) => {
       about: req.body.about,
       latitude,
       longitude,
-      status: "Active",
+      status: "Pending",
     });
 
     try {
@@ -113,7 +125,13 @@ exports.signup = async (req, res) => {
       console.warn("Company signup notifications failed:", notifyError.message || notifyError);
     }
 
-    res.status(201).send({ message: "Company was registered successfully!" });
+    res.status(201).send({ message: "Company was registered successfully! Please check your email." });
+
+    nodemailer.sendConfirmationEmail(
+      company.name,
+      company.email,
+      company.confirmation_code
+    );
   } catch (err) {
     console.error("Company signin failed:", err);
     return res.status(500).send({ message: "Login failed. Please try again later." });
@@ -129,6 +147,12 @@ exports.signin = async (req, res) => {
 
     if (!company) {
       return res.status(401).send({ message: "Invalid email or password." });
+    }
+
+    if (company.status !== "Active") {
+      return res.status(401).send({
+        message: "Pending Account. Please Verify Your Email!",
+      });
     }
 
     let passwordIsValid = false;
@@ -164,16 +188,159 @@ exports.signin = async (req, res) => {
 
 exports.verifyCompany = async (req, res) => {
   try {
-    const company = await companyRepository.findByConfirmationCode(req.params.confirmationCode);
+    const code = req.body.code;
+    const email = (req.body.email || "").trim().toLowerCase();
+    if (!code) {
+      return res.status(400).send({ message: "Verification code is required." });
+    }
 
-    if (!company) {
-      return res.status(404).send({ message: "Company Not found." });
+    const { maxAttempts } = getVerificationLimits();
+    const isExpired = (expiresAt) =>
+      expiresAt && new Date(expiresAt).getTime() < Date.now();
+
+    let company = null;
+    if (email) {
+      company = await companyRepository.findByEmail(email);
+      if (!company) {
+        return res.status(400).send({ message: "Invalid verification code." });
+      }
+      if (company.status === "Active") {
+        return res.status(400).send({ message: "Account already verified." });
+      }
+      if ((company.verification_attempts || 0) >= maxAttempts) {
+        return res.status(429).send({ message: "Too many attempts. Please request a new code." });
+      }
+      if (isExpired(company.verification_expires_at)) {
+        return res.status(400).send({ message: "Verification code expired. Please request a new one." });
+      }
+      if (company.confirmation_code !== code) {
+        await companyRepository.incrementVerificationAttempts(company.id);
+        return res.status(400).send({ message: "Invalid verification code." });
+      }
+    } else {
+      company = await companyRepository.findByConfirmationCode(code);
+      if (!company) {
+        return res.status(404).send({ message: "Company Not found." });
+      }
+      if (company.status === "Active") {
+        return res.status(400).send({ message: "Account already verified." });
+      }
+      if ((company.verification_attempts || 0) >= maxAttempts) {
+        return res.status(429).send({ message: "Too many attempts. Please request a new code." });
+      }
+      if (isExpired(company.verification_expires_at)) {
+        return res.status(400).send({ message: "Verification code expired. Please request a new one." });
+      }
     }
 
     await companyRepository.verifyCompany(company.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
     res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.resendVerificationCode = async (req, res) => {
+  try {
+    const email = (req.body.email || "").trim().toLowerCase();
+    if (!email) {
+      return res.status(400).send({ message: "Email is required." });
+    }
+
+    let confirmCode = generateVerificationCode();
+    while (await companyRepository.findByConfirmationCode(confirmCode)) {
+      confirmCode = generateVerificationCode();
+    }
+
+    const verificationExpiresAt = getVerificationExpiry();
+    const company = await companyRepository.updateConfirmationCodeByEmail(
+      email,
+      confirmCode,
+      verificationExpiresAt
+    );
+    if (company) {
+      nodemailer.sendConfirmationEmail(
+        company.name,
+        company.email,
+        company.confirmation_code
+      );
+    }
+
+    return res.status(200).send({
+      message: "If that email exists, a new verification code has been sent.",
+    });
+  } catch (err) {
+    console.error("Resend company verification failed:", err);
+    return res.status(500).send({ message: "Unable to resend verification code." });
+  }
+};
+
+exports.listSharedDocuments = async (req, res) => {
+  try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const docs = await documentAccessRepository.listSharedDocumentsByUser({
+      userId: req.id,
+      userType: "company",
+    });
+
+    res.status(200).send(docs.map(documentRepository.mapDocumentRow));
+  } catch (err) {
+    console.error("List shared documents failed:", err);
+    res.status(500).send({ message: "Failed to fetch shared documents." });
+  }
+};
+
+exports.createDocumentRequest = async (req, res) => {
+  try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const studentId = req.body.studentId;
+    if (!isUuid(studentId)) {
+      return res.status(400).send({ message: "Invalid student id." });
+    }
+
+    const title = (req.body.title || "").trim();
+    if (!title) {
+      return res.status(400).send({ message: "Request title is required." });
+    }
+
+    const request = await documentRequestRepository.createRequest({
+      requesterId: req.id,
+      requesterType: "company",
+      targetId: studentId,
+      targetType: "student",
+      title,
+      message: req.body.message || null,
+      dueDate: req.body.dueDate || null,
+    });
+
+    res.status(201).send(request);
+  } catch (err) {
+    console.error("Create document request failed:", err);
+    res.status(500).send({ message: "Failed to create request." });
+  }
+};
+
+exports.listDocumentRequests = async (req, res) => {
+  try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const requests = await documentRequestRepository.listByRequester({
+      requesterId: req.id,
+      requesterType: "company",
+    });
+
+    res.status(200).send(requests);
+  } catch (err) {
+    console.error("List requests failed:", err);
+    res.status(500).send({ message: "Failed to fetch requests." });
   }
 };
 

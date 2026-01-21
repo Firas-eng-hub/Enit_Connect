@@ -15,6 +15,7 @@ const admin_routes = require("./routes/admin.routes");
 const company_routes = require("./routes/company.routes");
 const offer_routes = require("./routes/offer.routes");
 const auth_routes = require("./routes/auth.routes");
+const document_routes = require("./routes/document.routes");
 const app = express();
 const path = require('path');
 
@@ -99,6 +100,7 @@ app.use("/api/admin", admin_routes);
 app.use("/api/student", student_routes);
 app.use("/api/company", company_routes);
 app.use("/api/offers", offer_routes);
+app.use("/api/documents", document_routes);
 
 // ============================================
 // Error Handling Middleware (must be last)
