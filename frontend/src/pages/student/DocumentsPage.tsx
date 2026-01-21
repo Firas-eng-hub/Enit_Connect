@@ -5,14 +5,17 @@ import {
   Clock,
   ChevronRight,
   Download,
+  Eye,
   File,
   FileText,
   Folder,
   FolderPlus,
   Link as LinkIcon,
   Pause,
+  Pencil,
   Play,
   RefreshCw,
+  Replace,
   Search,
   Send,
   Star,
@@ -96,11 +99,10 @@ const ROOT_EMPLACEMENT = 'root';
 
 const getDocId = (doc: DocumentItem) => doc.id || doc._id || '';
 
-// Reserved for future preview feature
-// const isPreviewable = (doc: DocumentItem) => {
-//   const ext = (doc.extension || '').toLowerCase();
-//   return ['pdf', 'png', 'jpg', 'jpeg'].includes(ext) || Boolean(doc.mimeType?.startsWith('image/'));
-// };
+const isPreviewable = (doc: DocumentItem) => {
+  const ext = (doc.extension || '').toLowerCase();
+  return ['pdf', 'png', 'jpg', 'jpeg'].includes(ext) || Boolean(doc.mimeType?.startsWith('image/'));
+};
 
 const formatTags = (tags: string[]) => tags.join(', ');
 
@@ -120,8 +122,14 @@ const buildFolderTree = (folders: DocumentItem[]): FolderNode => {
   const root: FolderNode = { name: 'Root', path: ROOT_EMPLACEMENT, children: [] };
 
   folders.forEach((folder) => {
-    const path = `${folder.emplacement || ROOT_EMPLACEMENT}/${folder.title}`;
-    const segments = path.split('/').filter(Boolean);
+    // Build the full path for this folder
+    const parentPath = folder.emplacement || ROOT_EMPLACEMENT;
+    const fullPath = parentPath === ROOT_EMPLACEMENT 
+      ? folder.title 
+      : `${parentPath}/${folder.title}`;
+    
+    // Split into segments, filtering out 'root' since it's our root node
+    const segments = fullPath.split('/').filter((s) => s && s !== ROOT_EMPLACEMENT);
     let current = root;
 
     segments.forEach((segment, index) => {
@@ -179,6 +187,7 @@ export function DocumentsPage() {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
   const [filters, setFilters] = useState({
     query: '',
     type: 'all',
@@ -223,6 +232,14 @@ export function DocumentsPage() {
       .sort((a, b) => new Date(b.lastOpenedAt || 0).getTime() - new Date(a.lastOpenedAt || 0).getTime())
       .slice(0, 5);
   }, [documents]);
+
+  // Filter documents to show only those in the current folder
+  const currentFolderDocuments = useMemo(() => {
+    return documents.filter((doc) => {
+      const docEmplacement = doc.emplacement || ROOT_EMPLACEMENT;
+      return docEmplacement === filters.emplacement;
+    });
+  }, [documents, filters.emplacement]);
 
   const fetchDocuments = async (applyFilters = true, targetPage = page, targetPageSize = pageSize) => {
     setLoading(true);
@@ -271,6 +288,13 @@ export function DocumentsPage() {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refetch when folder changes
+  useEffect(() => {
+    setPage(1);
+    fetchDocuments(true, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.emplacement]);
 
   const handleUploadFiles = (files: File[]) => {
     const validatedUploads: UploadItem[] = [];
@@ -442,32 +466,31 @@ export function DocumentsPage() {
     }
   };
 
-  // Reserved for future file replacement feature
-  // const handleReplaceFile = async (doc: DocumentItem, file: File | null) => {
-  //   if (!file) return;
-  //   const validationError = validateFile(file, {
-  //     maxSizeMB: DOCUMENT_MAX_MB,
-  //     allowedMimeTypes: DOCUMENT_MIME_TYPES,
-  //     allowedExtensions: DOCUMENT_EXTENSIONS,
-  //     label: 'document',
-  //   });
-  //   if (validationError) {
-  //     setError(validationError);
-  //     return;
-  //   }
-  //   const formData = new FormData();
-  //   formData.append('file', file);
-  //   try {
-  //     const response = await httpClient.post(`/api/student/documents/${getDocId(doc)}/replace`, formData, {
-  //       headers: { 'Content-Type': 'multipart/form-data' },
-  //     });
-  //     setDocuments((prev) =>
-  //       prev.map((item) => (getDocId(item) === getDocId(doc) ? response.data : item))
-  //     );
-  //   } catch (err) {
-  //     setError(getApiErrorMessage(err, 'Failed to replace document.'));
-  //   }
-  // };
+  const handleReplaceFile = async (doc: DocumentItem, file: File | null) => {
+    if (!file) return;
+    const validationError = validateFile(file, {
+      maxSizeMB: DOCUMENT_MAX_MB,
+      allowedMimeTypes: DOCUMENT_MIME_TYPES,
+      allowedExtensions: DOCUMENT_EXTENSIONS,
+      label: 'document',
+    });
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await httpClient.post(`/api/student/documents/${getDocId(doc)}/replace`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setDocuments((prev) =>
+        prev.map((item) => (getDocId(item) === getDocId(doc) ? response.data : item))
+      );
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to replace document.'));
+    }
+  };
 
   const startUpload = async (uploadId: string, file?: File) => {
     setUploads((prev) =>
@@ -565,10 +588,10 @@ export function DocumentsPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === documents.length) {
+    if (selectedIds.length === currentFolderDocuments.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(documents.map((doc) => getDocId(doc)));
+      setSelectedIds(currentFolderDocuments.map((doc) => getDocId(doc)));
     }
   };
 
@@ -705,23 +728,28 @@ export function DocumentsPage() {
     fetchDocuments(false, 1);
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalDocuments / pageSize));
-  const pageStart = totalDocuments === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(page * pageSize, totalDocuments);
+  // Pagination based on current folder documents
+  const currentFolderTotal = currentFolderDocuments.length;
+  const totalPages = Math.max(1, Math.ceil(currentFolderTotal / pageSize));
+  const pageStart = currentFolderTotal === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, currentFolderTotal);
+  
+  // Get paginated documents for current folder
+  const paginatedDocuments = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return currentFolderDocuments.slice(start, start + pageSize);
+  }, [currentFolderDocuments, page, pageSize]);
 
   const handlePageChange = (nextPage: number) => {
     const safePage = Math.min(Math.max(1, nextPage), totalPages);
     setPage(safePage);
-    fetchDocuments(true, safePage, pageSize);
   };
 
-  // Reserved for future page size selector
-  // const handlePageSizeChange = (value: number) => {
-  //   const safeSize = Math.min(Math.max(5, value), 50);
-  //   setPageSize(safeSize);
-  //   setPage(1);
-  //   fetchDocuments(true, 1, safeSize);
-  // };
+  const handlePageSizeChange = (value: number) => {
+    const safeSize = Math.min(Math.max(5, value), 50);
+    setPageSize(safeSize);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-6">
@@ -905,15 +933,15 @@ export function DocumentsPage() {
               <FolderPlus className="w-4 h-4 text-primary-600" />
               Create Folder
             </div>
-            <div className="flex gap-2">
+            <div className="space-y-2">
               <input
                 value={folderName}
                 onChange={(event) => setFolderName(event.target.value)}
                 placeholder="Folder name"
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
-              <Button size="sm" onClick={handleCreateFolder} disabled={isCreatingFolder}>
-                {isCreatingFolder ? '...' : 'Create'}
+              <Button className="w-full" size="sm" onClick={handleCreateFolder} disabled={isCreatingFolder}>
+                {isCreatingFolder ? 'Creating...' : 'Create'}
               </Button>
             </div>
           </div>
@@ -1021,8 +1049,8 @@ export function DocumentsPage() {
 
           {/* Search & Filters */}
           <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search Input */}
+            {/* Search Row */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -1032,23 +1060,88 @@ export function DocumentsPage() {
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                 />
               </div>
-              {/* Quick Filters */}
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={filters.type}
-                  onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
-                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="all">All Types</option>
-                  <option value="file">Files</option>
-                  <option value="folder">Folders</option>
-                </select>
+              <div className="flex gap-2 flex-shrink-0">
                 <Button onClick={handleApplyFilters} disabled={isApplyingFilters}>
                   {isApplyingFilters ? 'Searching...' : 'Search'}
                 </Button>
                 <Button variant="secondary" onClick={handleResetFilters}>
                   Reset
                 </Button>
+              </div>
+            </div>
+
+            {/* Advanced Filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-gray-100">
+              {/* Type Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                <select
+                  value={filters.type}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="file">Files</option>
+                  <option value="folder">Folders</option>
+                </select>
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Min Size */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Min Size (KB)</label>
+                <input
+                  type="number"
+                  value={filters.minSize}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, minSize: event.target.value }))}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Max Size */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Max Size (KB)</label>
+                <input
+                  type="number"
+                  value={filters.maxSize}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, maxSize: event.target.value }))}
+                  placeholder="10000"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Tags Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Tags</label>
+                <input
+                  type="text"
+                  value={filters.tags}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, tags: event.target.value }))}
+                  placeholder="cv, resume"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
+                />
               </div>
             </div>
           </div>
@@ -1086,18 +1179,22 @@ export function DocumentsPage() {
                 <p className="mt-4 text-sm text-gray-500">Loading documents...</p>
               </div>
             </div>
-          ) : documents.length === 0 ? (
+          ) : currentFolderDocuments.length === 0 ? (
             <div className="bg-gradient-to-br from-emerald-50 via-white to-primary-50 rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
               <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-xl shadow-primary-500/30">
                 <FileText className="w-10 h-10 text-white" />
               </div>
-              <h3 className="mt-6 text-2xl font-bold text-gray-900">No Documents Yet</h3>
+              <h3 className="mt-6 text-2xl font-bold text-gray-900">
+                {filters.emplacement === ROOT_EMPLACEMENT ? 'No Documents Yet' : 'This Folder is Empty'}
+              </h3>
               <p className="mt-2 text-gray-600 max-w-sm mx-auto">
-                Upload your CV, certificates, and other documents to share with potential employers.
+                {filters.emplacement === ROOT_EMPLACEMENT 
+                  ? 'Upload your CV, certificates, and other documents to share with potential employers.'
+                  : `No documents in "${filters.emplacement.split('/').pop()}". Upload files or create subfolders.`}
               </p>
               <label className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold cursor-pointer hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-500/30">
                 <Upload className="w-5 h-5" />
-                Upload Your First Document
+                {filters.emplacement === ROOT_EMPLACEMENT ? 'Upload Your First Document' : 'Upload to This Folder'}
                 <input type="file" onChange={handleFileInput} className="hidden" multiple />
               </label>
             </div>
@@ -1107,7 +1204,7 @@ export function DocumentsPage() {
               <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 <input
                   type="checkbox"
-                  checked={documents.length > 0 && selectedIds.length === documents.length}
+                  checked={paginatedDocuments.length > 0 && selectedIds.length === paginatedDocuments.length}
                   onChange={toggleSelectAll}
                   className="w-4 h-4 rounded border-gray-300"
                 />
@@ -1118,7 +1215,7 @@ export function DocumentsPage() {
 
               {/* Document Rows */}
               <div className="divide-y divide-gray-100">
-                {documents.map((doc) => {
+                {paginatedDocuments.map((doc) => {
                   const docId = getDocId(doc);
                   const isBlocked = Boolean(doc.quarantined || doc.scanStatus === 'infected');
                   return (
@@ -1151,15 +1248,35 @@ export function DocumentsPage() {
                             <FileText className="w-5 h-5 text-primary-600" />
                           )}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           {editingId === docId ? (
-                            <input
-                              value={editValues.title}
-                              onChange={(e) => setEditValues((prev) => ({ ...prev, title: e.target.value }))}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
-                            />
+                            <div className="space-y-2">
+                              <input
+                                value={editValues.title}
+                                onChange={(e) => setEditValues((prev) => ({ ...prev, title: e.target.value }))}
+                                placeholder="Title"
+                                className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
+                              />
+                              <input
+                                value={editValues.description}
+                                onChange={(e) => setEditValues((prev) => ({ ...prev, description: e.target.value }))}
+                                placeholder="Description (optional)"
+                                className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
+                              />
+                              <input
+                                value={editValues.tags}
+                                onChange={(e) => setEditValues((prev) => ({ ...prev, tags: e.target.value }))}
+                                placeholder="Tags (comma separated)"
+                                className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
+                              />
+                            </div>
                           ) : (
-                            <div className="font-medium text-gray-900 truncate">{doc.title}</div>
+                            <>
+                              <div className="font-medium text-gray-900 truncate">{doc.title}</div>
+                              {doc.description && (
+                                <div className="text-xs text-gray-500 truncate">{doc.description}</div>
+                              )}
+                            </>
                           )}
                           <div className="flex items-center gap-2 mt-0.5">
                             {doc.extension && (
@@ -1174,6 +1291,9 @@ export function DocumentsPage() {
                                 {tag}
                               </span>
                             ))}
+                            {doc.tags && doc.tags.length > 2 && (
+                              <span className="text-xs text-gray-400">+{doc.tags.length - 2} more</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1190,6 +1310,20 @@ export function DocumentsPage() {
                           </>
                         ) : (
                           <>
+                            {/* Preview button - only for previewable files */}
+                            {doc.type === 'file' && isPreviewable(doc) && doc.link && (
+                              <button
+                                onClick={() => setPreviewDoc(doc)}
+                                disabled={isBlocked}
+                                className={cn(
+                                  'p-2 rounded-lg transition',
+                                  isBlocked ? 'text-gray-300' : 'text-indigo-600 hover:bg-indigo-50'
+                                )}
+                                title="Preview"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
                             {doc.link && (
                               <button
                                 onClick={() => handleOpenDoc(doc)}
@@ -1224,6 +1358,24 @@ export function DocumentsPage() {
                             >
                               <Send className="w-4 h-4" />
                             </button>
+                            {/* Replace file button */}
+                            {doc.type === 'file' && (
+                              <label
+                                className={cn(
+                                  'p-2 rounded-lg transition cursor-pointer',
+                                  isBlocked ? 'text-gray-300' : 'text-orange-500 hover:bg-orange-50'
+                                )}
+                                title="Replace file"
+                              >
+                                <Replace className="w-4 h-4" />
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => handleReplaceFile(doc, e.target.files?.[0] || null)}
+                                  disabled={isBlocked}
+                                />
+                              </label>
+                            )}
                             {doc.type === 'file' && (
                               <button
                                 onClick={() => handleOpenVersions(doc)}
@@ -1238,7 +1390,7 @@ export function DocumentsPage() {
                               className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition"
                               title="Edit"
                             >
-                              <FileText className="w-4 h-4" />
+                              <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(docId)}
@@ -1256,10 +1408,21 @@ export function DocumentsPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
-                <span className="text-sm text-gray-600">
-                  Showing {pageStart}-{pageEnd} of {totalDocuments}
-                </span>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600">
+                    Showing {pageStart}-{pageEnd} of {currentFolderTotal}
+                  </span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-700"
+                  >
+                    <option value={10}>10 per page</option>
+                    <option value={20}>20 per page</option>
+                    <option value={50}>50 per page</option>
+                  </select>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
@@ -1446,6 +1609,56 @@ export function DocumentsPage() {
           <Button variant="outline" onClick={() => setVersionsDoc(null)}>
             Close
           </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog
+        open={Boolean(previewDoc)}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.title || 'Preview'}
+        description="Preview your document before downloading."
+        size="xl"
+      >
+        <div className="relative w-full" style={{ minHeight: '60vh' }}>
+          {previewDoc?.link && (
+            <>
+              {previewDoc.mimeType?.startsWith('image/') || ['png', 'jpg', 'jpeg'].includes((previewDoc.extension || '').toLowerCase()) ? (
+                <img
+                  src={previewDoc.link}
+                  alt={previewDoc.title}
+                  className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                />
+              ) : (previewDoc.extension || '').toLowerCase() === 'pdf' ? (
+                <iframe
+                  src={previewDoc.link}
+                  className="w-full h-[70vh] rounded-lg border border-gray-200"
+                  title={previewDoc.title}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <FileText className="w-16 h-16 text-gray-300 mx-auto" />
+                    <p className="mt-4 text-gray-500">Preview not available for this file type</p>
+                    <Button className="mt-4" onClick={() => handleOpenDoc(previewDoc)}>
+                      Download to view
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setPreviewDoc(null)}>
+            Close
+          </Button>
+          {previewDoc?.link && (
+            <Button onClick={() => handleOpenDoc(previewDoc)}>
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+          )}
         </DialogFooter>
       </Dialog>
     </div>
