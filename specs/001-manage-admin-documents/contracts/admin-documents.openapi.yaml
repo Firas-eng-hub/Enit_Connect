@@ -1,0 +1,319 @@
+openapi: 3.0.3
+info:
+  title: Admin Documents API
+  version: 1.0.0
+  description: Admin-only document management endpoints.
+servers:
+  - url: /api
+security:
+  - adminAuth: []
+paths:
+  /admin/documents:
+    get:
+      summary: List documents
+      description: Returns paginated documents with optional search and filters.
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Keyword search over title and description.
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by category.
+        - in: query
+          name: tags
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by tags.
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [file, folder]
+          description: Filter by document type.
+        - in: query
+          name: emplacement
+          schema:
+            type: string
+          description: Filter by folder path.
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [createdAt, updatedAt, title]
+          description: Sort field.
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort order.
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+          description: Page size.
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentList'
+    post:
+      summary: Upload a document
+      description: Creates a new document with file upload and metadata.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentCreateRequest'
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+  /admin/documents/{id}:
+    get:
+      summary: Get document details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+    patch:
+      summary: Update document metadata
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUpdateRequest'
+      responses:
+        '200':
+          description: Updated document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+    delete:
+      summary: Delete a document
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+  /admin/documents/{id}/file:
+    post:
+      summary: Replace document file
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentReplaceRequest'
+      responses:
+        '200':
+          description: Document updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+  /admin/documents/{id}/download:
+    get:
+      summary: Download document file
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '302':
+          description: Redirect to file URL
+          headers:
+            Location:
+              schema:
+                type: string
+components:
+  securitySchemes:
+    adminAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          enum: [file, folder]
+        link:
+          type: string
+          nullable: true
+        extension:
+          type: string
+          nullable: true
+        mimeType:
+          type: string
+          nullable: true
+        size:
+          type: string
+          nullable: true
+        sizeBytes:
+          type: integer
+          nullable: true
+        emplacement:
+          type: string
+        creatorId:
+          type: string
+          format: uuid
+          nullable: true
+        creatorName:
+          type: string
+        creatorType:
+          type: string
+          nullable: true
+        accessLevel:
+          type: string
+        pinned:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - title
+        - type
+        - emplacement
+        - creatorName
+    DocumentList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+        - data
+        - total
+    DocumentCreateRequest:
+      type: object
+      required:
+        - title
+        - file
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        tags:
+          type: string
+          description: Comma-separated tags.
+        emplacement:
+          type: string
+        accessLevel:
+          type: string
+        file:
+          type: string
+          format: binary
+    DocumentUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        emplacement:
+          type: string
+        accessLevel:
+          type: string
+        pinned:
+          type: boolean
+    DocumentReplaceRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary

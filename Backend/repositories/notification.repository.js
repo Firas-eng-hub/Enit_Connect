@@ -67,6 +67,17 @@ const createNotification = async (data, client = null) => {
       toJson(data.extra || {}, {}),
     ]
   );
+  // Keep only the newest 30 notifications per recipient.
+  await runner.query(
+    `DELETE FROM notifications
+     WHERE id IN (
+       SELECT id FROM notifications
+       WHERE recipient_id = $1 AND recipient_type = $2
+       ORDER BY created_at DESC NULLS LAST
+       OFFSET 30
+     )`,
+    [data.recipientId, data.recipientType]
+  );
   return result.rows[0];
 };
 

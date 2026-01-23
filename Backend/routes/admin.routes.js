@@ -4,9 +4,11 @@ const rateLimit = require('express-rate-limit');
 
 const { authJwt } = require("../middlewares");
 const controller = require("../controllers/admin.controller");
+const adminDocumentsController = require("../controllers/admin-documents.controller");
 const notifications = require("../controllers/notification.controller");
 const savedoc = require('../helpers/savedoc');
 const newsdoc = require('../helpers/newsdoc');
+const adminDocumentUpload = require("../helpers/admin-document-upload");
 
 // Rate limiter for admin authentication (stricter)
 const adminAuthLimiter = rateLimit({
@@ -58,13 +60,56 @@ router.delete("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.d
 //Add folder
 router.post('/folder', authJwt.verifyToken, authJwt.isAdmin, controller.createFolder);
 //Add file
-router.post('/file', savedoc, controller.createFile);
-//Get documents
-router.post('/documents', authJwt.verifyToken, controller.getDocuments);
+router.post('/file', authJwt.verifyToken, authJwt.isAdmin, savedoc, controller.createFile);
+// RESTful admin documents API (Phase 2 scaffolding; handlers implemented in Phase 3+)
+router.get("/documents", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.listDocuments);
+router.post(
+  "/documents",
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  adminDocumentUpload,
+  adminDocumentsController.createDocument
+);
+// Admin document enhancements (folders + bulk actions)
+router.post("/documents/folders", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.createFolder);
+router.patch("/documents/folders/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.renameFolder);
+router.delete("/documents/folders/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.deleteFolder);
+router.post("/documents/bulk-delete", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.bulkDelete);
+router.post("/documents/bulk-move", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.bulkMove);
+router.post("/documents/bulk-download", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.bulkDownload);
+// Share links (registered before `/documents/:id` routes to avoid path collisions)
+router.post("/documents/:id/share", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.createShareLink);
+router.get("/documents/:id/shares", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.listShareLinks);
+router.patch(
+  "/documents/shares/:shareId/revoke",
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  adminDocumentsController.revokeShareLink
+);
+router.get("/documents/:id/versions", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.listDocumentVersions);
+router.post(
+  "/documents/:id/versions/:versionId/restore",
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  adminDocumentsController.restoreDocumentVersion
+);
+router.get("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.getDocument);
+router.patch("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.updateDocument);
+router.post(
+  "/documents/:id/file",
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  adminDocumentUpload,
+  adminDocumentsController.replaceDocumentFile
+);
+router.delete("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.deleteDocument);
+
+// Legacy endpoints (kept for backward compatibility with older clients)
+router.post('/documents-legacy', authJwt.verifyToken, authJwt.isAdmin, controller.getDocuments);
 //Delete document
-router.post('/deldoc', authJwt.verifyToken, controller.deleteDocument);
+router.post('/deldoc', authJwt.verifyToken, authJwt.isAdmin, controller.deleteDocument);
 //Search for document
-router.post('/searchdoc', authJwt.verifyToken, controller.searchDocument);
+router.post('/searchdoc', authJwt.verifyToken, authJwt.isAdmin, controller.searchDocument);
 //Receive message
 router.post('/message', controller.saveMessage);
 //Get messages

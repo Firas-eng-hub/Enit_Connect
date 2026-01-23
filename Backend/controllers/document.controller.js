@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const { documentShareRepository, documentRepository } = require("../repositories");
+const { documentShareRepository, documentRepository, documentAccessRepository } = require("../repositories");
 
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -12,8 +12,26 @@ const buildShareResponse = (doc) => ({
   document: documentRepository.mapDocumentRow(doc),
 });
 
+const accessLevelToAudience = (accessLevel) => {
+  const v = String(accessLevel || "").trim().toLowerCase();
+  if (v === "students" || v === "companies") return v;
+  return "internal";
+};
+
+const isAudienceMatch = (audience, userType) => {
+  const a = String(audience || "").trim().toLowerCase();
+  if (a === "students") return userType === "student";
+  if (a === "companies") return userType === "company";
+  // internal-only
+  return userType === "admin";
+};
+
 exports.getSharedDocument = async (req, res) => {
   try {
+    if (!req.id) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
     const tokenHash = hashToken(req.params.token || "");
     const share = await documentShareRepository.findByTokenHash(tokenHash);
 
@@ -27,12 +45,23 @@ exports.getSharedDocument = async (req, res) => {
       return res.status(401).send({ message: "Password required.", requiresPassword: true });
     }
 
+    const requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
+    if (!requesterType) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
     const [doc] = await documentRepository.listByIds([share.document_id]);
     if (!doc) {
       return res.status(404).send({ message: "Document not found." });
     }
     if (doc.quarantined || doc.scan_status === "infected") {
       return res.status(423).send({ message: "Document is quarantined." });
+    }
+
+    const parsed = documentShareRepository.parseShareAccess(share.access);
+    const audience = parsed.audience || accessLevelToAudience(doc.access_level);
+    if (!isAudienceMatch(audience, requesterType)) {
+      return res.status(403).send({ message: "Access denied for this share link." });
     }
 
     return res.status(200).send(buildShareResponse(doc));
@@ -44,6 +73,10 @@ exports.getSharedDocument = async (req, res) => {
 
 exports.accessSharedDocument = async (req, res) => {
   try {
+    if (!req.id) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
     const tokenHash = hashToken(req.params.token || "");
     const share = await documentShareRepository.findByTokenHash(tokenHash);
 
@@ -62,12 +95,23 @@ exports.accessSharedDocument = async (req, res) => {
       }
     }
 
+    const requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
+    if (!requesterType) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
     const [doc] = await documentRepository.listByIds([share.document_id]);
     if (!doc) {
       return res.status(404).send({ message: "Document not found." });
     }
     if (doc.quarantined || doc.scan_status === "infected") {
       return res.status(423).send({ message: "Document is quarantined." });
+    }
+
+    const parsed = documentShareRepository.parseShareAccess(share.access);
+    const audience = parsed.audience || accessLevelToAudience(doc.access_level);
+    if (!isAudienceMatch(audience, requesterType)) {
+      return res.status(403).send({ message: "Access denied for this share link." });
     }
 
     return res.status(200).send(buildShareResponse(doc));
