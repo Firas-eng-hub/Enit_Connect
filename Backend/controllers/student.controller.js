@@ -1463,18 +1463,25 @@ exports.getByName = async (req, res) => {
 
 exports.getStudentLocations = async (req, res) => {
   const allowed = {
+    firstname: "firstname",
+    lastname: "lastname",
+    email: "email",
     country: "country",
     city: "city",
     class: "\"class\"",
     promotion: "promotion",
+    type: "type",
   };
   const column = allowed[req.query.property];
-  if (!column || !req.query.key) {
+  if (!column) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
 
   try {
-    const docs = await studentRepository.searchByKey(column, req.query.key);
+    const key = typeof req.query.key === "string" ? req.query.key.trim() : "";
+    const docs = key
+      ? await studentRepository.searchByKey(column, key)
+      : await studentRepository.listAll();
     const response = docs.map((doc) => ({
       id: doc.id,
       lat: doc.latitude,
