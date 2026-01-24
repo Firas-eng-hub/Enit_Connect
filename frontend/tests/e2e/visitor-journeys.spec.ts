@@ -4,7 +4,7 @@
  * Tests: Register → Login → View News
  */
 
-import { test, expect } from '../fixtures';
+import { test, expect } from './fixtures';
 
 test.describe('Visitor Journey', () => {
   test('should complete visitor registration flow', async ({ page }) => {
