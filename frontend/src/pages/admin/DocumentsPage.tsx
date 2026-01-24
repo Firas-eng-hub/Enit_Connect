@@ -6,7 +6,7 @@ import type { AdminDocumentListParams } from '@/entities/document/types';
 import { DocumentFilters } from '@/features/admin-documents/DocumentFilters';
 import { FolderTree } from '@/features/admin-documents/FolderTree';
 import { useState } from 'react';
-import { FileText, FolderOpen, Upload } from 'lucide-react';
+import { FileText, FolderOpen } from 'lucide-react';
 
 export function DocumentsPage() {
   const [filters, setFilters] = useState<AdminDocumentListParams>({

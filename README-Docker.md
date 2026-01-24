@@ -329,6 +329,168 @@ docker compose down -v --rmi all
 
 ---
 
+## Testing
+
+### Release Readiness Test Suite
+
+The release readiness test suite ensures your application is ready for deployment. It runs linting, unit tests, and type checking across both backend and frontend.
+
+#### Prerequisites
+- Node.js 18+ installed
+- Backend and Frontend dependencies installed (`npm install` in respective directories)
+
+#### Running Tests
+
+**Run all tests:**
+```bash
+chmod +x scripts/run-tests.sh
+./scripts/run-tests.sh
+```
+
+**Run backend tests only:**
+```bash
+./scripts/run-tests.sh --backend
+```
+
+**Run frontend tests only:**
+```bash
+./scripts/run-tests.sh --frontend
+```
+
+**Verbose output (shows errors):**
+```bash
+VERBOSE=true ./scripts/run-tests.sh
+```
+
+#### Test Suite Components
+
+The release test runner executes:
+
+1. **Linting & Code Quality**
+   - Frontend ESLint checks
+   - Ensures code style compliance
+
+2. **Backend Unit Tests**
+   - `npm run test:unit` - Controller tests
+   - `npm run test:data` - Repository/data layer tests
+   - Coverage verification
+
+3. **Frontend Unit Tests**
+   - `npm run test` - Vitest unit tests
+   - `npm run test:coverage` - Coverage reporting
+
+4. **Type Checking**
+   - `npm run build` - TypeScript compilation check
+   - Ensures no type errors
+
+#### Exit Codes
+
+- **0**: All tests passed - ready for release
+- **1**: One or more tests failed - review required
+
+#### Test Output Example
+
+```
+═══════════════════════════════════════════════════════════
+  🚀 RELEASE READINESS TEST SUITE
+═══════════════════════════════════════════════════════════
+
+▶ Running: Frontend ESLint
+✓ Frontend ESLint (523ms)
+
+▶ Running: Backend Unit Tests
+✓ Backend Unit Tests (2341ms)
+
+▶ Running: Frontend Unit Tests
+✓ Frontend Unit Tests (1823ms)
+
+═══════════════════════════════════════════════════════════
+  📊 TEST SUMMARY
+═══════════════════════════════════════════════════════════
+
+Total Tests:    4
+Passed:         4
+Failed:         0
+
+Total Duration: 0m 4s
+
+═══════════════════════════════════════════════════════════
+  ✓ ALL TESTS PASSED - READY FOR RELEASE
+═══════════════════════════════════════════════════════════
+```
+
+#### Troubleshooting Tests
+
+**"npm: command not found"**
+- Install Node.js 18+ from https://nodejs.org
+- Verify: `node --version && npm --version`
+- Update npm: `npm install -g npm@latest`
+
+**"Module not found" errors**
+- Backend: `cd Backend && npm install --legacy-peer-deps`
+- Frontend: `cd frontend && npm install`
+- Clear cache: `npm cache clean --force` (if persists)
+
+**"PORT already in use" errors**
+- Find process: `lsof -i :3000` (backend) or `lsof -i :4200` (frontend)
+- Kill process: `kill -9 <PID>`
+- Or change port: `PORT=3001 npm run dev`
+- In Docker: restart service: `docker compose restart backend` or `docker compose restart frontend`
+
+**Test timeout errors**
+- Increase test timeout in `Backend/jest.config.js` or `frontend/vitest.config.ts`
+- Run with `--maxWorkers=1` for slower systems: `npm test -- --maxWorkers=1`
+- Skip slow tests temporarily: `npm test -- --testNamePattern="not slow"`
+
+**Database/Connection errors**
+- Backend tests use pg-mem (in-memory), no external DB needed
+- Verify connection string in `Backend/.env`: should match Docker service names
+- Inside Docker: `db:5432` (not `localhost:5432`)
+- Outside Docker: `localhost:5432`
+- Check migration logs: `docker compose logs backend | grep "migration\|CREATE TABLE"`
+
+**"EADDRINUSE: address already in use" in Docker**
+- Prune docker resources: `docker compose down && docker system prune -a`
+- Or force kill: `docker compose down -v` (removes volumes too)
+- Rebuild: `docker compose up --build`
+
+**Tests fail with "Cannot find module" in Docker**
+- Ensure node_modules was installed: `docker compose exec backend npm install`
+- Check Dockerfile doesn't exclude node_modules: should `RUN npm install`
+- Rebuild images: `docker compose up --build`
+
+**E2E Tests hang or timeout**
+- Ensure backend is ready: `curl http://localhost:3000/health`
+- Check logs: `docker compose logs frontend | tail -50`
+- Increase Playwright timeout in `frontend/playwright.config.ts`: `timeout: 30000`
+- Run single test: `npx playwright test visitor-journeys.spec.ts`
+- Debug mode: `npx playwright test --debug`
+
+**Coverage reports show 0%**
+- Ensure coverage config is correct in `Backend/jest.config.js` and `frontend/vitest.config.ts`
+- Rebuild and clear cache: `npm run build && npm run test:coverage`
+- Check that tests actually run: `npm test -- --verbose`
+- View HTML report: Open `coverage/index.html` in browser
+
+**Tests pass locally but fail in CI/CD**
+- Check Node version in CI: must be 18+
+- Check environment variables are set in CI
+- Try exact same npm versions: `npm ci` instead of `npm install` in CI
+- Run with verbose output: `npm test -- --verbose`
+- Check CI logs for hidden errors before test output
+
+**"WARN async "**
+- Not an error, just deprecation warning
+- Safe to ignore, tests will still pass
+- Optional: Update dependencies: `npm audit fix`
+
+**Still having issues?**
+- Check logs in detail: `npm test 2>&1 | tee test.log`
+- Report with test.log attached to GitHub issue
+- Include: Node version, npm version, OS, Docker version (if applicable)
+
+---
+
 ## Architecture
 
 ```
@@ -353,7 +515,7 @@ docker compose down -v --rmi all
                                                │
                                                ▼
                                     ┌─────────────────────┐
-                                    │   MongoDB Atlas     │
+                                    │        │
                                     │   (External Cloud)  │
                                     └─────────────────────┘
 ```

@@ -63,6 +63,16 @@ export function RegisterPage() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => (2000 + i).toString());
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const onSubmitStudent = async (data: StudentFormData) => {
     setIsLoading(true);
     setError(null);
@@ -70,12 +80,8 @@ export function RegisterPage() {
     try {
       await httpClient.post('/api/student/signup', { ...data, type: 'student' });
       setSuccess(true);
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -88,12 +94,8 @@ export function RegisterPage() {
     try {
       await httpClient.post('/api/company/signup', data);
       setSuccess(true);
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }

@@ -47,6 +47,16 @@ export function AddUsersPage() {
     resolver: zodResolver(companySchema),
   });
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const onSubmitUser = async (data: UserFormData) => {
     setSubmitting(true);
     setError(null);
@@ -55,8 +65,8 @@ export function AddUsersPage() {
       setSuccess(true);
       userForm.reset();
       setTimeout(() => setSuccess(false), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create user');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create user'));
     } finally {
       setSubmitting(false);
     }
@@ -70,8 +80,8 @@ export function AddUsersPage() {
       setSuccess(true);
       companyForm.reset();
       setTimeout(() => setSuccess(false), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create company');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create company'));
     } finally {
       setSubmitting(false);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Calendar, GraduationCap } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -24,11 +24,7 @@ export function CandidaciesPage() {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
   );
 
-  useEffect(() => {
-    fetchCandidacies();
-  }, [id]);
-
-  const fetchCandidacies = async () => {
+  const fetchCandidacies = useCallback(async () => {
     if (!isValidOfferId) {
       setError('Invalid offer id.');
       setLoading(false);
@@ -45,7 +41,11 @@ export function CandidaciesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, isValidOfferId]);
+
+  useEffect(() => {
+    fetchCandidacies();
+  }, [fetchCandidacies]);
 
   const handleViewStudent = async (candidacy: CandidacyWithStudent) => {
     setSelectedCandidacy(candidacy);

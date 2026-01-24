@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, X, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import type { AdminDocumentListParams } from '@/entities/document/types';
 import { Button } from '@/shared/ui/Button';
 

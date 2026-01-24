@@ -46,12 +46,24 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
   const [expiresInDays, setExpiresInDays] = useState<number>(7);
   const [notice, setNotice] = useState<string>('');
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) return;
     setAudience(accessLevelToAudience(document?.accessLevel));
     setExpiresInDays(7);
     setNotice('');
   }, [open, document?.accessLevel]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
 
   const onCopy = async (value: string) => {
     try {
@@ -71,8 +83,8 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         payload: { accessLevel: audienceToAccessLevel(audience), updatedAt: document.updatedAt ?? null },
       });
       setNotice('Visibility updated.');
-    } catch (err: any) {
-      setNotice(err?.response?.data?.message || err?.message || 'Failed to update visibility.');
+    } catch (err: unknown) {
+      setNotice(getErrorMessage(err, 'Failed to update visibility.'));
     }
   };
 
@@ -87,8 +99,8 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
       const url = res.data.shareUrl;
       setNotice('Share link created.');
       if (url) void onCopy(url);
-    } catch (err: any) {
-      setNotice(err?.response?.data?.message || err?.message || 'Failed to create share link.');
+    } catch (err: unknown) {
+      setNotice(getErrorMessage(err, 'Failed to create share link.'));
     }
   };
 
@@ -97,8 +109,8 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
     try {
       await revokeShare.mutateAsync(shareId);
       setNotice('Share link revoked.');
-    } catch (err: any) {
-      setNotice(err?.response?.data?.message || err?.message || 'Failed to revoke share link.');
+    } catch (err: unknown) {
+      setNotice(getErrorMessage(err, 'Failed to revoke share link.'));
     }
   };
 
@@ -263,4 +275,3 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
     </Dialog>
   );
 }
-

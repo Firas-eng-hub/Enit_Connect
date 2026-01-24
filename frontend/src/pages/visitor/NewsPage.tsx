@@ -44,6 +44,7 @@ function NewsCard({
 
   const dateValue = news.date || news.createdAt;
   const isRecent = dateValue &&
+    // eslint-disable-next-line react-hooks/purity
     new Date(dateValue) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   if (featured) {

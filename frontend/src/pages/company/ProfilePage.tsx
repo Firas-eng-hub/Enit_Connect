@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Building2, Mail, Phone, Globe, MapPin, Camera } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -47,11 +47,7 @@ export function ProfilePage() {
     return trimmed;
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const companyId = localStorage.getItem('company_id');
       const response = await httpClient.get(`/api/company/info?id=${companyId}`);
@@ -63,7 +59,11 @@ export function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reset]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const onSubmit = async (data: Partial<Company>) => {
     setSaving(true);
