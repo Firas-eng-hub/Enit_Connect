@@ -182,7 +182,7 @@ export function DocumentsPage() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [requests, setRequests] = useState<DocumentRequest[]>([]);
-  const [_requestsError, setRequestsError] = useState<string | null>(null);
+  const [, setRequestsError] = useState<string | null>(null);
   const [versionsDoc, setVersionsDoc] = useState<DocumentItem | null>(null);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
@@ -430,7 +430,7 @@ export function DocumentsPage() {
       setDocuments((prev) =>
         prev.map((item) => (getDocId(item) === getDocId(doc) ? response.data : item))
       );
-    } catch (err) {
+    } catch {
       // ignore
     } finally {
       window.open(doc.link || undefined, '_blank', 'noopener,noreferrer');
@@ -537,7 +537,7 @@ export function DocumentsPage() {
           item.id === uploadId ? { ...item, status: 'done', progress: 100 } : item
         )
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (axios.isCancel(err)) {
         setUploads((prev) =>
           prev.map((item) =>

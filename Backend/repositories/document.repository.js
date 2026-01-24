@@ -7,11 +7,11 @@ const toJson = (value, fallback) =>
 const createDocument = async (data) => {
   const result = await db.query(
     `INSERT INTO documents (
-      creator_id, creator_name, creator_type, date, title, description, tags, type, access_level, link,
+      creator_id, creator_name, creator_type, date, title, description, category, tags, type, access_level, link,
       thumbnail_url, emplacement, extension, mime_type, size, size_bytes, version, pinned, last_opened_at,
       scan_status, scan_checked_at, scan_error, quarantined, created_at, updated_at, extra
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
     RETURNING *`,
     [
       data.creatorId || null,
@@ -20,6 +20,7 @@ const createDocument = async (data) => {
       data.date || null,
       data.title,
       data.description || null,
+      data.category || null,
       data.tags || [],
       data.type,
       data.accessLevel || "private",
@@ -49,6 +50,7 @@ const listDocuments = async ({
   creatorId,
   creatorType,
   emplacement,
+  category,
   query,
   type,
   fromDate,
@@ -78,6 +80,12 @@ const listDocuments = async ({
   if (emplacement) {
     conditions.push(`emplacement = $${idx}`);
     params.push(emplacement);
+    idx += 1;
+  }
+
+  if (category) {
+    conditions.push(`category = $${idx}`);
+    params.push(category);
     idx += 1;
   }
 
@@ -145,6 +153,98 @@ const listDocuments = async ({
   return { rows: result.rows, total: countResult.rows[0]?.total ?? 0 };
 };
 
+// List documents created by admins (including legacy rows with NULL creator_type).
+const listAdminDocuments = async ({
+  emplacement,
+  category,
+  query,
+  type,
+  tags,
+  fromDate,
+  toDate,
+  sort,
+  order,
+  page,
+  pageSize,
+}) => {
+  const conditions = ["(creator_type = $1 OR creator_type IS NULL)"];
+  const params = ["admin"];
+  let idx = 2;
+
+  if (emplacement) {
+    conditions.push(`emplacement = $${idx}`);
+    params.push(emplacement);
+    idx += 1;
+  }
+
+  if (category) {
+    conditions.push(`category = $${idx}`);
+    params.push(category);
+    idx += 1;
+  }
+
+  if (type) {
+    conditions.push(`type = $${idx}`);
+    params.push(type);
+    idx += 1;
+  }
+
+  if (query) {
+    conditions.push(
+      `(title ILIKE $${idx} OR description ILIKE $${idx} OR array_to_string(tags, ' ') ILIKE $${idx})`
+    );
+    params.push(`%${query}%`);
+    idx += 1;
+  }
+
+  if (fromDate) {
+    conditions.push(`created_at >= $${idx}`);
+    params.push(fromDate);
+    idx += 1;
+  }
+
+  if (toDate) {
+    conditions.push(`created_at <= $${idx}`);
+    params.push(toDate);
+    idx += 1;
+  }
+
+  if (tags && tags.length) {
+    conditions.push(`tags && $${idx}::text[]`);
+    params.push(tags);
+    idx += 1;
+  }
+
+  const whereClause = `WHERE ${conditions.join(" AND ")}`;
+
+  const sortMap = {
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+    title: "title",
+  };
+  const sortKey = sortMap[sort] || "created_at";
+  const sortDir = String(order || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+  const orderClause = `ORDER BY ${sortKey} ${sortDir} NULLS LAST`;
+
+  const limit = pageSize ? Number(pageSize) : null;
+  const offset = page && limit ? (Number(page) - 1) * limit : null;
+  const paginationClause = limit ? `LIMIT $${idx} OFFSET $${idx + 1}` : "";
+  const listParams = [...params];
+  if (limit) {
+    listParams.push(limit, offset || 0);
+  }
+
+  const result = await db.query(
+    `SELECT * FROM documents ${whereClause} ${orderClause} ${paginationClause}`,
+    listParams
+  );
+  const countResult = await db.query(
+    `SELECT COUNT(*)::int AS total FROM documents ${whereClause}`,
+    params
+  );
+  return { rows: result.rows, total: countResult.rows[0]?.total ?? 0 };
+};
+
 const listByEmplacement = async (emplacement) => {
   const result = await db.query(
     "SELECT * FROM documents WHERE emplacement = $1 ORDER BY created_at DESC NULLS LAST",
@@ -181,26 +281,41 @@ const listByIds = async (ids) => {
 };
 
 const updateDocumentMeta = async (id, data) => {
+  const expectedUpdatedAt =
+    data.expectedUpdatedAt === undefined ? undefined : data.expectedUpdatedAt;
+  const params = [
+    data.title || null,
+    data.description || null,
+    data.category || null,
+    Array.isArray(data.tags) ? data.tags : null,
+    data.emplacement || null,
+    data.accessLevel || null,
+    typeof data.pinned === "boolean" ? data.pinned : null,
+    id,
+  ];
+
+  let whereClause = "WHERE id = $8";
+  if (expectedUpdatedAt !== undefined) {
+    params.push(expectedUpdatedAt);
+    whereClause = `WHERE id = $8 AND (
+      (updated_at IS NULL AND $9::timestamptz IS NULL)
+      OR (updated_at IS NOT NULL AND $9::timestamptz IS NOT NULL AND date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', $9::timestamptz))
+    )`;
+  }
+
   const result = await db.query(
     `UPDATE documents
      SET title = COALESCE($1, title),
          description = COALESCE($2, description),
-         tags = COALESCE($3, tags),
-         emplacement = COALESCE($4, emplacement),
-         access_level = COALESCE($5, access_level),
-         pinned = COALESCE($6, pinned),
+         category = COALESCE($3, category),
+         tags = COALESCE($4, tags),
+         emplacement = COALESCE($5, emplacement),
+         access_level = COALESCE($6, access_level),
+         pinned = COALESCE($7, pinned),
          updated_at = now()
-     WHERE id = $7
+     ${whereClause}
      RETURNING *`,
-    [
-      data.title || null,
-      data.description || null,
-      Array.isArray(data.tags) ? data.tags : null,
-      data.emplacement || null,
-      data.accessLevel || null,
-      typeof data.pinned === "boolean" ? data.pinned : null,
-      id,
-    ]
+    params
   );
   return result.rows[0] || null;
 };
@@ -293,6 +408,7 @@ const mapDocumentRow = (row) => ({
   title: row.title,
   name: row.title,
   description: row.description,
+  category: row.category,
   tags: row.tags || [],
   extension: row.extension,
   mimeType: row.mime_type,
@@ -318,9 +434,124 @@ const mapDocumentRow = (row) => ({
   extra: parseJson(row.extra, {}),
 });
 
+const getFolderFullPath = (folderRow) => {
+  const parent = folderRow?.emplacement || "root";
+  const title = folderRow?.title || "";
+  if (!title) return "";
+  return parent === "root" ? title : `${parent}/${title}`;
+};
+
+// Folders are stored as documents with type='folder' and `emplacement` as the parent path.
+const createFolderDocument = async ({ creatorId, creatorName, creatorType, title, parentPath }) => {
+  return createDocument({
+    creatorId,
+    creatorName,
+    creatorType,
+    date: new Date(),
+    title,
+    description: null,
+    category: null,
+    tags: [],
+    type: "folder",
+    accessLevel: "private",
+    link: null,
+    thumbnailUrl: null,
+    emplacement: parentPath || "root",
+    extension: null,
+    mimeType: null,
+    size: null,
+    sizeBytes: null,
+    createdAt: new Date(),
+  });
+};
+
+const renameFolderDocument = async ({ id, title, expectedUpdatedAt }) => {
+  // Rename the folder document itself, then migrate descendants' emplacement prefix if needed.
+  await db.query("BEGIN");
+  try {
+    const result = await db.query("SELECT * FROM documents WHERE id = $1 FOR UPDATE", [id]);
+    const folder = result.rows[0];
+    if (!folder || folder.type !== "folder") {
+      await db.query("ROLLBACK");
+      return null;
+    }
+
+    const oldPath = getFolderFullPath(folder);
+    const updated = await updateDocumentMeta(id, { title, expectedUpdatedAt });
+    if (!updated) {
+      // Conflict or not found.
+      await db.query("ROLLBACK");
+      return null;
+    }
+
+    const newPath = getFolderFullPath({ ...folder, title });
+    if (oldPath && newPath && oldPath !== newPath) {
+      await db.query(
+        `UPDATE documents
+         SET emplacement = CASE
+           WHEN emplacement = $1 THEN $2
+           ELSE $2 || substring(emplacement from char_length($1) + 1)
+         END,
+         updated_at = now()
+         WHERE emplacement = $1 OR emplacement LIKE $1 || '/%'`,
+        [oldPath, newPath]
+      );
+    }
+
+    await db.query("COMMIT");
+    return updated;
+  } catch (err) {
+    await db.query("ROLLBACK");
+    throw err;
+  }
+};
+
+const deleteFolderIfEmpty = async (id) => {
+  const result = await db.query("SELECT * FROM documents WHERE id = $1", [id]);
+  const folder = result.rows[0];
+  if (!folder || folder.type !== "folder") {
+    return { deleted: false, reason: "not_found" };
+  }
+
+  const folderPath = getFolderFullPath(folder);
+  const children = await db.query(
+    `SELECT COUNT(*)::int AS total
+     FROM documents
+     WHERE emplacement = $1 OR emplacement LIKE $1 || '/%'`,
+    [folderPath]
+  );
+  const total = children.rows[0]?.total ?? 0;
+  if (total > 0) {
+    return { deleted: false, reason: "not_empty" };
+  }
+
+  const ok = await deleteById(id);
+  return { deleted: ok, reason: ok ? null : "not_found" };
+};
+
+const bulkMoveDocuments = async ({ ids, targetPath }) => {
+  const safeTarget = targetPath || "root";
+  if (!ids.length) return { moved: 0 };
+
+  const result = await db.query(
+    `UPDATE documents
+     SET emplacement = $1, updated_at = now()
+     WHERE id = ANY($2::uuid[])
+     RETURNING id`,
+    [safeTarget, ids]
+  );
+  return { moved: result.rowCount || 0 };
+};
+
+// Convenience wrapper for updating admin document audience (stored in `access_level`).
+const updateDocumentAudience = async ({ id, accessLevel, expectedUpdatedAt }) => {
+  return updateDocumentMeta(id, { accessLevel, expectedUpdatedAt });
+};
+
 module.exports = {
   createDocument,
   listDocuments,
+  listAdminDocuments,
   listByEmplacement,
   searchByTitle,
   deleteByTitleAndEmplacement,
@@ -332,4 +563,9 @@ module.exports = {
   updatePinned,
   markOpened,
   mapDocumentRow,
+  createFolderDocument,
+  renameFolderDocument,
+  deleteFolderIfEmpty,
+  bulkMoveDocuments,
+  updateDocumentAudience,
 };

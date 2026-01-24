@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import * as React from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { lazy, Suspense, Component, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -78,11 +78,11 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ defa
 const ForbiddenPage = lazy(() => import('@/pages/ForbiddenPage').then(m => ({ default: m.ForbiddenPage })));
 
 // Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ComponentType<{ error: Error }> },
+class ErrorBoundary extends Component<
+  { children: ReactNode; fallback: ComponentType<{ error: Error }> },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: any) {
+  constructor(props: { children: ReactNode; fallback: ComponentType<{ error: Error }> }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -101,7 +101,7 @@ class ErrorBoundary extends React.Component<
 }
 
 // Wrap with Suspense and Error Boundary
-const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>) => (
+const withSuspense = (Component: LazyExoticComponent<ComponentType>) => (
   <ErrorBoundary fallback={ErrorFallback}>
     <Suspense fallback={<LoadingFallback />}>
       <Component />
@@ -128,7 +128,8 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/visitor/news" replace /> },
       { path: 'news', element: withSuspense(NewsPage) },
       { path: 'statistics', element: withSuspense(StatisticsPage) },
-      { path: 'members', element: withSuspense(MembersPage) },
+      { path: 'how-it-works', element: withSuspense(MembersPage) },
+      { path: 'members', element: <Navigate to="/visitor/how-it-works" replace /> },
       { path: 'about', element: withSuspense(AboutPage) },
     ],
   },

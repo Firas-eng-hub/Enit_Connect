@@ -1,6 +1,21 @@
 const db = require("../db");
 const { parseJson } = require("../utils/validation");
 
+const resolveUserTypeById = async (userId) => {
+  const result = await db.query(
+    `SELECT user_type FROM (
+       SELECT 'admin'::text AS user_type WHERE EXISTS (SELECT 1 FROM admins WHERE id = $1)
+       UNION ALL
+       SELECT 'student'::text AS user_type WHERE EXISTS (SELECT 1 FROM students WHERE id = $1)
+       UNION ALL
+       SELECT 'company'::text AS user_type WHERE EXISTS (SELECT 1 FROM companies WHERE id = $1)
+     ) t
+     LIMIT 1`,
+    [userId]
+  );
+  return result.rows[0]?.user_type || null;
+};
+
 const createAccessEntries = async (entries) => {
   if (!entries.length) return [];
   const values = [];
@@ -47,4 +62,5 @@ module.exports = {
   createAccessEntries,
   listSharedDocumentsByUser,
   deleteByDocumentId,
+  resolveUserTypeById,
 };

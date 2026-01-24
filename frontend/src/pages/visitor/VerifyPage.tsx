@@ -49,6 +49,16 @@ export function VerifyPage() {
     resolver: zodResolver(resendSchema),
   });
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const onVerify = async (data: VerifyFormData) => {
     setIsVerifying(true);
     setVerifyError(null);
@@ -57,12 +67,8 @@ export function VerifyPage() {
     try {
       await httpClient.post(`/api/${selectedType}/confirm`, { code: data.code, email: data.email });
       setVerifySuccess(true);
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        setVerifyError(err.response.data.message);
-      } else {
-        setVerifyError('Verification failed. Please check the code and try again.');
-      }
+    } catch (err: unknown) {
+      setVerifyError(getErrorMessage(err, 'Verification failed. Please check the code and try again.'));
     } finally {
       setIsVerifying(false);
     }
@@ -76,12 +82,8 @@ export function VerifyPage() {
     try {
       const response = await httpClient.post(`/api/${selectedType}/resend-confirmation`, data);
       setResendMessage(response.data?.message || 'Check your inbox for a new code.');
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        setResendError(err.response.data.message);
-      } else {
-        setResendError('Unable to resend the code right now.');
-      }
+    } catch (err: unknown) {
+      setResendError(getErrorMessage(err, 'Unable to resend the code right now.'));
     } finally {
       setIsResending(false);
     }

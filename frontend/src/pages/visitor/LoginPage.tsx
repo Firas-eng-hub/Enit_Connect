@@ -32,6 +32,16 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
@@ -45,12 +55,8 @@ export function LoginPage() {
         admin: '/admin/home',
       };
       navigate(redirects[selectedType]);
-    } catch (err: any) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Login failed. Please check your credentials.'));
     } finally {
       setIsLoading(false);
     }

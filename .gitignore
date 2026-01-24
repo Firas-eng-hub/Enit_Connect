@@ -3,6 +3,7 @@ node_modules/
 
 # Environment variables
 .env
+.env.*
 
 # Build output
 dist/
@@ -17,6 +18,11 @@ out-tsc/
 
 # Logs
 npm-debug.log
+*.log
+*.log.*
 CLAUDE.md
 Doc.md
 AGENTS.md
+.codex
+.github/
+.specify

@@ -21,6 +21,16 @@ export function SearchPage() {
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasFilters = [country, city, promotion, studentClass].some((value) => value.trim());
@@ -84,8 +94,8 @@ export function SearchPage() {
         dueDate: requestForm.dueDate || undefined,
       });
       setRequestSuccess('Request sent successfully.');
-    } catch (err: any) {
-      setRequestError(err.response?.data?.message || 'Failed to send request.');
+    } catch (err: unknown) {
+      setRequestError(getErrorMessage(err, 'Failed to send request.'));
     } finally {
       setIsRequesting(false);
     }

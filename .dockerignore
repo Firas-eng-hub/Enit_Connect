@@ -1,0 +1,18 @@
+# Keep Docker build context small and avoid leaking local artifacts into images.
+.git
+.github
+.vscode
+.idea
+
+node_modules
+**/node_modules
+
+dist
+build
+coverage
+
+*.log
+*.log.*
+
+.env
+.env.*

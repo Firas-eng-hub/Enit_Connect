@@ -9,7 +9,7 @@ import bgImage from '@/assets/img/Acceuil.BG.jpg';
 const navItems = [
   { path: '/visitor/news', label: 'News', icon: Newspaper },
   { path: '/visitor/statistics', label: 'Statistics', icon: BarChart3 },
-  { path: '/visitor/members', label: 'Members', icon: Users },
+  { path: '/visitor/how-it-works', label: 'How It Works', icon: Users },
   { path: '/visitor/about', label: 'About', icon: Info },
 ];
 
@@ -225,7 +225,7 @@ export function VisitorLayout() {
               <div className="flex items-center gap-3 mb-6">
                 <img src={enitLogo} alt="ENIT Logo" className="w-11 h-11 object-contain" />
                 <div>
-                  <h3 className="font-bold text-lg">ENIT-Connect</h3>
+                  <h3 className="font-bold text-lg text-white">ENIT-Connect</h3>
                   <p className="text-sm text-white/60">Career Platform</p>
                 </div>
               </div>
@@ -296,4 +296,3 @@ export function VisitorLayout() {
     </div>
   );
 }
-

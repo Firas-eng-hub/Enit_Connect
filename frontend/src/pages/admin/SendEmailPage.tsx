@@ -27,6 +27,16 @@ export function SendEmailPage() {
     resolver: zodResolver(emailSchema),
   });
 
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object') {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      const message = response?.data?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
+
   const onSubmit = async (data: EmailFormData) => {
     setSending(true);
     setError(null);
@@ -35,8 +45,8 @@ export function SendEmailPage() {
       setSuccess(true);
       reset();
       setTimeout(() => setSuccess(false), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send email');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to send email'));
     } finally {
       setSending(false);
     }

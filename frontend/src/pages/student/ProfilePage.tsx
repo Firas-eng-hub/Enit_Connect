@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { User, Mail, Phone, MapPin, GraduationCap, Calendar, Camera, Briefcase, Linkedin, FileText } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -59,11 +59,7 @@ export function ProfilePage() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => (2000 + i).toString());
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const userId = localStorage.getItem('user_id');
       const response = await httpClient.get(`/api/student/${userId}`);
@@ -75,7 +71,11 @@ export function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reset]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const onSubmit = async (data: Partial<Student>) => {
     setSaving(true);
