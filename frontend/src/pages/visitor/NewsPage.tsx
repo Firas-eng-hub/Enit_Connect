@@ -5,7 +5,6 @@ import type { News } from '@/entities/news/types';
 import { formatDate } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
-import { config } from '@/app/config/env';
 
 // Skeleton loader
 function NewsCardSkeleton() {
@@ -36,11 +35,25 @@ function NewsCard({
   onRead: (item: News) => void;
 }) {
   const imageSource = news.picture || news.image || '';
-  const imageUrl = imageSource
-    ? imageSource.startsWith('http')
-      ? imageSource
-      : `${config.apiUrl}/${imageSource}`
-    : null;
+  
+  // Build image URL - handle both full URLs and relative paths
+  let imageUrl: string | null = null;
+  if (imageSource) {
+    if (imageSource.startsWith('http')) {
+      // Extract just the path from full URL
+      try {
+        const url = new URL(imageSource);
+        imageUrl = url.pathname;
+      } catch {
+        imageUrl = imageSource;
+      }
+    } else {
+      // Use relative path as-is (Vite proxy handles /uploads)
+      imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
+    }
+  }
+  
+  console.log('NewsPage NewsCard debug:', { picture: news.picture, image: news.image, imageSource, imageUrl });
 
   const dateValue = news.date || news.createdAt;
   const isRecent = dateValue &&
@@ -289,12 +302,23 @@ export function NewsPage() {
             </div>
             <div className="p-6 space-y-5 overflow-y-auto">
               {(() => {
-                const imageSource = selectedNews.picture || selectedNews.image;
-                const imageUrl = imageSource
-                  ? imageSource.startsWith('http')
-                    ? imageSource
-                    : `${config.apiUrl}/${imageSource}`
-                  : null;
+                const imageSource = selectedNews.picture || selectedNews.image || '';
+                
+                // Build image URL - same logic as NewsCard
+                let imageUrl: string | null = null;
+                if (imageSource) {
+                  if (imageSource.startsWith('http')) {
+                    try {
+                      const url = new URL(imageSource);
+                      imageUrl = url.pathname;
+                    } catch {
+                      imageUrl = imageSource;
+                    }
+                  } else {
+                    imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
+                  }
+                }
+                
                 return imageUrl ? (
                   <div className="rounded-2xl overflow-hidden">
                     <img

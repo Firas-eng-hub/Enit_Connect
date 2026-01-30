@@ -2,7 +2,6 @@ import { Calendar, FileText, ArrowRight, Newspaper } from 'lucide-react';
 import type { News } from '@/entities/news/types';
 import { Card, CardContent } from '@/shared/ui/Card';
 import { formatDate } from '@/shared/lib/utils';
-import { config } from '@/app/config/env';
 
 interface NewsCardProps {
   news: News;
@@ -13,11 +12,33 @@ interface NewsCardProps {
 
 export function NewsCard({ news, onDelete, showDeleteButton, onRead }: NewsCardProps) {
   const imageSource = news.picture || news.image || '';
-  const imageUrl = imageSource
-    ? imageSource.startsWith('http')
-      ? imageSource
-      : `${config.apiUrl}/${imageSource}`
-    : null;
+  
+  // Build image URL - always use relative path for uploads
+  // Vite dev server proxies /uploads to backend automatically
+  let imageUrl: string | null = null;
+  
+  if (imageSource) {
+    if (imageSource.startsWith('http')) {
+      // Extract just the path from full URL (e.g., http://localhost:3000/uploads/x -> /uploads/x)
+      try {
+        const url = new URL(imageSource);
+        imageUrl = url.pathname;
+      } catch {
+        imageUrl = imageSource;
+      }
+    } else {
+      // Ensure path starts with /
+      imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
+    }
+  }
+  
+  // Debug logging
+  console.log('NewsCard image debug:', {
+    picture: news.picture,
+    image: news.image,
+    imageSource,
+    imageUrl,
+  });
   const dateValue = news.date || news.createdAt;
 
   return (

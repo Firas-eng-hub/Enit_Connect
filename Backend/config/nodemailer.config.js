@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
 const Email = require('email-templates');
 
 // Gmail SMTP Configuration
@@ -14,6 +15,9 @@ const emailsender = new Email({
     transport: transport,
     send: true,
     preview: false,
+    views: {
+        root: path.join(__dirname, '..', 'emails'),
+    },
 });
 
 exports.sendConfirmationEmail = (name, email, confirmationCode) => {

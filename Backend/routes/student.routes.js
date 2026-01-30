@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
+const { validation } = require("../middlewares");
 const controller = require("../controllers/student.controller");
 const company = require("../controllers/company.controller");
 const notifications = require("../controllers/notification.controller");
@@ -22,13 +23,13 @@ const authLimiter = rateLimit({
 router.get("/posts", controller.getPosts);
 // Add Post
 router.post('/posts',controller.addPost);
-//Register Student
-router.post("/signup", authLimiter, verifySignUp.checkDuplicateEmail, controller.signup);
-//Confirm Email
-router.post("/confirm", controller.verifyUser);
-router.post("/resend-confirmation", authLimiter, controller.resendVerificationCode);
-//Login Student
-router.post("/login", authLimiter, controller.signin);
+//Register Student with validation
+router.post("/signup", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.studentSignup), verifySignUp.checkDuplicateEmail, controller.signup);
+//Confirm Email with validation
+router.post("/confirm", validation.sqlInjectionCheck, validation.validate(validation.schemas.emailVerification), controller.verifyUser);
+router.post("/resend-confirmation", authLimiter, validation.sqlInjectionCheck, controller.resendVerificationCode);
+//Login Student with validation
+router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
 //Get All Student
 router.get("/all", controller.getAll);
 
@@ -91,11 +92,11 @@ router.post('/companiesinfo', authJwt.verifyToken, controller.companiesInfo);
 // Add Candidacy
 router.post('/apply/:id', authJwt.verifyToken, controller.apply);
 
-//Get Student informations by ID
-router.get("/:id", authJwt.verifyToken, controller.getStudentById);
-//Update Student informations
-router.patch("/:id", authJwt.verifyToken, authJwt.isStudent, controller.updateStudent);
-//Delete Student from database
-router.delete("/:id", authJwt.verifyToken, authJwt.isStudent, controller.deleteStudent);
+//Get Student informations by ID with UUID validation
+router.get("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), controller.getStudentById);
+//Update Student informations with validation
+router.patch("/:id", authJwt.verifyToken, authJwt.isStudent, validation.validate(validation.schemas.uuidParam, 'params'), validation.sqlInjectionCheck, validation.validate(validation.schemas.updateStudent), controller.updateStudent);
+//Delete Student from database with UUID validation
+router.delete("/:id", authJwt.verifyToken, authJwt.isStudent, validation.validate(validation.schemas.uuidParam, 'params'), controller.deleteStudent);
 
 module.exports = router;

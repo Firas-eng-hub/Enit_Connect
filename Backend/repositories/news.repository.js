@@ -75,22 +75,37 @@ const deleteNews = async (id) => {
   return result.rowCount > 0;
 };
 
-const mapNewsRow = (row) => ({
-  _id: row.id,
-  id: row.id,
-  date: row.date,
-  title: row.title,
-  content: row.content,
-  picture: row.picture,
-  docs: parseJson(row.docs, []),
-  status: row.status,
-  audience: row.audience || [],
-  category: row.category,
-  tags: row.tags || [],
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  extra: parseJson(row.extra, {}),
-});
+const mapNewsRow = (row) => {
+  // Transform picture URL to be relative for nginx proxy
+  let picture = row.picture;
+  if (picture && picture.startsWith('http')) {
+    // Convert absolute URL to relative path
+    // e.g., "http://localhost:3000/uploads/file.jpg" -> "/uploads/file.jpg"
+    try {
+      const url = new URL(picture);
+      picture = url.pathname;
+    } catch (e) {
+      // If URL parsing fails, keep original
+    }
+  }
+
+  return {
+    _id: row.id,
+    id: row.id,
+    date: row.date,
+    title: row.title,
+    content: row.content,
+    picture: picture,
+    docs: parseJson(row.docs, []),
+    status: row.status,
+    audience: row.audience || [],
+    category: row.category,
+    tags: row.tags || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    extra: parseJson(row.extra, {}),
+  };
+};
 
 module.exports = {
   createNews,

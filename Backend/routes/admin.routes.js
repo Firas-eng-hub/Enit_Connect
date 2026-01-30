@@ -3,6 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 
 const { authJwt } = require("../middlewares");
+const { validation } = require("../middlewares");
 const controller = require("../controllers/admin.controller");
 const adminDocumentsController = require("../controllers/admin-documents.controller");
 const notifications = require("../controllers/notification.controller");
@@ -18,9 +19,9 @@ const adminAuthLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-//Login Admin
-router.post("/", adminAuthLimiter, controller.signin);
-router.post("/login", adminAuthLimiter, controller.signin);
+//Login Admin with validation
+router.post("/", adminAuthLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
+router.post("/login", adminAuthLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
 //Get All Students
 router.get("/allstudents", authJwt.verifyToken, controller.getAllStudents);
 //Get All Companies
@@ -47,16 +48,16 @@ router.get("/student/:id", authJwt.verifyToken, controller.getStudentById);
 router.post("/student/add", authJwt.verifyToken, authJwt.isAdmin, controller.addStudents);
 //Add Companies
 router.post("/company/add", authJwt.verifyToken, authJwt.isAdmin, controller.addCompany);
-//Update Student informations
-router.patch("/student/:id", authJwt.verifyToken, authJwt.isAdmin, controller.updateStudent);
-//Delete Student from database
-router.delete("/student/:id", authJwt.verifyToken, authJwt.isAdmin, controller.deleteStudent);
-//Get Company informations by ID
-router.get("/company/:id", authJwt.verifyToken, controller.getCompanyById);
-//Edit Company informations
-router.patch("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.updateCompany);
-//Delete Company from database
-router.delete("/company/:id", authJwt.verifyToken, authJwt.isAdmin, controller.deleteCompany);
+//Update Student informations with validation
+router.patch("/student/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), validation.sqlInjectionCheck, validation.validate(validation.schemas.updateStudent), controller.updateStudent);
+//Delete Student from database with UUID validation
+router.delete("/student/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.deleteStudent);
+//Get Company informations by ID with UUID validation
+router.get("/company/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), controller.getCompanyById);
+//Edit Company informations with validation
+router.patch("/company/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), validation.sqlInjectionCheck, validation.validate(validation.schemas.updateCompany), controller.updateCompany);
+//Delete Company from database with UUID validation
+router.delete("/company/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.deleteCompany);
 //Add folder
 router.post('/folder', authJwt.verifyToken, authJwt.isAdmin, controller.createFolder);
 //Add file
@@ -93,16 +94,17 @@ router.post(
   authJwt.isAdmin,
   adminDocumentsController.restoreDocumentVersion
 );
-router.get("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.getDocument);
-router.patch("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.updateDocument);
+router.get("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), adminDocumentsController.getDocument);
+router.patch("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), validation.sqlInjectionCheck, validation.validate(validation.schemas.updateDocument), adminDocumentsController.updateDocument);
 router.post(
   "/documents/:id/file",
   authJwt.verifyToken,
   authJwt.isAdmin,
+  validation.validate(validation.schemas.uuidParam, 'params'),
   adminDocumentUpload,
   adminDocumentsController.replaceDocumentFile
 );
-router.delete("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.deleteDocument);
+router.delete("/documents/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), adminDocumentsController.deleteDocument);
 
 // Legacy endpoints (kept for backward compatibility with older clients)
 router.post('/documents-legacy', authJwt.verifyToken, authJwt.isAdmin, controller.getDocuments);
@@ -114,8 +116,8 @@ router.post('/searchdoc', authJwt.verifyToken, authJwt.isAdmin, controller.searc
 router.post('/message', controller.saveMessage);
 //Get messages
 router.get('/message', authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
-//Mark message read/unread
-router.patch('/message/:id/read', authJwt.verifyToken, authJwt.isAdmin, controller.markMessageRead);
+//Mark message read/unread with UUID validation
+router.patch('/message/:id/read', authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.markMessageRead);
 //Archive/unarchive message
 router.patch('/message/:id/archive', authJwt.verifyToken, authJwt.isAdmin, controller.archiveMessage);
 //Bulk update messages

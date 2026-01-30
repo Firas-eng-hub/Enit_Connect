@@ -7,7 +7,6 @@ import { Plus, Newspaper, Trash2, Calendar, Image, Filter, Search, Users, Pencil
 import httpClient from '@/shared/api/httpClient';
 import type { News } from '@/entities/news/types';
 import { formatDate, getApiErrorMessage } from '@/shared/lib/utils';
-import { config } from '@/app/config/env';
 import { Button } from '@/shared/ui/Button';
 
 const newsSchema = z.object({
@@ -183,11 +182,22 @@ export function HomePage() {
   const handleEdit = (item: News) => {
     setEditingNews(item);
     const imageSource = item.picture || item.image || '';
-    const imageUrl = imageSource
-      ? imageSource.startsWith('http')
-        ? imageSource
-        : `${config.apiUrl}/${imageSource}`
-      : null;
+    
+    // Build image URL - same logic as NewsCard
+    let imageUrl: string | null = null;
+    if (imageSource) {
+      if (imageSource.startsWith('http')) {
+        try {
+          const url = new URL(imageSource);
+          imageUrl = url.pathname;
+        } catch {
+          imageUrl = imageSource;
+        }
+      } else {
+        imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
+      }
+    }
+    
     setImagePreview(imageUrl);
     setSelectedImage(null);
     setImageRemoved(false);
@@ -536,11 +546,22 @@ export function HomePage() {
           ) : (
             paginatedNews.map((item) => {
             const imageSource = item.picture || item.image || '';
-            const imageUrl = imageSource
-              ? imageSource.startsWith('http')
-                ? imageSource
-                : `${config.apiUrl}/${imageSource}`
-              : null;
+            
+            // Build image URL - same logic as NewsCard
+            let imageUrl: string | null = null;
+            if (imageSource) {
+              if (imageSource.startsWith('http')) {
+                try {
+                  const url = new URL(imageSource);
+                  imageUrl = url.pathname;
+                } catch {
+                  imageUrl = imageSource;
+                }
+              } else {
+                imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
+              }
+            }
+            
             return (
             <div key={item._id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
               <div className="h-1.5 bg-gradient-to-r from-primary-500 to-primary-600" />

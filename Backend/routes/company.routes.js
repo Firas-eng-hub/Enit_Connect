@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 
 const { verifySignUp } = require("../middlewares");
 const { authJwt } = require("../middlewares");
+const { validation } = require("../middlewares");
 const { company, offer } = require("../controllers");
 const notifications = require("../controllers/notification.controller");
 const storage = require('../helpers/storage');
@@ -16,13 +17,13 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-//Register Company
-router.post("/signup", authLimiter, verifySignUp.checkDuplicateCompany, company.signup);
-//Confirm Email
-router.post("/confirm", company.verifyCompany);
-router.post("/resend-confirmation", authLimiter, company.resendVerificationCode);
-//Login Company
-router.post("/login", authLimiter, company.signin);
+//Register Company with validation
+router.post("/signup", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.companySignup), verifySignUp.checkDuplicateCompany, company.signup);
+//Confirm Email with validation
+router.post("/confirm", validation.sqlInjectionCheck, validation.validate(validation.schemas.emailVerification), company.verifyCompany);
+router.post("/resend-confirmation", authLimiter, validation.sqlInjectionCheck, company.resendVerificationCode);
+//Login Company with validation
+router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), company.signin);
 //Get Companies Locations
 router.get("/location", authJwt.verifyToken, company.getCompanyLocations);
 //Search for Companies with Property and Key
@@ -37,16 +38,16 @@ router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isCompany, 
 router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isCompany, notifications.deleteCompanyNotification);
 //Get Company informations by ID
 router.get("/info", authJwt.verifyToken, company.getCompanyById);
-//Edit Company informations
-router.patch("/update", authJwt.verifyToken, authJwt.isCompany, company.updateCompany);
-//Upload logo
-router.post("/upload/:id", authJwt.verifyToken, authJwt.isCompany, storage, company.updateLogo);
-//Delete Company from database
-router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, company.deleteCompany);
-//Get Company's Offers
-router.get("/:id/offers", authJwt.verifyToken, offer.getCompanyOffers);
-//Get User info
-router.get("/user/:id", authJwt.verifyToken, company.getUserInfo);
+//Edit Company informations with validation
+router.patch("/update", authJwt.verifyToken, authJwt.isCompany, validation.sqlInjectionCheck, validation.validate(validation.schemas.updateCompany), company.updateCompany);
+//Upload logo with UUID validation
+router.post("/upload/:id", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), storage, company.updateLogo);
+//Delete Company from database with UUID validation
+router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), company.deleteCompany);
+//Get Company's Offers with UUID validation
+router.get("/:id/offers", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), offer.getCompanyOffers);
+//Get User info with UUID validation
+router.get("/user/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), company.getUserInfo);
 //Shared documents
 router.get("/documents/shared", authJwt.verifyToken, authJwt.isCompany, company.listSharedDocuments);
 //Document requests
