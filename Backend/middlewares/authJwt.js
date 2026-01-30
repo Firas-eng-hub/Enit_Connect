@@ -4,14 +4,26 @@ const { adminRepository, studentRepository, companyRepository } = require("../re
 const { isUuid } = require("../utils/validation");
 
 const getCookieOptions = () => {
-  const secure = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
-  return {
+  const hasSecureOverride = typeof process.env.COOKIE_SECURE === "string";
+  const secure = hasSecureOverride
+    ? process.env.COOKIE_SECURE === "true"
+    : process.env.NODE_ENV === "production";
+
+  const sameSite = (process.env.COOKIE_SAMESITE || "lax").toLowerCase();
+
+  const options = {
     httpOnly: true,        // Prevents JavaScript access (XSS protection)
     secure,               // Only use secure cookies over HTTPS
-    sameSite: 'lax',      // CSRF protection
+    sameSite,             // CSRF protection (lax/strict/none)
     maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
     path: '/'
   };
+
+  if (process.env.COOKIE_DOMAIN) {
+    options.domain = process.env.COOKIE_DOMAIN;
+  }
+
+  return options;
 };
 
 const getRefreshCookieOptions = () => ({
