@@ -23,6 +23,8 @@ export function LoginPage() {
   const [selectedType, setSelectedType] = useState<UserType>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingVerify, setPendingVerify] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
@@ -45,6 +47,7 @@ export function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
+    setPendingVerify(false);
 
     try {
       await login(selectedType, data);
@@ -56,7 +59,12 @@ export function LoginPage() {
       };
       navigate(redirects[selectedType]);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Login failed. Please check your credentials.'));
+      const message = getErrorMessage(err, 'Login failed. Please check your credentials.');
+      setError(message);
+      if (message.toLowerCase().includes('verify')) {
+        setPendingVerify(true);
+        setPendingEmail(data.email);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +185,17 @@ export function LoginPage() {
                 {error && (
                   <Alert variant="danger" className="text-sm rounded-xl">
                     {error}
+                    {pendingVerify && (
+                      <div className="mt-3">
+                        <Link
+                          to={`/verify?type=${selectedType}${pendingEmail ? `&email=${encodeURIComponent(pendingEmail)}` : ''}`}
+                          className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700"
+                        >
+                          Verify now
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    )}
                   </Alert>
                 )}
 

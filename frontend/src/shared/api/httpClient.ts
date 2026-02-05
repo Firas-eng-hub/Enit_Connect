@@ -27,10 +27,14 @@ httpClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Handle 401 - try to refresh token (but not for auth check or refresh endpoints)
+    // Handle 401 - try to refresh token (but not for auth check/refresh/login endpoints)
     const isAuthCheckOrRefresh = originalRequest.url?.includes('/auth/check') || originalRequest.url?.includes('/auth/refresh');
+    const isLoginRequest =
+      originalRequest.url?.includes('/student/login') ||
+      originalRequest.url?.includes('/company/login') ||
+      originalRequest.url?.includes('/admin/login');
     
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthCheckOrRefresh) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthCheckOrRefresh && !isLoginRequest) {
       originalRequest._retry = true;
 
       try {

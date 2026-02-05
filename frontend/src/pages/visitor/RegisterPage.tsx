@@ -63,6 +63,7 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
 
   const studentForm = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -91,6 +92,7 @@ export function RegisterPage() {
 
     try {
       await httpClient.post('/api/student/signup', { ...data, type: 'Student' });
+      setSuccessEmail(data.email);
       setSuccess(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Registration failed. Please try again.'));
@@ -105,6 +107,7 @@ export function RegisterPage() {
 
     try {
       await httpClient.post('/api/company/signup', data);
+      setSuccessEmail(data.email);
       setSuccess(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Registration failed. Please try again.'));
@@ -135,7 +138,7 @@ export function RegisterPage() {
               We've sent a 6-digit verification code to your inbox. Enter it to activate your account.
             </p>
             <div className="space-y-3">
-              <Link to={`/verify?type=${selectedType}`}>
+              <Link to={`/verify?type=${selectedType}${successEmail ? `&email=${encodeURIComponent(successEmail)}` : ''}`}>
                 <Button className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30" size="lg">
                   Enter Verification Code
                 </Button>

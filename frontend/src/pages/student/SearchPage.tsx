@@ -340,7 +340,7 @@ export function SearchPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="h-[600px]">
+              <div className="h-[360px] sm:h-[480px] lg:h-[600px]">
                 <StudentMap locations={locations} />
               </div>
             </div>
@@ -351,7 +351,7 @@ export function SearchPage() {
       {/* Map view - show when button clicked before search */}
       {!searched && showMap && (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-6">
-          <div className="h-[600px]">
+          <div className="h-[360px] sm:h-[480px] lg:h-[600px]">
             <StudentMap locations={locations} />
           </div>
         </div>

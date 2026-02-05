@@ -47,6 +47,7 @@ export function VerifyPage() {
 
   const resendForm = useForm<ResendFormData>({
     resolver: zodResolver(resendSchema),
+    defaultValues: { email: initialEmail },
   });
 
   const getErrorMessage = (err: unknown, fallback: string) => {
@@ -173,11 +174,13 @@ export function VerifyPage() {
                     type="email"
                     autoComplete="email"
                     placeholder="you@enit.utm.tn"
+                    readOnly={Boolean(initialEmail)}
                     className={cn(
                       'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
                       'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
                       'transition-all duration-200 font-medium',
-                      verifyForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100'
+                      verifyForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100',
+                      initialEmail && 'bg-gray-100 text-gray-600 cursor-not-allowed'
                     )}
                   />
                   {verifyForm.formState.errors.email && (
@@ -246,11 +249,13 @@ export function VerifyPage() {
                       type="email"
                       autoComplete="email"
                       placeholder="you@enit.utm.tn"
+                      readOnly={Boolean(initialEmail)}
                       className={cn(
                         'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
                         'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
                         'transition-all duration-200 font-medium',
-                        resendForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100'
+                        resendForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100',
+                        initialEmail && 'bg-gray-100 text-gray-600 cursor-not-allowed'
                       )}
                     />
                     {resendForm.formState.errors.email && (

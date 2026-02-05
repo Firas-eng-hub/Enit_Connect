@@ -38,6 +38,7 @@ export function RegisterCompany() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
 
   const {
     register,
@@ -51,6 +52,7 @@ export function RegisterCompany() {
     setError(null);
     try {
       await httpClient.post('/api/company/signup', data);
+      setSuccessEmail(data.email);
       setSuccess(true);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -64,6 +66,14 @@ export function RegisterCompany() {
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Registration Successful!</h3>
         <p className="text-gray-500">Please check your email to verify your account.</p>
+        <div className="mt-4">
+          <a
+            href={`/verify?type=company${successEmail ? `&email=${encodeURIComponent(successEmail)}` : ''}`}
+            className="text-primary-600 font-semibold hover:text-primary-700"
+          >
+            Enter verification code
+          </a>
+        </div>
       </div>
     );
   }

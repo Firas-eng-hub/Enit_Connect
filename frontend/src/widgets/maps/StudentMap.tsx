@@ -39,6 +39,34 @@ export function StudentMap({ locations }: StudentMapProps) {
   }, []);
 
   useEffect(() => {
+    if (!mapRef.current || !mapInstanceRef.current) return;
+
+    const map = mapInstanceRef.current;
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(handleResize);
+      observer.observe(mapRef.current);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    // Ensure initial sizing after mount
+    setTimeout(handleResize, 0);
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!mapInstanceRef.current || locations.length === 0) return;
 
     const map = mapInstanceRef.current;
