@@ -21,7 +21,7 @@ export function StudentMap({ locations }: StudentMapProps) {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     // Initialize map
-    const map = L.map(mapRef.current).setView([36.8, 10.1], 2); // Tunisia center, world zoom
+    const map = L.map(mapRef.current).setView([36.8, 10.1], 7); // Tunisia default view
     mapInstanceRef.current = map;
 
     // Add OpenStreetMap tiles
@@ -146,6 +146,8 @@ export function StudentMap({ locations }: StudentMapProps) {
     // Fit map to show all markers
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [50, 50] });
+    } else {
+      map.setView([36.8, 10.1], 7);
     }
   }, [locations]);
 
