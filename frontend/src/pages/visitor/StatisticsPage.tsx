@@ -91,7 +91,7 @@ export function StatisticsPage() {
       {/* Charts Section */}
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Offers by Type */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold text-gray-900">Offers by Type</h3>
@@ -121,7 +121,7 @@ export function StatisticsPage() {
         </div>
 
         {/* Top Sectors */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold text-gray-900">Top Sectors</h3>
@@ -153,7 +153,7 @@ export function StatisticsPage() {
       </div>
 
       {/* Growth Timeline */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-xl font-bold text-gray-900">Platform Growth</h3>
@@ -183,7 +183,7 @@ export function StatisticsPage() {
 
       {/* Quick Facts */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-8 text-white relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <GraduationCap className="w-10 h-10 mb-4 relative z-10" />
           <div className="text-4xl font-bold mb-2 relative z-10">95%</div>
@@ -191,7 +191,7 @@ export function StatisticsPage() {
           <div className="text-white/60 text-sm mt-2 relative z-10">Within 6 months of graduation</div>
         </div>
         
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-8 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <Globe className="w-10 h-10 mb-4 relative z-10" />
           <div className="text-4xl font-bold mb-2 relative z-10">15+</div>
@@ -199,7 +199,7 @@ export function StatisticsPage() {
           <div className="text-white/60 text-sm mt-2 relative z-10">Where our alumni work</div>
         </div>
         
-        <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-8 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <Award className="w-10 h-10 mb-4 relative z-10" />
           <div className="text-4xl font-bold mb-2 relative z-10">4.8/5</div>

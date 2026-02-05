@@ -114,7 +114,7 @@ export function VerifyPage() {
             </Link>
           </div>
 
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 lg:p-10 border border-white/30 relative overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/30 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-100 to-accent-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
 
             <div className="relative space-y-8">
@@ -132,7 +132,7 @@ export function VerifyPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Account type
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {typeOptions.map(({ type, label, icon: Icon, gradient }) => (
                     <button
                       key={type}

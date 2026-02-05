@@ -95,7 +95,7 @@ export function LoginPage() {
 
         <div className="space-y-10">
           <div>
-            <h2 className="text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
+            <h2 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
               Your gateway to
               <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-accent-400 via-accent-300 to-yellow-300">
                 career success
@@ -138,7 +138,7 @@ export function LoginPage() {
           </div>
 
           {/* Glassmorphism Form Card */}
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 lg:p-10 border border-white/30 relative overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/30 relative overflow-hidden">
             {/* Decorative gradient */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-100 to-accent-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
             
@@ -153,7 +153,7 @@ export function LoginPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   I am a:
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {typeOptions.map(({ type, label, icon: Icon, gradient }) => (
                     <button
                       key={type}

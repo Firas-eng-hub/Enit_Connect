@@ -48,6 +48,8 @@ export function NewsCard({ news, onDelete, showDeleteButton, onRead }: NewsCardP
           <img
             src={imageUrl}
             alt={news.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
         ) : (

@@ -32,7 +32,13 @@ export function OfferCard({
         {/* Company info */}
         <div className="flex items-center gap-3 mb-4">
           {companyLogo ? (
-            <img src={companyLogo} alt={companyName} className="w-10 h-10 rounded-lg object-cover" />
+            <img
+              src={companyLogo}
+              alt={companyName}
+              loading="lazy"
+              decoding="async"
+              className="w-10 h-10 rounded-lg object-cover"
+            />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-gray-400" />

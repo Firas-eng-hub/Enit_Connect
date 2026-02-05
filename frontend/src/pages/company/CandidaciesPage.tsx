@@ -110,7 +110,7 @@ export function CandidaciesPage() {
         Back to offers
       </Link>
 
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10 shadow-xl mb-8">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-primary-100 text-sm uppercase tracking-[0.2em] font-semibold">Offer Candidacies</p>
@@ -255,7 +255,7 @@ export function CandidaciesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Mail className="w-4 h-4" />
                     <span className="text-sm">{studentDetails?.email || selectedCandidacy.studentSnapshot?.email || 'N/A'}</span>

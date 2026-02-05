@@ -74,7 +74,7 @@ export function MembersPage() {
   return (
     <div className="space-y-14">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-900 text-white p-10">
+      <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-900 text-white p-6 sm:p-8 lg:p-10">
         <div className="absolute -top-20 -right-10 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute bottom-0 left-0 h-44 w-44 -translate-x-1/2 translate-y-1/2 rounded-full bg-white/10" />
         <div className="relative z-10 max-w-2xl space-y-5">
@@ -100,7 +100,7 @@ export function MembersPage() {
 
       {/* Steps */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-blue-600" />
@@ -131,7 +131,7 @@ export function MembersPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-emerald-600" />
@@ -180,7 +180,7 @@ export function MembersPage() {
       </div>
 
       {/* FAQ */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+      <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center">
             <CheckCircle className="w-6 h-6 text-primary-600" />
@@ -201,7 +201,7 @@ export function MembersPage() {
       </div>
 
       {/* CTA */}
-      <div className="bg-gradient-to-br from-primary-900 to-primary-800 rounded-3xl p-10 text-center relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary-900 to-primary-800 rounded-3xl p-6 sm:p-8 lg:p-10 text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10">

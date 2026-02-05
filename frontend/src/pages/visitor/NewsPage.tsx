@@ -70,6 +70,8 @@ function NewsCard({
               <img
                 src={imageUrl}
                 alt={news.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
@@ -88,7 +90,7 @@ function NewsCard({
           </div>
           
           {/* Content */}
-          <div className="p-8 lg:p-10 flex flex-col justify-center">
+          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
             <div className="flex items-center gap-2 text-sm text-primary-600 font-medium mb-4">
               <Clock className="w-4 h-4" />
               {dateValue ? formatDate(dateValue) : 'No date'}
@@ -117,6 +119,8 @@ function NewsCard({
           <img
             src={imageUrl}
             alt={news.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (

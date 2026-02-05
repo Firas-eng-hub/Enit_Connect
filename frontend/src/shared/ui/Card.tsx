@@ -15,9 +15,9 @@ const variants = {
 
 const paddings = {
   none: '',
-  sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-8',
+  sm: 'p-3 sm:p-4',
+  md: 'p-4 sm:p-6',
+  lg: 'p-6 sm:p-8',
 };
 
 export function Card({ className, children, variant = 'default', padding = 'none', ...props }: CardProps) {
@@ -43,7 +43,7 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardHeader({ className, children, action, ...props }: CardHeaderProps) {
   return (
-    <div className={cn('px-6 py-4 border-b border-border flex items-center justify-between', className)} {...props}>
+    <div className={cn('px-4 py-3 border-b border-border flex items-center justify-between sm:px-6 sm:py-4', className)} {...props}>
       <div className="min-w-0 flex-1">{children}</div>
       {action && <div className="ml-4 flex-shrink-0">{action}</div>}
     </div>
@@ -81,7 +81,7 @@ export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardContent({ className, children, ...props }: CardContentProps) {
   return (
-    <div className={cn('p-6', className)} {...props}>
+    <div className={cn('p-4 sm:p-6', className)} {...props}>
       {children}
     </div>
   );
@@ -93,9 +93,8 @@ export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardFooter({ className, children, ...props }: CardFooterProps) {
   return (
-    <div className={cn('px-6 py-4 border-t border-border bg-muted/30 rounded-b-xl', className)} {...props}>
+    <div className={cn('px-4 py-3 border-t border-border bg-muted/30 rounded-b-xl sm:px-6 sm:py-4', className)} {...props}>
       {children}
     </div>
   );
 }
-

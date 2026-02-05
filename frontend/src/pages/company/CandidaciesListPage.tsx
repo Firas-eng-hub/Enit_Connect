@@ -59,7 +59,7 @@ export function CandidaciesListPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10 shadow-xl">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl">
         <h1 className="text-4xl font-bold text-white mb-2">All Candidacies</h1>
         <p className="text-primary-100 text-lg">
           Manage applications across all your job offers
@@ -68,7 +68,7 @@ export function CandidaciesListPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Offers</p>
@@ -80,7 +80,7 @@ export function CandidaciesListPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Applications</p>
@@ -92,7 +92,7 @@ export function CandidaciesListPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Active Offers</p>

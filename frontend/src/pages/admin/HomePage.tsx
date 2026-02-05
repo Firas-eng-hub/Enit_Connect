@@ -540,7 +540,7 @@ export function HomePage() {
           </div>
 
           {paginatedNews.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center text-gray-600">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 lg:p-10 text-center text-gray-600">
               No news matched your filters.
             </div>
           ) : (
@@ -645,7 +645,7 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="mt-12 bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+      <div className="mt-12 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center">

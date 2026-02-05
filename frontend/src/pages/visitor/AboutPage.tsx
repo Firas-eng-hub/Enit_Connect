@@ -118,7 +118,7 @@ export function AboutPage() {
       </div>
 
       {/* Mission Section */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-10 lg:p-14 relative overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 lg:p-14 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-primary-50 to-accent-50 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
         
@@ -176,7 +176,7 @@ export function AboutPage() {
             return (
               <div 
                 key={feature.title}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className={`w-16 h-16 rounded-2xl ${feature.bgLight} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className={`w-8 h-8 ${feature.iconColor}`} />
@@ -190,7 +190,7 @@ export function AboutPage() {
       </div>
 
       {/* Values Section */}
-      <div className="bg-gradient-to-br from-primary-900 to-primary-800 rounded-3xl p-10 lg:p-14 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary-900 to-primary-800 rounded-3xl p-6 sm:p-8 lg:p-14 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -221,7 +221,7 @@ export function AboutPage() {
       {/* Stats Section */}
       <div className="grid gap-6 md:grid-cols-4">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center hover:shadow-lg transition-shadow">
+          <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 text-center hover:shadow-lg transition-shadow">
             <div className="text-4xl font-bold text-primary-900 mb-2">{stat.value}</div>
             <div className="text-gray-500 font-medium">{stat.label}</div>
           </div>
@@ -229,7 +229,7 @@ export function AboutPage() {
       </div>
 
       {/* Why Choose Us */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-10 lg:p-14">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 lg:p-14">
         <div className="text-center mb-12">
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Why Choose ENIT Connect?</h3>
           <p className="text-gray-500">The advantages that set us apart</p>
@@ -258,7 +258,7 @@ export function AboutPage() {
 
       {/* Contact Section */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
           <h3 className="text-xl font-bold text-gray-900 mb-6">Get in Touch</h3>
           <div className="space-y-6">
             <div className="flex items-start gap-4">
@@ -299,7 +299,7 @@ export function AboutPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center">
               <Send className="w-6 h-6 text-primary-600" />

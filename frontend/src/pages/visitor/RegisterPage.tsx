@@ -126,7 +126,7 @@ export function RegisterPage() {
         </div>
         
         <div className="relative z-10 w-full max-w-md">
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-10 text-center border border-white/30">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 text-center border border-white/30">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 mb-6 shadow-xl shadow-emerald-500/30">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
@@ -196,7 +196,7 @@ export function RegisterPage() {
               <Sparkles className="w-4 h-4 text-accent-400" />
               Join our growing community
             </div>
-            <h2 className="text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
+            <h2 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
               Start your
               <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-accent-400 via-accent-300 to-yellow-300">
                 success story
@@ -251,7 +251,7 @@ export function RegisterPage() {
           </Link>
 
           {/* Glassmorphism Form Card */}
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 lg:p-10 border border-white/30 relative overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/30 relative overflow-hidden">
             {/* Decorative gradient */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-accent-100 to-primary-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
             
@@ -271,7 +271,7 @@ export function RegisterPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   I want to register as:
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={() => setSelectedType('student')}
@@ -331,7 +331,7 @@ export function RegisterPage() {
               {/* Student Form */}
               {selectedType === 'student' && (
                 <form onSubmit={studentForm.handleSubmit(onSubmitStudent)} className="space-y-5">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">First name</label>
                       <input
@@ -397,7 +397,7 @@ export function RegisterPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
                       <select {...studentForm.register('class')} className={selectClass}>
@@ -543,7 +543,7 @@ export function RegisterPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
                       <input

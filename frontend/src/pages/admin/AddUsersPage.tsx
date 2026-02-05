@@ -89,14 +89,14 @@ export function AddUsersPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10 shadow-xl mb-8">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">Add Users</h1>
         <p className="text-primary-100 text-lg">Create new student or company accounts</p>
       </div>
 
       <div className="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-3xl mx-auto overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-primary-50 to-emerald-50 rounded-full blur-3xl opacity-80 -mr-32 -mt-32"></div>
-        <div className="relative p-8 md:p-10">
+        <div className="relative p-6 sm:p-8 md:p-10">
           {/* Type selection */}
           <div className="mb-8">
             <div className="flex items-center justify-between gap-4 mb-4">

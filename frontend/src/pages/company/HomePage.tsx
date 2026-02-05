@@ -150,7 +150,7 @@ export function HomePage() {
 
   return (
     <div>
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-3xl px-8 py-10 shadow-xl mb-8">
+      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-3xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
         <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-emerald-300/20 rounded-full blur-3xl" />
         <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">

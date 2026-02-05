@@ -91,7 +91,7 @@ export function RegisterStudent() {
         <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           {...register('firstname')}
           label="First Name"
@@ -131,7 +131,7 @@ export function RegisterStudent() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select {...register('class')} label="Class" options={classes} />
         <Select {...register('promotion')} label="Year" options={[{ value: '', label: 'Select year' }, ...years]} />
       </div>
