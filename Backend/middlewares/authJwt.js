@@ -3,39 +3,24 @@ const config = require("../config/auth.config.js");
 const { adminRepository, studentRepository, companyRepository } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
-const getCookieOptions = () => {
-  const hasSecureOverride = typeof process.env.COOKIE_SECURE === "string";
-  const secure = hasSecureOverride
-    ? process.env.COOKIE_SECURE === "true"
-    : process.env.NODE_ENV === "production";
-
-  const sameSite = (process.env.COOKIE_SAMESITE || "lax").toLowerCase();
-
-  const options = {
-    httpOnly: true,        // Prevents JavaScript access (XSS protection)
-    secure,               // Only use secure cookies over HTTPS
-    sameSite,             // CSRF protection (lax/strict/none)
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-    path: '/'
-  };
-
-  if (process.env.COOKIE_DOMAIN) {
-    options.domain = process.env.COOKIE_DOMAIN;
-  }
-
-  return options;
+// Cookie configuration for JWT tokens
+const cookieOptions = {
+  httpOnly: true,        // Prevents JavaScript access (XSS protection)
+  secure: false,         // Set to true only if using HTTPS
+  sameSite: 'lax',      // CSRF protection
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  path: '/'
 };
 
-const getRefreshCookieOptions = () => ({
-  ...getCookieOptions(),
+const refreshCookieOptions = {
+  ...cookieOptions,
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days for refresh token
-});
+};
 
 // Helper function to set auth cookies
 exports.setAuthCookies = (res, accessToken, refreshToken, userType) => {
-  const cookieOptions = getCookieOptions();
   res.cookie('accessToken', accessToken, cookieOptions);
-  res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+  res.cookie('refreshToken', refreshToken, refreshCookieOptions);
   res.cookie('userType', userType, { ...cookieOptions, httpOnly: false }); // Allow JS to read user type
 };
 
