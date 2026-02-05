@@ -8,14 +8,28 @@ import { Input } from '@/shared/ui/Input';
 import { Textarea } from '@/shared/ui/Textarea';
 import httpClient from '@/shared/api/httpClient';
 
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+    'Password must include uppercase, lowercase, number, and special character'
+  );
+
+const phoneSchema = z
+  .string()
+  .regex(/^\+?[\d\s\-\(\)]{8,20}$/, 'Phone number must be 8-20 digits');
+
 const schema = z.object({
   name: z.string().min(2, 'Company name is required'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  sector: z.string().optional(),
-  description: z.string().optional(),
-  phone: z.string().optional(),
-  website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  password: passwordSchema,
+  website: z.string().url('Invalid URL'),
+  address: z.string().min(1, 'Address is required'),
+  city: z.string().min(1, 'City is required'),
+  country: z.string().min(1, 'Country is required'),
+  phone: phoneSchema,
+  about: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -97,21 +111,6 @@ export function RegisterCompany() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          {...register('sector')}
-          label="Sector"
-          placeholder="Technology"
-          error={errors.sector?.message}
-        />
-        <Input
-          {...register('phone')}
-          label="Phone"
-          placeholder="+216 XX XXX XXX"
-          error={errors.phone?.message}
-        />
-      </div>
-
       <Input
         {...register('website')}
         label="Website"
@@ -119,9 +118,39 @@ export function RegisterCompany() {
         error={errors.website?.message}
       />
 
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          {...register('phone')}
+          label="Phone"
+          placeholder="+216 XX XXX XXX"
+          error={errors.phone?.message}
+        />
+        <Input
+          {...register('city')}
+          label="City"
+          placeholder="Tunis"
+          error={errors.city?.message}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          {...register('country')}
+          label="Country"
+          placeholder="Tunisia"
+          error={errors.country?.message}
+        />
+        <Input
+          {...register('address')}
+          label="Address"
+          placeholder="Street, building"
+          error={errors.address?.message}
+        />
+      </div>
+
       <Textarea
-        {...register('description')}
-        label="Description"
+        {...register('about')}
+        label="About"
         placeholder="Tell us about your company..."
         rows={3}
       />

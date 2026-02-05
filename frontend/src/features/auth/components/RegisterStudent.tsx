@@ -8,11 +8,19 @@ import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import httpClient from '@/shared/api/httpClient';
 
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+    'Password must include uppercase, lowercase, number, and special character'
+  );
+
 const schema = z.object({
   firstname: z.string().min(2, 'First name is required'),
   lastname: z.string().min(2, 'Last name is required'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: passwordSchema,
   class: z.string().optional(),
   promotion: z.string().optional(),
 });
@@ -54,7 +62,7 @@ export function RegisterStudent() {
   const onSubmit = async (data: FormData) => {
     setError(null);
     try {
-      await httpClient.post('/api/student/signup', { ...data, type: 'student' });
+      await httpClient.post('/api/student/signup', { ...data, type: 'Student' });
       setSuccess(true);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

@@ -11,11 +11,23 @@ import { Alert } from '@/shared/ui/Alert';
 import enitLogo from '@/assets/img/ENIT.png';
 import bgImage from '@/assets/img/Acceuil.BG.jpg';
 
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+    'Password must include uppercase, lowercase, number, and special character'
+  );
+
+const phoneSchema = z
+  .string()
+  .regex(/^\+?[\d\s\-\(\)]{8,20}$/, 'Phone number must be 8-20 digits');
+
 const studentSchema = z.object({
   firstname: z.string().min(1, 'First name is required'),
   lastname: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: passwordSchema,
   class: z.string().optional(),
   promotion: z.string().optional(),
 });
@@ -23,12 +35,12 @@ const studentSchema = z.object({
 const companySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  website: z.string().min(1, 'Website is required'),
+  password: passwordSchema,
+  website: z.string().url('Please enter a valid URL'),
   address: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
-  phone: z.string().min(1, 'Phone is required'),
+  phone: phoneSchema,
   about: z.string().optional(),
 });
 
@@ -78,7 +90,7 @@ export function RegisterPage() {
     setError(null);
 
     try {
-      await httpClient.post('/api/student/signup', { ...data, type: 'student' });
+      await httpClient.post('/api/student/signup', { ...data, type: 'Student' });
       setSuccess(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Registration failed. Please try again.'));
