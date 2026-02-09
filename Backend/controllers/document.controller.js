@@ -14,24 +14,32 @@ const buildShareResponse = (doc) => ({
 
 const accessLevelToAudience = (accessLevel) => {
   const v = String(accessLevel || "").trim().toLowerCase();
+  if (v === "public") return "public";
   if (v === "students" || v === "companies") return v;
   return "internal";
 };
 
 const isAudienceMatch = (audience, userType) => {
   const a = String(audience || "").trim().toLowerCase();
+  
+  // Public links - anyone can access (authenticated or not)
+  if (a === "public") return true;
+  
+  // If user is not authenticated, only public links are allowed
+  if (!userType) return false;
+  
+  // Students-only links
   if (a === "students") return userType === "student";
+  
+  // Companies-only links
   if (a === "companies") return userType === "company";
-  // internal-only
-  return userType === "admin";
+  
+  // "internal" means all authenticated users (admin, student, company)
+  return ["admin", "student", "company"].includes(userType);
 };
 
 exports.getSharedDocument = async (req, res) => {
   try {
-    if (!req.id) {
-      return res.status(401).send({ message: "Unauthorized!" });
-    }
-
     const tokenHash = hashToken(req.params.token || "");
     const share = await documentShareRepository.findByTokenHash(tokenHash);
 
@@ -45,9 +53,10 @@ exports.getSharedDocument = async (req, res) => {
       return res.status(401).send({ message: "Password required.", requiresPassword: true });
     }
 
-    const requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
-    if (!requesterType) {
-      return res.status(401).send({ message: "Unauthorized!" });
+    // Resolve user type if authenticated
+    let requesterType = null;
+    if (req.id) {
+      requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
     }
 
     const [doc] = await documentRepository.listByIds([share.document_id]);
@@ -60,7 +69,12 @@ exports.getSharedDocument = async (req, res) => {
 
     const parsed = documentShareRepository.parseShareAccess(share.access);
     const audience = parsed.audience || accessLevelToAudience(doc.access_level);
+    
     if (!isAudienceMatch(audience, requesterType)) {
+      // If not authenticated and link requires auth, return 401 instead of 403
+      if (!requesterType && audience !== "public") {
+        return res.status(401).send({ message: "Authentication required for this share link." });
+      }
       return res.status(403).send({ message: "Access denied for this share link." });
     }
 
@@ -73,10 +87,6 @@ exports.getSharedDocument = async (req, res) => {
 
 exports.accessSharedDocument = async (req, res) => {
   try {
-    if (!req.id) {
-      return res.status(401).send({ message: "Unauthorized!" });
-    }
-
     const tokenHash = hashToken(req.params.token || "");
     const share = await documentShareRepository.findByTokenHash(tokenHash);
 
@@ -95,9 +105,10 @@ exports.accessSharedDocument = async (req, res) => {
       }
     }
 
-    const requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
-    if (!requesterType) {
-      return res.status(401).send({ message: "Unauthorized!" });
+    // Resolve user type if authenticated
+    let requesterType = null;
+    if (req.id) {
+      requesterType = await documentAccessRepository.resolveUserTypeById(req.id);
     }
 
     const [doc] = await documentRepository.listByIds([share.document_id]);
@@ -110,7 +121,12 @@ exports.accessSharedDocument = async (req, res) => {
 
     const parsed = documentShareRepository.parseShareAccess(share.access);
     const audience = parsed.audience || accessLevelToAudience(doc.access_level);
+    
     if (!isAudienceMatch(audience, requesterType)) {
+      // If not authenticated and link requires auth, return 401 instead of 403
+      if (!requesterType && audience !== "public") {
+        return res.status(401).send({ message: "Authentication required for this share link." });
+      }
       return res.status(403).send({ message: "Access denied for this share link." });
     }
 

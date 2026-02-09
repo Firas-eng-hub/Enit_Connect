@@ -75,18 +75,19 @@ const getShareUrl = (token) => {
 
 const normalizeAudience = (value) => {
   const v = String(value || "").trim().toLowerCase();
-  if (v === "students" || v === "companies" || v === "internal") return v;
+  if (v === "students" || v === "companies" || v === "internal" || v === "public") return v;
   return null;
 };
 
 const audienceToAccessLevel = (audience) => {
-  if (audience === "internal") return "private";
+  if (audience === "public") return "public";\n  if (audience === "internal") return "private";
   if (audience === "students" || audience === "companies") return audience;
   return "private";
 };
 
 const accessLevelToAudience = (accessLevel) => {
   const v = String(accessLevel || "").trim().toLowerCase();
+  if (v === "public") return "public";
   if (v === "students" || v === "companies") return v;
   return "internal";
 };

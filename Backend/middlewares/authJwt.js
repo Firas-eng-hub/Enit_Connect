@@ -111,4 +111,40 @@ exports.isCompany = (req, res, next) => {
     });
 };
 
+// Optional token verification - doesn't fail if token is missing (for public share links)
+exports.verifyTokenOptional = (req, res, next) => {
+  // First try to get token from HTTP-only cookie
+  let token = req.cookies?.accessToken;
+
+  // Fallback to Authorization header for backward compatibility
+  if (!token && req.headers["authorization"]) {
+    token = req.headers["authorization"].split(' ')[1];
+  }
+
+  // If no token, proceed without authentication (for public links)
+  if (!token) {
+    req.id = null;
+    req.email = null;
+    return next();
+  }
+
+  // If token exists, verify it
+  jwt.verify(token, config.secret, (err, decoded) => {
+    if (err) {
+      // Invalid token - proceed without authentication
+      req.id = null;
+      req.email = null;
+      return next();
+    }
+    if (!isUuid(decoded.id)) {
+      req.id = null;
+      req.email = null;
+      return next();
+    }
+    req.id = decoded.id;
+    req.email = decoded.email;
+    next();
+  });
+};
+
 module.exports = exports;
