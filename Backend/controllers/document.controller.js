@@ -49,6 +49,7 @@ exports.getSharedDocument = async (req, res) => {
     if (isExpired(share.expires_at)) {
       return res.status(410).send({ message: "Share link expired." });
     }
+    
     if (share.password_hash) {
       return res.status(401).send({ message: "Password required.", requiresPassword: true });
     }

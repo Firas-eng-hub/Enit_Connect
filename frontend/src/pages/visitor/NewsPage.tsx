@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, Newspaper, RefreshCw, Clock, ArrowRight, Sparkles } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { News } from '@/entities/news/types';
+import { PartnerLogoMarquee } from '@/features/partners';
 import { formatDate } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
@@ -203,6 +204,8 @@ export function NewsPage() {
 
   return (
     <div>
+      <PartnerLogoMarquee />
+
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
         <div>

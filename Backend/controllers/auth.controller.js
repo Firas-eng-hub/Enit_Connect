@@ -9,6 +9,77 @@ const {
 } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  emailNotifications: true,
+  pushNotifications: true,
+};
+
+const parseExtra = (value) => {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return {};
+  }
+};
+
+const getNotificationPreferences = (extraValue) => {
+  const extra = parseExtra(extraValue);
+  const stored = extra?.preferences?.notifications || {};
+  return {
+    emailNotifications:
+      typeof stored.emailNotifications === "boolean"
+        ? stored.emailNotifications
+        : DEFAULT_NOTIFICATION_PREFERENCES.emailNotifications,
+    pushNotifications:
+      typeof stored.pushNotifications === "boolean"
+        ? stored.pushNotifications
+        : DEFAULT_NOTIFICATION_PREFERENCES.pushNotifications,
+  };
+};
+
+const applyNotificationPreferences = (extraValue, nextPreferences) => {
+  const extra = parseExtra(extraValue);
+  const current = getNotificationPreferences(extra);
+  return {
+    ...extra,
+    preferences: {
+      ...(extra.preferences || {}),
+      notifications: {
+        ...current,
+        ...nextPreferences,
+      },
+    },
+  };
+};
+
+const getCurrentUser = async ({ id, preferredType }) => {
+  if (!isUuid(id)) return null;
+  const requested = String(preferredType || "").trim().toLowerCase();
+  const types = ["student", "company", "admin"];
+  const ordered = requested
+    ? [requested, ...types.filter((type) => type !== requested)]
+    : types;
+
+  for (const type of ordered) {
+    if (type === "student") {
+      const user = await studentRepository.findById(id);
+      if (user) return { type, user };
+    }
+    if (type === "company") {
+      const user = await companyRepository.findById(id);
+      if (user) return { type, user };
+    }
+    if (type === "admin") {
+      const user = await adminRepository.findById(id);
+      if (user) return { type, user };
+    }
+  }
+
+  return null;
+};
+
 // Check authentication status (for frontend guards)
 exports.checkAuth = async (req, res) => {
   try {
@@ -61,6 +132,66 @@ exports.checkAuth = async (req, res) => {
   } catch (err) {
     console.error("Auth check failed:", err);
     return res.status(500).json({ authenticated: false, message: "Internal server error" });
+  }
+};
+
+exports.getPreferences = async (req, res) => {
+  try {
+    const current = await getCurrentUser({
+      id: req.id,
+      preferredType: req.cookies?.userType,
+    });
+    if (!current) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    return res.status(200).send({
+      notifications: getNotificationPreferences(current.user.extra),
+    });
+  } catch (err) {
+    return res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.updatePreferences = async (req, res) => {
+  try {
+    const current = await getCurrentUser({
+      id: req.id,
+      preferredType: req.cookies?.userType,
+    });
+    if (!current) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const patch = {};
+    if (typeof req.body.emailNotifications === "boolean") {
+      patch.emailNotifications = req.body.emailNotifications;
+    }
+    if (typeof req.body.pushNotifications === "boolean") {
+      patch.pushNotifications = req.body.pushNotifications;
+    }
+
+    const mergedExtra = applyNotificationPreferences(current.user.extra, patch);
+
+    let updated = null;
+    if (current.type === "student") {
+      updated = await studentRepository.updateExtra(current.user.id, mergedExtra);
+    } else if (current.type === "company") {
+      updated = await companyRepository.updateExtra(current.user.id, mergedExtra);
+    } else if (current.type === "admin") {
+      updated = await adminRepository.updateExtra(current.user.id, mergedExtra);
+    }
+
+    if (!updated) {
+      return res.status(404).send({ message: "User not found." });
+    }
+
+    return res.status(200).send({
+      message: "Preferences updated.",
+      notifications: getNotificationPreferences(updated.extra),
+    });
+  } catch (err) {
+    return res.status(500).send({ message: err.message || err });
   }
 };
 

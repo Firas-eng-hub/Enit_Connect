@@ -26,17 +26,48 @@ const countUnread = async (recipientType, recipientId) => {
 
 const markRead = async (id, recipientType, recipientId) => {
   const result = await db.query(
-    "UPDATE notifications SET read = true WHERE id = $1 AND recipient_type = $2 AND recipient_id = $3",
+    "UPDATE notifications SET read = true, updated_at = now() WHERE id = $1 AND recipient_type = $2 AND recipient_id = $3 RETURNING *",
     [id, recipientType, recipientId]
   );
-  return result.rowCount > 0;
+  const row = result.rows[0] || null;
+  if (!row) {
+    return { updated: false, deleted: false };
+  }
+
+  const extra = parseJson(row.extra, {});
+  const shouldDelete =
+    extra?.autoDeleteOnRead === true ||
+    extra?.category === "mail";
+
+  if (shouldDelete) {
+    await db.query(
+      "DELETE FROM notifications WHERE id = $1 AND recipient_type = $2 AND recipient_id = $3",
+      [id, recipientType, recipientId]
+    );
+  }
+
+  return { updated: true, deleted: shouldDelete };
 };
 
 const markAllRead = async (recipientType, recipientId) => {
-  await db.query(
+  const updated = await db.query(
     "UPDATE notifications SET read = true WHERE recipient_type = $1 AND recipient_id = $2",
     [recipientType, recipientId]
   );
+  const deleted = await db.query(
+    `DELETE FROM notifications
+     WHERE recipient_type = $1
+       AND recipient_id = $2
+       AND (
+         extra->>'category' = 'mail'
+         OR extra->>'autoDeleteOnRead' = 'true'
+       )`,
+    [recipientType, recipientId]
+  );
+  return {
+    updatedCount: updated.rowCount,
+    deletedCount: deleted.rowCount,
+  };
 };
 
 const deleteNotification = async (id, recipientType, recipientId) => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Home, User, FileText, Briefcase, Search } from 'lucide-react';
+import { Home, User, FileText, Briefcase, Search, Mail } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
@@ -18,6 +18,7 @@ const sidebarSections: SidebarSection[] = [
       { path: '/user/offers', label: 'Browse Offers', icon: Briefcase },
       { path: '/user/search', label: 'Search Students', icon: Search },
       { path: '/user/documents', label: 'My Documents', icon: FileText },
+      { path: '/user/mail', label: 'Mailbox', icon: Mail },
     ],
   },
 ];
@@ -43,4 +44,3 @@ export function StudentLayout() {
     </div>
   );
 }
-

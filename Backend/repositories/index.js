@@ -10,7 +10,9 @@ const documentVersionRepository = require("./documentVersion.repository");
 const documentAuditRepository = require("./documentAudit.repository");
 const postRepository = require("./post.repository");
 const newsRepository = require("./news.repository");
+const partnerRepository = require("./partner.repository");
 const messageRepository = require("./message.repository");
+const mailRepository = require("./mail.repository");
 const notificationRepository = require("./notification.repository");
 const refreshTokenRepository = require("./refreshToken.repository");
 
@@ -27,7 +29,9 @@ module.exports = {
   documentAuditRepository,
   postRepository,
   newsRepository,
+  partnerRepository,
   messageRepository,
+  mailRepository,
   notificationRepository,
   refreshTokenRepository,
 };

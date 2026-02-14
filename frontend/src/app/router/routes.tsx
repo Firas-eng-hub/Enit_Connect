@@ -55,6 +55,7 @@ const StudentNotificationsPage = lazy(() => import('@/pages/student/Notification
 const StudentSettingsPage = lazy(() => import('@/pages/student/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const BrowseOffersPage = lazy(() => import('@/pages/student/BrowseOffersPage').then(m => ({ default: m.BrowseOffersPage })));
 const StudentPublicProfilePage = lazy(() => import('@/pages/student/StudentPublicProfilePage').then(m => ({ default: m.StudentPublicProfilePage })));
+const StudentMailboxPage = lazy(() => import('@/pages/student/MailboxPage').then(m => ({ default: m.MailboxPage })));
 
 const CompanyHomePage = lazy(() => import('@/pages/company/HomePage').then(m => ({ default: m.HomePage })));
 const CandidaciesPage = lazy(() => import('@/pages/company/CandidaciesPage').then(m => ({ default: m.CandidaciesPage })));
@@ -63,12 +64,14 @@ const CompanyProfilePage = lazy(() => import('@/pages/company/ProfilePage').then
 const CompanySearchPage = lazy(() => import('@/pages/company/SearchPage').then(m => ({ default: m.SearchPage })));
 const CompanyNotificationsPage = lazy(() => import('@/pages/company/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const CompanySettingsPage = lazy(() => import('@/pages/company/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const CompanyMailboxPage = lazy(() => import('@/pages/company/MailboxPage').then(m => ({ default: m.MailboxPage })));
 
 const AdminHomePage = lazy(() => import('@/pages/admin/HomePage').then(m => ({ default: m.HomePage })));
-const SendEmailPage = lazy(() => import('@/pages/admin/SendEmailPage').then(m => ({ default: m.SendEmailPage })));
+const AdminMailboxPage = lazy(() => import('@/pages/admin/MailboxPage').then(m => ({ default: m.MailboxPage })));
 const AdminSearchPage = lazy(() => import('@/pages/admin/SearchPage').then(m => ({ default: m.SearchPage })));
 const AddUsersPage = lazy(() => import('@/pages/admin/AddUsersPage').then(m => ({ default: m.AddUsersPage })));
 const AdminDocumentsPage = lazy(() => import('@/pages/admin/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
+const PartnersPage = lazy(() => import('@/pages/admin/PartnersPage').then(m => ({ default: m.PartnersPage })));
 const MessagesPage = lazy(() => import('@/pages/admin/MessagesPage').then(m => ({ default: m.MessagesPage })));
 const AdminNotificationsPage = lazy(() => import('@/pages/admin/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const AdminSettingsPage = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })));
@@ -176,6 +179,7 @@ export const router = createBrowserRouter([
       { path: 'student/:id', element: withSuspense(StudentPublicProfilePage) },
       { path: 'search', element: withSuspense(StudentSearchPage) },
       { path: 'documents', element: withSuspense(StudentDocumentsPage) },
+      { path: 'mail', element: withSuspense(StudentMailboxPage) },
       { path: 'notifications', element: withSuspense(StudentNotificationsPage) },
       { path: 'settings', element: withSuspense(StudentSettingsPage) },
     ],
@@ -196,6 +200,7 @@ export const router = createBrowserRouter([
       { path: 'candidacies/:id', element: withSuspense(CandidaciesPage) },
       { path: 'profile', element: withSuspense(CompanyProfilePage) },
       { path: 'search', element: withSuspense(CompanySearchPage) },
+      { path: 'mail', element: withSuspense(CompanyMailboxPage) },
       { path: 'notifications', element: withSuspense(CompanyNotificationsPage) },
       { path: 'settings', element: withSuspense(CompanySettingsPage) },
     ],
@@ -212,11 +217,13 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/admin/home" replace /> },
       { path: 'home', element: withSuspense(AdminHomePage) },
-      { path: 'send', element: withSuspense(SendEmailPage) },
+      { path: 'mail', element: withSuspense(AdminMailboxPage) },
+      { path: 'send', element: <Navigate to="/admin/mail" replace /> },
       { path: 'search', element: withSuspense(AdminSearchPage) },
       { path: 'add', element: withSuspense(AddUsersPage) },
       { path: 'add-users', element: <Navigate to="/admin/add" replace /> },
       { path: 'documents', element: withSuspense(AdminDocumentsPage) },
+      { path: 'partners', element: withSuspense(PartnersPage) },
       { path: 'messages', element: withSuspense(MessagesPage) },
       { path: 'notifications', element: withSuspense(AdminNotificationsPage) },
       { path: 'settings', element: withSuspense(AdminSettingsPage) },

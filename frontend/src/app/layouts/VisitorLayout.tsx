@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Newspaper, BarChart3, Users, Info, LogIn, UserPlus, Menu, X, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
@@ -19,6 +19,17 @@ export function VisitorLayout() {
   
   // Show hero section only on the news/home page
   const isHomePage = location.pathname === '/visitor/news' || location.pathname === '/visitor' || location.pathname === '/';
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -105,48 +116,57 @@ export function VisitorLayout() {
 
           {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <div className="md:hidden absolute inset-x-0 top-full bg-primary-900/98 backdrop-blur-xl border-t border-white/10 animate-slide-up">
-              <nav className="px-4 py-4 space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
+            <>
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setMobileMenuOpen(false)}
+                className="md:hidden fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px]"
+              />
+
+              <div className="md:hidden fixed inset-x-0 top-20 bottom-0 z-50 bg-white border-t border-gray-200 shadow-2xl animate-slide-up overflow-y-auto">
+                <nav className="px-4 py-4 space-y-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                          isActive
+                            ? 'bg-primary-50 text-primary-900'
+                            : 'text-gray-700 hover:text-primary-900 hover:bg-gray-100'
+                        )}
+                      >
+                        <Icon className="w-5 h-5" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                  <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
                     <Link
-                      key={item.path}
-                      to={item.path}
+                      to="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
-                        isActive
-                          ? 'bg-white/20 text-white'
-                          : 'text-white/70 hover:text-white hover:bg-white/10'
-                      )}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:text-primary-900 hover:bg-gray-100"
                     >
-                      <Icon className="w-5 h-5" />
-                      {item.label}
+                      <LogIn className="w-5 h-5" />
+                      Sign In
                     </Link>
-                  );
-                })}
-                <div className="pt-4 border-t border-white/10 mt-4 space-y-2">
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-white text-primary-900"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    Register
-                  </Link>
-                </div>
-              </nav>
-            </div>
+                    <Link
+                      to="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-primary-900 text-white hover:bg-primary-800"
+                    >
+                      <UserPlus className="w-5 h-5" />
+                      Register
+                    </Link>
+                  </div>
+                </nav>
+              </div>
+            </>
           )}
         </header>
 

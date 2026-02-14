@@ -57,6 +57,41 @@ const mapCompanyRow = (row) => ({
   _id: row.id,
 });
 
+const mapBrowseUserRow = (row) => {
+  if (row.result_type === "student") {
+    return {
+      _id: row.id,
+      id: row.id,
+      resultType: "student",
+      firstname: row.firstname,
+      lastname: row.lastname,
+      email: row.email,
+      status: row.status,
+      country: row.country,
+      city: row.city,
+      phone: row.phone,
+      class: row.class_name,
+      promotion: row.promotion,
+      type: row.student_type,
+      createdAt: row.created_at,
+    };
+  }
+
+  return {
+    _id: row.id,
+    id: row.id,
+    resultType: "company",
+    name: row.name,
+    email: row.email,
+    status: row.status,
+    country: row.country,
+    city: row.city,
+    phone: row.phone,
+    website: row.website,
+    createdAt: row.created_at,
+  };
+};
+
 exports.getNews = async (req, res) => {
   try {
     const docs = await newsRepository.listAll();
@@ -462,8 +497,50 @@ exports.getAllCompanies = async (req, res) => {
   }
 };
 
+exports.getUsersForBrowse = async (req, res) => {
+  const type = String(req.query.type || "all").toLowerCase();
+  const query = String(req.query.q || "");
+
+  const parsedLimit = Number(req.query.limit);
+  const parsedOffset = Number(req.query.offset);
+  const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 200) : 50;
+  const offset = Number.isFinite(parsedOffset) ? Math.max(parsedOffset, 0) : 0;
+
+  try {
+    const [rows, total] = await Promise.all([
+      adminRepository.listUsersForBrowse({ type, query, limit, offset }),
+      adminRepository.countUsersForBrowse({ type, query }),
+    ]);
+
+    const data = rows.map(mapBrowseUserRow);
+    res.status(200).send({
+      data,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + data.length < total,
+      },
+    });
+  } catch (err) {
+    res.status(500).send({ message: err.message || err });
+  }
+};
+
 exports.sendEmail = (req, res) => {
-  nodemailer.sendSearchEmail(req.body.emails, req.body.object, req.body.message);
+  const maillist = Array.isArray(req.body.emails)
+    ? req.body.emails
+    : req.body.to
+      ? [req.body.to]
+      : [];
+  const subject = req.body.object || req.body.subject;
+  const message = req.body.message || req.body.body;
+
+  if (!maillist.length || !subject || !message) {
+    return res.status(400).send({ message: "Recipients, subject, and message are required." });
+  }
+
+  nodemailer.sendSearchEmail(maillist, subject, message);
   return res.status(201).send({ message: "Email has been sent!" });
 };
 

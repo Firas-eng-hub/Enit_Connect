@@ -162,6 +162,18 @@ const verifyCompany = async (id) => {
   return result.rows[0] || null;
 };
 
+const updateExtra = async (id, extra) => {
+  const result = await db.query(
+    `UPDATE companies
+     SET extra = $1::jsonb,
+         updated_at = now()
+     WHERE id = $2
+     RETURNING *`,
+    [toJson(extra || {}, {}), id]
+  );
+  return result.rows[0] || null;
+};
+
 const deleteCompany = async (id) => {
   const result = await db.query("DELETE FROM companies WHERE id = $1", [id]);
   return result.rowCount > 0;
@@ -190,6 +202,7 @@ module.exports = {
   incrementVerificationAttempts,
   updateLogo,
   verifyCompany,
+  updateExtra,
   deleteCompany,
   findByIds,
 };

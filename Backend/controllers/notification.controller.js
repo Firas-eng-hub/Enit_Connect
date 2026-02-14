@@ -27,11 +27,14 @@ const fetchUnreadCount = async (recipientType, req, res) => {
 
 const markRead = async (recipientType, req, res) => {
   try {
-    const updated = await notificationRepository.markRead(req.params.id, recipientType, req.id);
-    if (!updated) {
+    const result = await notificationRepository.markRead(req.params.id, recipientType, req.id);
+    if (!result.updated) {
       return res.status(404).send({ message: "Notification not found." });
     }
-    res.status(200).send({ message: "Notification updated." });
+    res.status(200).send({
+      message: result.deleted ? "Notification read and removed." : "Notification updated.",
+      deleted: result.deleted,
+    });
   } catch (err) {
     res.status(500).send({ message: err.message || err });
   }
@@ -39,8 +42,12 @@ const markRead = async (recipientType, req, res) => {
 
 const markAllRead = async (recipientType, req, res) => {
   try {
-    await notificationRepository.markAllRead(recipientType, req.id);
-    res.status(200).send({ message: "Notifications updated." });
+    const summary = await notificationRepository.markAllRead(recipientType, req.id);
+    res.status(200).send({
+      message: "Notifications updated.",
+      deletedCount: summary.deletedCount || 0,
+      updatedCount: summary.updatedCount || 0,
+    });
   } catch (err) {
     res.status(500).send({ message: err.message || err });
   }

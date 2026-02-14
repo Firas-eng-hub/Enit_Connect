@@ -1,4 +1,4 @@
-import { Bell, CheckCircle, AlertCircle, Info, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import httpClient from '@/shared/api/httpClient';
 import { formatDateTime } from '@/shared/lib/utils';
@@ -39,30 +39,16 @@ export function NotificationsPage() {
   const markAsRead = async (id: string) => {
     try {
       await httpClient.patch(`/api/student/notifications/${id}/read`);
-      setNotifications(notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n
-      ));
-      window.dispatchEvent(new Event('notifications:refresh'));
+      await fetchNotifications();
     } catch (err) {
       console.error('Failed to mark notification read:', err);
-    }
-  };
-
-  const deleteNotification = async (id: string) => {
-    try {
-      await httpClient.delete(`/api/student/notifications/${id}`);
-      setNotifications(notifications.filter((n) => n.id !== id));
-      window.dispatchEvent(new Event('notifications:refresh'));
-    } catch (err) {
-      console.error('Failed to delete notification:', err);
     }
   };
 
   const markAllAsRead = async () => {
     try {
       await httpClient.patch('/api/student/notifications/read-all');
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
-      window.dispatchEvent(new Event('notifications:refresh'));
+      await fetchNotifications();
     } catch (err) {
       console.error('Failed to mark all notifications read:', err);
     }
@@ -161,13 +147,6 @@ export function NotificationsPage() {
                         <CheckCircle className="w-5 h-5" />
                       </button>
                     )}
-                    <button
-                      onClick={() => deleteNotification(notification.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
                   </div>
                 </div>
               </div>

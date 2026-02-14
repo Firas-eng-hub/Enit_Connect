@@ -98,12 +98,82 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 }).messages(customMessages);
 
+const authPreferencesSchema = Joi.object({
+  emailNotifications: Joi.boolean(),
+  pushNotifications: Joi.boolean(),
+}).or('emailNotifications', 'pushNotifications').messages(customMessages);
+
 const emailVerificationSchema = Joi.object({
   email: emailSchema.required(),
   code: Joi.string().length(6).pattern(/^\d{6}$/).required().messages({
     ...customMessages,
     'string.pattern.base': 'Verification code must be 6 digits',
   }),
+}).messages(customMessages);
+
+const mailDirectRecipientSchema = Joi.object({
+  id: uuidSchema.required(),
+  type: Joi.string().valid('student', 'company', 'admin').required(),
+}).messages(customMessages);
+
+const mailBroadcastRecipientSchema = Joi.object({
+  id: Joi.string().valid('all', 'all_students', 'all_companies').required(),
+  type: Joi.string().valid('group').required(),
+}).messages(customMessages);
+
+const mailRecipientSchema = Joi.alternatives()
+  .try(mailDirectRecipientSchema, mailBroadcastRecipientSchema)
+  .required()
+  .messages(customMessages);
+
+const mailComposeSchema = Joi.object({
+  subject: Joi.string().min(1).max(200).trim().required(),
+  body: Joi.string().min(1).max(10000).trim().required(),
+  recipients: Joi.array().items(mailRecipientSchema).min(1).max(50).required(),
+}).messages(customMessages);
+
+const mailDraftSchema = Joi.object({
+  subject: Joi.string().max(200).trim().allow('').default(''),
+  body: Joi.string().max(10000).trim().allow('').default(''),
+  recipients: Joi.array().items(mailRecipientSchema).max(50).default([]),
+}).messages(customMessages);
+
+const mailFolderParamsSchema = Joi.object({
+  folder: Joi.string().valid('inbox', 'sent', 'drafts').required(),
+}).messages(customMessages);
+
+const mailItemParamsSchema = Joi.object({
+  itemId: uuidSchema.required(),
+}).messages(customMessages);
+
+const mailMessageParamsSchema = Joi.object({
+  messageId: uuidSchema.required(),
+}).messages(customMessages);
+
+const mailFolderQuerySchema = Joi.object({
+  q: Joi.string().max(200).trim().allow('').default(''),
+  limit: Joi.number().integer().min(1).max(100).default(50),
+  offset: Joi.number().integer().min(0).default(0),
+  ownerId: uuidSchema,
+  ownerType: Joi.string().valid('student', 'company', 'admin'),
+}).with('ownerId', 'ownerType').with('ownerType', 'ownerId').messages(customMessages);
+
+const mailPatchSchema = Joi.object({
+  read: Joi.boolean(),
+  starred: Joi.boolean(),
+  folder: Joi.string().valid('inbox', 'sent', 'drafts'),
+}).or('read', 'starred', 'folder').messages(customMessages);
+
+const mailRecipientsQuerySchema = Joi.object({
+  q: Joi.string().max(200).trim().allow('').default(''),
+  type: Joi.string().valid('all', 'student', 'company', 'admin').default('all'),
+  limit: Joi.number().integer().min(1).max(100).default(25),
+}).messages(customMessages);
+
+const mailLockSchema = Joi.object({
+  userId: uuidSchema.required(),
+  userType: Joi.string().valid('student', 'company', 'admin').required(),
+  reason: Joi.string().max(500).allow('', null),
 }).messages(customMessages);
 
 // ============================================
@@ -187,6 +257,19 @@ const createNewsSchema = Joi.object({
   audience: Joi.array().items(Joi.string().valid('students', 'companies', 'alumni', 'all')),
   category: Joi.string().max(100).trim(),
   tags: Joi.array().items(Joi.string().max(50).trim()).max(20),
+}).messages(customMessages);
+
+const createPartnerSchema = Joi.object({
+  name: Joi.string().min(2).max(120).trim().required(),
+  logoUrl: Joi.string()
+    .trim()
+    .max(2048)
+    .pattern(/^(https?:\/\/\S+|\/uploads\/\S+)$/i)
+    .required()
+    .messages({
+      ...customMessages,
+      'string.pattern.base': 'Logo URL must be an http(s) URL or an /uploads path',
+    }),
 }).messages(customMessages);
 
 // ============================================
@@ -383,6 +466,7 @@ module.exports = {
     studentSignup: studentSignupSchema,
     companySignup: companySignupSchema,
     login: loginSchema,
+    authPreferences: authPreferencesSchema,
     emailVerification: emailVerificationSchema,
 
     // User management
@@ -399,11 +483,21 @@ module.exports = {
 
     // News
     createNews: createNewsSchema,
+    createPartner: createPartnerSchema,
 
     // Search & Pagination
     search: searchSchema,
     pagination: paginationSchema,
     uuidParam: uuidParamSchema,
+    mailFolderParams: mailFolderParamsSchema,
+    mailItemParams: mailItemParamsSchema,
+    mailMessageParams: mailMessageParamsSchema,
+    mailFolderQuery: mailFolderQuerySchema,
+    mailRecipientsQuery: mailRecipientsQuerySchema,
+    mailCompose: mailComposeSchema,
+    mailDraft: mailDraftSchema,
+    mailPatch: mailPatchSchema,
+    mailLock: mailLockSchema,
 
     // Common
     uuid: uuidSchema,

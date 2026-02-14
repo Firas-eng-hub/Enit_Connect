@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
@@ -14,13 +14,47 @@ interface TopbarProps {
   showMenuButton?: boolean;
 }
 
+const PREFERENCES_UPDATED_EVENT = 'auth:preferences-updated';
+
 export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
   const { user, userName, userType, logout } = useAuth();
   const navigate = useNavigate();
   const [notificationCount, setNotificationCount] = useState(0);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
+  const pushNotificationsEnabledRef = useRef(true);
+  const previousNotificationCount = useRef<number | null>(null);
+
+  useEffect(() => {
+    pushNotificationsEnabledRef.current = pushNotificationsEnabled;
+  }, [pushNotificationsEnabled]);
 
   useEffect(() => {
     if (!userType) return;
+    previousNotificationCount.current = null;
+
+    const applyPushPreference = (enabled: boolean) => {
+      setPushNotificationsEnabled(enabled);
+      pushNotificationsEnabledRef.current = enabled;
+      if (
+        enabled &&
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'default'
+      ) {
+        Notification.requestPermission().catch(() => {});
+      }
+    };
+
+    const fetchPreferences = () => {
+      httpClient.get('/api/auth/preferences')
+        .then((response) => {
+          const enabled = response.data?.notifications?.pushNotifications !== false;
+          applyPushPreference(enabled);
+        })
+        .catch(() => {
+          applyPushPreference(true);
+        });
+    };
 
     const fetchUnreadCount = () => {
       const endpoint = userType === 'admin'
@@ -31,20 +65,54 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
 
       httpClient.get(endpoint)
         .then((response) => {
-          setNotificationCount(response.data?.count ?? 0);
+          const nextCount = response.data?.count ?? 0;
+          const previousCount = previousNotificationCount.current;
+          setNotificationCount(nextCount);
+          if (
+            pushNotificationsEnabledRef.current &&
+            previousCount !== null &&
+            nextCount > previousCount &&
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
+            const delta = nextCount - previousCount;
+            const label = userType === 'admin' ? 'admin' : userType === 'company' ? 'company' : 'student';
+            const body =
+              delta === 1
+                ? 'You received a new notification.'
+                : `You received ${delta} new notifications.`;
+            // Browser notification for critical awareness while user is in other tabs/apps.
+            new Notification(`ENIT Connect (${label})`, { body });
+          }
+          previousNotificationCount.current = nextCount;
         })
         .catch(() => {
           setNotificationCount(0);
+          previousNotificationCount.current = null;
         });
     };
 
+    fetchPreferences();
     fetchUnreadCount();
 
+    const handlePreferencesUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ notifications?: { pushNotifications?: boolean } }>;
+      const pushPref = customEvent.detail?.notifications?.pushNotifications;
+      if (typeof pushPref === 'boolean') {
+        applyPushPreference(pushPref);
+        return;
+      }
+      fetchPreferences();
+    };
+
     const handleRefresh = () => fetchUnreadCount();
+    window.addEventListener(PREFERENCES_UPDATED_EVENT, handlePreferencesUpdated);
     window.addEventListener('notifications:refresh', handleRefresh);
 
     const intervalId = window.setInterval(fetchUnreadCount, 30000);
     return () => {
+      window.removeEventListener(PREFERENCES_UPDATED_EVENT, handlePreferencesUpdated);
       window.removeEventListener('notifications:refresh', handleRefresh);
       window.clearInterval(intervalId);
     };

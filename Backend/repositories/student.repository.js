@@ -214,6 +214,18 @@ const verifyStudent = async (id) => {
   return result.rows[0] || null;
 };
 
+const updateExtra = async (id, extra) => {
+  const result = await db.query(
+    `UPDATE students
+     SET extra = $1::jsonb,
+         updated_at = now()
+     WHERE id = $2
+     RETURNING *`,
+    [toJson(extra || {}, {}), id]
+  );
+  return result.rows[0] || null;
+};
+
 const deleteStudent = async (id) => {
   const result = await db.query("DELETE FROM students WHERE id = $1", [id]);
   return result.rowCount > 0;
@@ -233,5 +245,6 @@ module.exports = {
   incrementVerificationAttempts,
   updatePicture,
   verifyStudent,
+  updateExtra,
   deleteStudent,
 };

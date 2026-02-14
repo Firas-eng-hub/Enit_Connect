@@ -6,10 +6,12 @@ const { authJwt } = require("../middlewares");
 const { validation } = require("../middlewares");
 const controller = require("../controllers/admin.controller");
 const adminDocumentsController = require("../controllers/admin-documents.controller");
+const partnerController = require("../controllers/partner.controller");
 const notifications = require("../controllers/notification.controller");
 const savedoc = require('../helpers/savedoc');
 const newsdoc = require('../helpers/newsdoc');
 const adminDocumentUpload = require("../helpers/admin-document-upload");
+const partnerLogoUpload = require("../helpers/partner-logo-upload");
 
 // Rate limiter for admin authentication (stricter)
 const adminAuthLimiter = rateLimit({
@@ -30,6 +32,8 @@ router.get("/allcompanies", authJwt.verifyToken, controller.getAllCompanies);
 router.get("/search/student", authJwt.verifyToken, controller.getStudentsByKey);
 //Get Companies by key
 router.get("/search/company", authJwt.verifyToken, controller.getCompaniesByKey);
+//Browse users with pagination + search
+router.get("/users", authJwt.verifyToken, authJwt.isAdmin, controller.getUsersForBrowse);
 //Admin Notifications
 router.get("/notifications", authJwt.verifyToken, authJwt.isAdmin, notifications.getAdminNotifications);
 router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isAdmin, notifications.getAdminUnreadCount);
@@ -37,7 +41,8 @@ router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isAdmin, no
 router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isAdmin, notifications.markAdminRead);
 router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isAdmin, notifications.deleteAdminNotification);
 //Send Email
-router.post("/contact", authJwt.verifyToken, controller.sendEmail);
+router.post("/contact", authJwt.verifyToken, authJwt.isAdmin, controller.sendEmail);
+router.post("/email", authJwt.verifyToken, authJwt.isAdmin, controller.sendEmail);
 //Delete Students from database
 router.post("/student/delete", authJwt.verifyToken, authJwt.isAdmin, controller.deleteStudents);
 //Delete Companies from database
@@ -139,6 +144,31 @@ router.patch('/news/:id', authJwt.verifyToken, authJwt.isAdmin, controller.updat
 router.post('/newsdoc', newsdoc, controller.newsDoc);
 //Get news
 router.get('/news', controller.getNews);
+
+// Partners (public read + admin management)
+router.get('/partners', partnerController.listPartners);
+router.post(
+  '/partners/upload',
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  partnerLogoUpload,
+  partnerController.uploadPartnerLogo
+);
+router.post(
+  '/partners',
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  validation.sqlInjectionCheck,
+  validation.validate(validation.schemas.createPartner),
+  partnerController.createPartner
+);
+router.delete(
+  '/partners/:id',
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  validation.validate(validation.schemas.uuidParam, 'params'),
+  partnerController.deletePartner
+);
 
 
 module.exports = router;

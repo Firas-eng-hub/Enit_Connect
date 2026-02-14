@@ -1,11 +1,72 @@
 import { Shield, Bell, Lock, Globe, Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import httpClient from '@/shared/api/httpClient';
+
+const PREFERENCES_UPDATED_EVENT = 'auth:preferences-updated';
 
 export function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsMessage, setPrefsMessage] = useState<string | null>(null);
+
+  const loadPreferences = async () => {
+    setPrefsLoading(true);
+    try {
+      const response = await httpClient.get('/api/auth/preferences');
+      const notifications = response.data?.notifications || {};
+      setEmailNotifications(Boolean(notifications.emailNotifications));
+      setPushNotifications(Boolean(notifications.pushNotifications));
+      setPrefsMessage(null);
+    } catch {
+      setPrefsMessage('Failed to load notification preferences.');
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  const savePreferences = async (patch: {
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+  }) => {
+    setPrefsSaving(true);
+    try {
+      const response = await httpClient.patch('/api/auth/preferences', patch);
+      const notifications = response.data?.notifications || {};
+      setEmailNotifications(Boolean(notifications.emailNotifications));
+      setPushNotifications(Boolean(notifications.pushNotifications));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent(PREFERENCES_UPDATED_EVENT, {
+            detail: { notifications },
+          })
+        );
+      }
+      setPrefsMessage('Preferences saved.');
+    } catch {
+      setPrefsMessage('Unable to save preferences. Please retry.');
+      await loadPreferences();
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
+  const toggleEmailNotifications = () => {
+    if (prefsLoading || prefsSaving) return;
+    savePreferences({ emailNotifications: !emailNotifications });
+  };
+
+  const togglePushNotifications = () => {
+    if (prefsLoading || prefsSaving) return;
+    savePreferences({ pushNotifications: !pushNotifications });
+  };
 
   return (
     <div>
@@ -108,7 +169,8 @@ export function SettingsPage() {
                 <p className="text-sm text-gray-600">Receive system alerts via email</p>
               </div>
               <button
-                onClick={() => setEmailNotifications(!emailNotifications)}
+                onClick={toggleEmailNotifications}
+                disabled={prefsLoading || prefsSaving}
                 className={`relative w-14 h-8 rounded-full transition-colors ${
                   emailNotifications ? 'bg-primary-600' : 'bg-gray-300'
                 }`}
@@ -126,7 +188,8 @@ export function SettingsPage() {
                 <p className="text-sm text-gray-600">Receive browser notifications for critical events</p>
               </div>
               <button
-                onClick={() => setPushNotifications(!pushNotifications)}
+                onClick={togglePushNotifications}
+                disabled={prefsLoading || prefsSaving}
                 className={`relative w-14 h-8 rounded-full transition-colors ${
                   pushNotifications ? 'bg-primary-600' : 'bg-gray-300'
                 }`}
@@ -139,6 +202,11 @@ export function SettingsPage() {
               </button>
             </div>
           </div>
+          {prefsMessage && (
+            <p className={`text-sm ${prefsMessage.includes('saved') ? 'text-emerald-600' : 'text-red-600'}`}>
+              {prefsMessage}
+            </p>
+          )}
         </div>
 
         {/* System Settings */}
@@ -172,9 +240,9 @@ export function SettingsPage() {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <button className="px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold text-lg shadow-2xl shadow-primary-500/40 hover:shadow-3xl hover:shadow-primary-500/50 hover:scale-105 transform">
-            Save Settings
-          </button>
+          <span className="px-6 py-3 text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Notification preferences save automatically
+          </span>
         </div>
       </div>
     </div>

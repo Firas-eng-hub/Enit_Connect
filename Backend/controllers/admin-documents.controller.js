@@ -80,7 +80,8 @@ const normalizeAudience = (value) => {
 };
 
 const audienceToAccessLevel = (audience) => {
-  if (audience === "public") return "public";\n  if (audience === "internal") return "private";
+  if (audience === "public") return "public";
+  if (audience === "internal") return "private";
   if (audience === "students" || audience === "companies") return audience;
   return "private";
 };

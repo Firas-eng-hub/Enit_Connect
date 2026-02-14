@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Home, Users, Mail, FileText, MessageSquare, UserPlus } from 'lucide-react';
+import { Home, Users, Mail, FileText, MessageSquare, UserPlus, Handshake } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
@@ -22,8 +22,9 @@ const sidebarSections: SidebarSection[] = [
     title: 'Content',
     items: [
       { path: '/admin/documents', label: 'Documents', icon: FileText },
-      { path: '/admin/messages', label: 'Messages', icon: MessageSquare },
-      { path: '/admin/send', label: 'Send Email', icon: Mail },
+      { path: '/admin/partners', label: 'Partners', icon: Handshake },
+      { path: '/admin/mail', label: 'Mailbox', icon: Mail },
+      { path: '/admin/messages', label: 'Support Inbox', icon: MessageSquare },
     ],
   },
 ];

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const authController = require("../controllers/auth.controller");
+const { authJwt, validation } = require("../middlewares");
 
 // Rate limiter for auth endpoints
 const authLimiter = rateLimit({
@@ -12,6 +13,15 @@ const authLimiter = rateLimit({
 
 // Check authentication status (for frontend guards)
 router.get("/check", authController.checkAuth);
+
+// Notification/system preferences
+router.get("/preferences", authJwt.verifyToken, authController.getPreferences);
+router.patch(
+  "/preferences",
+  authJwt.verifyToken,
+  validation.validate(validation.schemas.authPreferences),
+  authController.updatePreferences
+);
 
 // Refresh access token
 router.post("/refresh", authLimiter, authController.refreshToken);

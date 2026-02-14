@@ -65,3 +65,24 @@ exports.sendSearchEmail = (maillist, object, message) => {
         });
     });
 };
+
+exports.sendRawEmail = async ({ to, subject, text, html }) => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log('Email credentials not configured. Skipping raw email to:', to);
+        return { skipped: true };
+    }
+
+    try {
+        await transport.sendMail({
+            from: `TIC-ENIT <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            text,
+            html,
+        });
+        return { success: true };
+    } catch (err) {
+        console.error("Failed to send raw email:", err.message);
+        return { success: false, error: err.message };
+    }
+};
