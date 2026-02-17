@@ -63,6 +63,36 @@ const listAll = async () => {
   return result.rows;
 };
 
+const listForStudentBrowse = async ({ query = "", limit = 50, offset = 0 } = {}) => {
+  const normalizedQuery = String(query || "").trim();
+  const pattern = `%${normalizedQuery}%`;
+
+  const [countResult, rowsResult] = await Promise.all([
+    db.query(
+      `SELECT COUNT(*)::int AS total
+       FROM companies
+       WHERE status = 'Active'
+         AND ($1::text = '' OR name ILIKE $2 OR email ILIKE $2)`,
+      [normalizedQuery, pattern]
+    ),
+    db.query(
+      `SELECT id, name, email, logo
+       FROM companies
+       WHERE status = 'Active'
+         AND ($1::text = '' OR name ILIKE $2 OR email ILIKE $2)
+       ORDER BY created_at DESC NULLS LAST
+       LIMIT $3
+       OFFSET $4`,
+      [normalizedQuery, pattern, limit, offset]
+    ),
+  ]);
+
+  return {
+    rows: rowsResult.rows,
+    total: Number(countResult.rows[0]?.total || 0),
+  };
+};
+
 const listIds = async () => {
   const result = await db.query("SELECT id FROM companies");
   return result.rows.map((row) => row.id);
@@ -195,6 +225,7 @@ module.exports = {
   findByName,
   findByConfirmationCode,
   listAll,
+  listForStudentBrowse,
   listIds,
   searchByKey,
   updateCompany,

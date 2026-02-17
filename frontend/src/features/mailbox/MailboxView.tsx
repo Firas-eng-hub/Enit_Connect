@@ -2,9 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Archive,
+  ChevronLeft,
+  ChevronRight,
   Inbox,
   MailPlus,
+  Minus,
+  Paperclip,
+  Plus,
   RefreshCw,
+  RotateCcw,
   Send,
   ShieldAlert,
   Star,
@@ -12,12 +18,14 @@ import {
   UserLock,
 } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
+import { config } from '@/app/config/env';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { cn, formatDateTime, getApiErrorMessage } from '@/shared/lib/utils';
+import { Dialog } from '@/shared/ui/Dialog';
+import { cn, formatDateTime, formatFileSize, getApiErrorMessage } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-type MailFolder = 'inbox' | 'sent' | 'drafts';
+type MailFolder = 'inbox' | 'sent' | 'drafts' | 'favorites';
 type MailRole = 'student' | 'company' | 'admin';
 type RecipientRole = MailRole | 'group';
 
@@ -26,6 +34,22 @@ interface MailUser {
   type: MailRole | 'system';
   name: string;
   email: string | null;
+}
+
+interface MailAttachment {
+  documentId: string;
+  title: string;
+  link: string;
+  extension?: string | null;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+}
+
+interface AttachmentPreview {
+  title: string;
+  url: string;
+  mimeType: string;
+  extension: string;
 }
 
 interface MailItem {
@@ -40,6 +64,10 @@ interface MailItem {
   sentAt: string;
   sender: MailUser;
   recipients: MailUser[];
+  extra?: {
+    attachments?: MailAttachment[];
+    [key: string]: unknown;
+  };
 }
 
 interface RecipientOption {
@@ -48,6 +76,14 @@ interface RecipientOption {
   name: string;
   email: string;
   status?: string | null;
+}
+
+interface ComposeAttachmentOption {
+  id: string;
+  title: string;
+  extension?: string | null;
+  category?: string | null;
+  tags?: string[];
 }
 
 interface MailboxViewProps {
@@ -61,7 +97,12 @@ const folderMeta: Array<{ key: MailFolder; label: string; icon: typeof Inbox }> 
   { key: 'inbox', label: 'Inbox', icon: Inbox },
   { key: 'sent', label: 'Sent', icon: Send },
   { key: 'drafts', label: 'Drafts', icon: Archive },
+  { key: 'favorites', label: 'Favorites', icon: Star },
 ];
+
+const MAX_COMPOSE_ATTACHMENTS = 5;
+const COMPOSE_ATTACHMENT_PAGE_SIZE = 50;
+const COMPOSE_ATTACHMENT_MAX_PAGES = 20;
 
 const dedupeRecipients = (rows: RecipientOption[]) => {
   const seen = new Set<string>();
@@ -73,6 +114,43 @@ const dedupeRecipients = (rows: RecipientOption[]) => {
     unique.push(row);
   });
   return unique;
+};
+
+const resolveFileUrl = (link?: string | null) => {
+  if (!link) return null;
+  if (link.startsWith('http://') || link.startsWith('https://')) return link;
+  if (link.startsWith('/uploads')) {
+    return config.apiUrl ? `${config.apiUrl}${link}` : link;
+  }
+  if (link.startsWith('uploads/')) {
+    return config.apiUrl ? `${config.apiUrl}/${link}` : `/${link}`;
+  }
+  return link;
+};
+
+const normalizeExtension = (extension?: string | null) =>
+  String(extension || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\./, '');
+
+const resolveAttachmentExtension = (attachment: MailAttachment) => {
+  const explicit = normalizeExtension(attachment.extension);
+  if (explicit) return explicit;
+
+  const link = String(attachment.link || '');
+  const cleanLink = link.split('?')[0];
+  const lastSegment = cleanLink.split('/').pop() || '';
+  const parts = lastSegment.split('.');
+  if (parts.length < 2) return '';
+  return normalizeExtension(parts.pop());
+};
+
+const matchesActiveFolder = (item: MailItem, activeFolder: MailFolder) => {
+  if (activeFolder === 'favorites') {
+    return item.starred;
+  }
+  return item.folder === activeFolder;
 };
 
 export function MailboxView({
@@ -100,11 +178,27 @@ export function MailboxView({
   const [recipientResults, setRecipientResults] = useState<RecipientOption[]>([]);
   const [recipientLoading, setRecipientLoading] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<RecipientOption[]>([]);
+  const [composeAttachments, setComposeAttachments] = useState<ComposeAttachmentOption[]>([]);
+  const [composeAttachmentsLoading, setComposeAttachmentsLoading] = useState(false);
+  const [selectedComposeAttachmentIds, setSelectedComposeAttachmentIds] = useState<string[]>([]);
+  const [previewingAttachmentId, setPreviewingAttachmentId] = useState<string | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<AttachmentPreview | null>(null);
+  const [attachmentPreviewError, setAttachmentPreviewError] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [pdfPage, setPdfPage] = useState(1);
 
   const selectedRecipientKeys = useMemo(
     () => new Set(selectedRecipients.map((recipient) => `${recipient.type}:${recipient.id}`)),
     [selectedRecipients]
   );
+
+  useEffect(() => {
+    return () => {
+      if (attachmentPreview?.url) {
+        URL.revokeObjectURL(attachmentPreview.url);
+      }
+    };
+  }, [attachmentPreview]);
 
   const recipientTypeOptions = useMemo(() => {
     if (userType === 'company') {
@@ -139,6 +233,7 @@ export function MailboxView({
     setRecipientQuery('');
     setRecipientResults([]);
     setSelectedRecipients([]);
+    setSelectedComposeAttachmentIds([]);
   };
 
   const fetchFolder = async () => {
@@ -192,6 +287,51 @@ export function MailboxView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCompose, recipientType, recipientQuery]);
 
+  const fetchComposeAttachments = async () => {
+    if (!showCompose || userType !== 'student') {
+      return;
+    }
+
+    setComposeAttachmentsLoading(true);
+    try {
+      const allRows: ComposeAttachmentOption[] = [];
+      const seen = new Set<string>();
+      for (let page = 1; page <= COMPOSE_ATTACHMENT_MAX_PAGES; page += 1) {
+        const response = await httpClient.get('/api/student/documents', {
+          params: {
+            type: 'file',
+            page,
+            pageSize: COMPOSE_ATTACHMENT_PAGE_SIZE,
+            emplacement: 'root',
+          },
+        });
+        const rows = (response.data?.items || []) as ComposeAttachmentOption[];
+        rows.forEach((row) => {
+          if (!seen.has(row.id)) {
+            seen.add(row.id);
+            allRows.push(row);
+          }
+        });
+
+        const total = Number(response.data?.total || 0);
+        if (rows.length < COMPOSE_ATTACHMENT_PAGE_SIZE || allRows.length >= total) {
+          break;
+        }
+      }
+
+      setComposeAttachments(allRows);
+    } catch {
+      setComposeAttachments([]);
+    } finally {
+      setComposeAttachmentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComposeAttachments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCompose, userType]);
+
   const openItem = async (item: MailItem) => {
     setActionError(null);
     setActionSuccess(null);
@@ -221,7 +361,7 @@ export function MailboxView({
       setItems((prev) =>
         prev
           .map((row) => (row.id === updated.id ? updated : row))
-          .filter((row) => row.folder === folder)
+          .filter((row) => matchesActiveFolder(row, folder))
       );
       setSelectedItem((prev) => (prev && prev.id === updated.id ? updated : prev));
     } catch (err) {
@@ -253,6 +393,21 @@ export function MailboxView({
     setSelectedRecipients((prev) => dedupeRecipients([...prev, recipient]));
   };
 
+  const toggleComposeAttachment = (attachmentId: string) => {
+    const exists = selectedComposeAttachmentIds.includes(attachmentId);
+    if (!exists && selectedComposeAttachmentIds.length >= MAX_COMPOSE_ATTACHMENTS) {
+      setActionError(`You can attach up to ${MAX_COMPOSE_ATTACHMENTS} documents.`);
+      return;
+    }
+
+    setActionError(null);
+    setSelectedComposeAttachmentIds((prev) =>
+      prev.includes(attachmentId)
+        ? prev.filter((id) => id !== attachmentId)
+        : [...prev, attachmentId]
+    );
+  };
+
   const sendMessage = async () => {
     setComposeSending(true);
     setActionError(null);
@@ -264,6 +419,9 @@ export function MailboxView({
         recipients: selectedRecipients.map((recipient) => ({
           id: recipient.id,
           type: recipient.type,
+        })),
+        attachments: selectedComposeAttachmentIds.map((documentId) => ({
+          documentId,
         })),
       });
       setActionSuccess('Message sent successfully.');
@@ -290,6 +448,9 @@ export function MailboxView({
         recipients: selectedRecipients.map((recipient) => ({
           id: recipient.id,
           type: recipient.type,
+        })),
+        attachments: selectedComposeAttachmentIds.map((documentId) => ({
+          documentId,
         })),
       });
       setActionSuccess('Draft saved.');
@@ -347,6 +508,59 @@ export function MailboxView({
       setActionError(getApiErrorMessage(err, 'Failed to permanently delete message.'));
     }
   };
+
+  const closeAttachmentPreview = () => {
+    if (attachmentPreview?.url) {
+      URL.revokeObjectURL(attachmentPreview.url);
+    }
+    setAttachmentPreview(null);
+    setAttachmentPreviewError(null);
+    setImageZoom(1);
+    setPdfPage(1);
+  };
+
+  const previewAttachment = async (attachment: MailAttachment) => {
+    const sourceUrl = resolveFileUrl(attachment.link);
+    if (!sourceUrl) return;
+
+    setPreviewingAttachmentId(attachment.documentId);
+    setAttachmentPreviewError(null);
+    try {
+      const response = await httpClient.get(sourceUrl, {
+        responseType: 'blob',
+      });
+      const blob = response.data as Blob;
+      const nextUrl = URL.createObjectURL(blob);
+
+      if (attachmentPreview?.url) {
+        URL.revokeObjectURL(attachmentPreview.url);
+      }
+
+      setAttachmentPreview({
+        title: attachment.title,
+        url: nextUrl,
+        mimeType: blob.type || attachment.mimeType || '',
+        extension: resolveAttachmentExtension(attachment),
+      });
+      setImageZoom(1);
+      setPdfPage(1);
+    } catch (err) {
+      setAttachmentPreviewError(getApiErrorMessage(err, 'Unable to preview this attachment.'));
+    } finally {
+      setPreviewingAttachmentId(null);
+    }
+  };
+
+  const isImagePreview = Boolean(
+    attachmentPreview?.mimeType?.startsWith('image/') ||
+    ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(attachmentPreview?.extension || '')
+  );
+  const isPdfPreview = Boolean(
+    attachmentPreview?.mimeType?.includes('pdf') || attachmentPreview?.extension === 'pdf'
+  );
+  const pdfPreviewSrc = attachmentPreview
+    ? `${attachmentPreview.url}#page=${pdfPage}&view=FitH`
+    : '';
 
   return (
     <div className="space-y-6">
@@ -489,6 +703,51 @@ export function MailboxView({
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
           />
 
+          {userType === 'student' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Attach Documents (optional)
+              </label>
+              <p className="text-xs text-gray-500">
+                Selected {selectedComposeAttachmentIds.length}/{MAX_COMPOSE_ATTACHMENTS}
+              </p>
+              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50/40">
+                {composeAttachmentsLoading ? (
+                  <p className="text-sm text-gray-500 px-2 py-1">Loading documents...</p>
+                ) : composeAttachments.length === 0 ? (
+                  <p className="text-sm text-gray-500 px-2 py-1">No documents available.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {composeAttachments.map((document) => {
+                      const checked = selectedComposeAttachmentIds.includes(document.id);
+                      return (
+                        <label
+                          key={document.id}
+                          className={cn(
+                            'flex items-center justify-between gap-3 rounded-lg border p-2 cursor-pointer',
+                            checked ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-white'
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{document.title}</p>
+                            <p className="text-xs text-gray-500">
+                              {document.extension ? `.${document.extension}` : 'document'}
+                            </p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleComposeAttachment(document.id)}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button
               variant="primary"
@@ -571,7 +830,7 @@ export function MailboxView({
                           <p className={cn('truncate', !item.read && 'font-semibold text-gray-900')}>
                             {item.subject}
                           </p>
-                          {!item.read && folder === 'inbox' && (
+                          {!item.read && (folder === 'inbox' || folder === 'favorites') && (
                             <span className="inline-block h-2 w-2 rounded-full bg-primary-600" />
                           )}
                         </div>
@@ -635,6 +894,50 @@ export function MailboxView({
               <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/40 whitespace-pre-wrap text-gray-800 text-sm leading-relaxed">
                 {selectedItem.body}
               </div>
+
+              {selectedItem.extra?.attachments && selectedItem.extra.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-gray-700 inline-flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    Attachments
+                  </p>
+                  <div className="space-y-2">
+                    {selectedItem.extra.attachments.map((attachment) => {
+                      const url = resolveFileUrl(attachment.link);
+                      return (
+                        <div
+                          key={attachment.documentId}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{attachment.title}</p>
+                            <p className="text-xs text-gray-500">
+                              {attachment.sizeBytes ? formatFileSize(attachment.sizeBytes) : attachment.extension || 'file'}
+                            </p>
+                          </div>
+                          {url ? (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => previewAttachment(attachment)}
+                              disabled={previewingAttachmentId === attachment.documentId}
+                            >
+                              {previewingAttachmentId === attachment.documentId ? 'Opening...' : 'Preview'}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-gray-400">Unavailable</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {attachmentPreviewError && (
+                    <Alert variant="danger" className="text-xs">
+                      {attachmentPreviewError}
+                    </Alert>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -726,6 +1029,100 @@ export function MailboxView({
           </Link>
         </div>
       )}
+
+      <Dialog
+        open={Boolean(attachmentPreview)}
+        onClose={closeAttachmentPreview}
+        title={attachmentPreview?.title || 'Attachment preview'}
+        size="full"
+      >
+        {attachmentPreview ? (
+          <div className="pb-6 space-y-3">
+            {isImagePreview ? (
+              <>
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                  <p className="text-sm font-medium text-gray-700">Image Zoom</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setImageZoom((prev) => Math.max(0.25, Number((prev - 0.1).toFixed(2))))}
+                    >
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="w-12 text-center text-xs font-semibold text-gray-600">
+                      {Math.round(imageZoom * 100)}%
+                    </span>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setImageZoom((prev) => Math.min(4, Number((prev + 0.1).toFixed(2))))}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                    <Button size="xs" variant="outline" onClick={() => setImageZoom(1)}>
+                      <RotateCcw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="max-h-[72vh] overflow-auto rounded-xl border border-gray-200 bg-gray-50 p-3 flex items-center justify-center">
+                  <img
+                    src={attachmentPreview.url}
+                    alt={attachmentPreview.title}
+                    className="max-h-[68vh] w-auto object-contain"
+                    style={{
+                      transform: `scale(${imageZoom})`,
+                      transformOrigin: 'center center',
+                    }}
+                  />
+                </div>
+              </>
+            ) : isPdfPreview ? (
+              <>
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                  <p className="text-sm font-medium text-gray-700">PDF Navigation</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setPdfPage((prev) => Math.max(1, prev - 1))}
+                      disabled={pdfPage <= 1}
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </Button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={pdfPage}
+                      onChange={(event) => {
+                        const parsed = Number(event.target.value);
+                        setPdfPage(Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1);
+                      }}
+                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded-md text-center"
+                    />
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setPdfPage((prev) => prev + 1)}
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <iframe
+                  src={pdfPreviewSrc}
+                  title={attachmentPreview.title}
+                  className="w-full h-[72vh] rounded-xl border border-gray-200"
+                />
+              </>
+            ) : (
+              <div className="rounded-xl border border-gray-200 p-5 text-sm text-gray-600">
+                Preview is not available for this file type.
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Dialog>
     </div>
   );
 }

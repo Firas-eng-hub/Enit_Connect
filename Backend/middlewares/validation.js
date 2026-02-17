@@ -126,20 +126,26 @@ const mailRecipientSchema = Joi.alternatives()
   .required()
   .messages(customMessages);
 
+const mailAttachmentSchema = Joi.object({
+  documentId: uuidSchema.required(),
+}).messages(customMessages);
+
 const mailComposeSchema = Joi.object({
   subject: Joi.string().min(1).max(200).trim().required(),
   body: Joi.string().min(1).max(10000).trim().required(),
   recipients: Joi.array().items(mailRecipientSchema).min(1).max(50).required(),
+  attachments: Joi.array().items(mailAttachmentSchema).max(5).default([]),
 }).messages(customMessages);
 
 const mailDraftSchema = Joi.object({
   subject: Joi.string().max(200).trim().allow('').default(''),
   body: Joi.string().max(10000).trim().allow('').default(''),
   recipients: Joi.array().items(mailRecipientSchema).max(50).default([]),
+  attachments: Joi.array().items(mailAttachmentSchema).max(5).default([]),
 }).messages(customMessages);
 
 const mailFolderParamsSchema = Joi.object({
-  folder: Joi.string().valid('inbox', 'sent', 'drafts').required(),
+  folder: Joi.string().valid('inbox', 'sent', 'drafts', 'favorites').required(),
 }).messages(customMessages);
 
 const mailItemParamsSchema = Joi.object({

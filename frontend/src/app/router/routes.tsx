@@ -50,6 +50,7 @@ const VerifyPage = lazy(() => import('@/pages/visitor/VerifyPage').then(m => ({ 
 const StudentHomePage = lazy(() => import('@/pages/student/HomePage').then(m => ({ default: m.HomePage })));
 const StudentProfilePage = lazy(() => import('@/pages/student/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const StudentSearchPage = lazy(() => import('@/pages/student/SearchPage').then(m => ({ default: m.SearchPage })));
+const BrowseCompaniesPage = lazy(() => import('@/pages/student/BrowseCompaniesPage').then(m => ({ default: m.BrowseCompaniesPage })));
 const StudentDocumentsPage = lazy(() => import('@/pages/student/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
 const StudentNotificationsPage = lazy(() => import('@/pages/student/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const StudentSettingsPage = lazy(() => import('@/pages/student/SettingsPage').then(m => ({ default: m.SettingsPage })));
@@ -175,6 +176,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/user/home" replace /> },
       { path: 'home', element: withSuspense(StudentHomePage) },
       { path: 'offers', element: withSuspense(BrowseOffersPage) },
+      { path: 'companies', element: withSuspense(BrowseCompaniesPage) },
       { path: 'profile', element: withSuspense(StudentProfilePage) },
       { path: 'student/:id', element: withSuspense(StudentPublicProfilePage) },
       { path: 'search', element: withSuspense(StudentSearchPage) },

@@ -1,11 +1,14 @@
 const db = require("../db");
 const { parseJson } = require("../utils/validation");
 
-const VALID_FOLDERS = new Set(["inbox", "sent", "drafts"]);
+const LISTABLE_FOLDERS = new Set(["inbox", "sent", "drafts", "favorites"]);
+const MUTABLE_FOLDERS = new Set(["inbox", "sent", "drafts"]);
+// Backwards-compatible alias used by existing imports/tests.
+const VALID_FOLDERS = MUTABLE_FOLDERS;
 
 const normalizeFolder = (value) => {
   const folder = String(value || "").trim().toLowerCase();
-  return VALID_FOLDERS.has(folder) ? folder : "inbox";
+  return LISTABLE_FOLDERS.has(folder) ? folder : "inbox";
 };
 
 const mapRecipientRow = (row) => ({
@@ -127,6 +130,7 @@ const listMailboxItems = async ({
   const normalizedFolder = normalizeFolder(folder);
   const normalizedSearch = String(search || "").trim();
   const pattern = `%${normalizedSearch}%`;
+  const isFavoritesFolder = normalizedFolder === "favorites";
 
   const [countResult, rowsResult] = await Promise.all([
     db.query(
@@ -135,7 +139,7 @@ const listMailboxItems = async ({
        JOIN mail_messages mm ON mm.id = mi.message_id
        WHERE mi.owner_id = $1
          AND mi.owner_type = $2
-         AND mi.folder = $3
+         AND ($3::text = 'favorites' AND mi.starred = true OR $3::text <> 'favorites' AND mi.folder = $3)
          AND ($4::text = '' OR mm.subject ILIKE $5 OR mm.body ILIKE $5)`,
       [ownerId, ownerType, normalizedFolder, normalizedSearch, pattern]
     ),
@@ -143,7 +147,7 @@ const listMailboxItems = async ({
       `${mailboxSelect}
        WHERE mi.owner_id = $1
          AND mi.owner_type = $2
-         AND mi.folder = $3
+         AND ($3::text = 'favorites' AND mi.starred = true OR $3::text <> 'favorites' AND mi.folder = $3)
          AND ($4::text = '' OR mm.subject ILIKE $5 OR mm.body ILIKE $5)
        ORDER BY mm.sent_at DESC NULLS LAST, mi.id DESC
        LIMIT $6
@@ -158,7 +162,14 @@ const listMailboxItems = async ({
   );
 
   const items = rows.map((row) =>
-    mapMailboxRow(row, recipientsByMessageId.get(row.message_id) || [])
+    mapMailboxRow(
+      {
+        ...row,
+        // Keep virtual folder label stable in favorites view for client filtering/rendering.
+        folder: isFavoritesFolder ? "favorites" : row.folder,
+      },
+      recipientsByMessageId.get(row.message_id) || []
+    )
   );
 
   return {
@@ -315,7 +326,7 @@ const updateMailboxItem = async ({
     values.push(starred);
     index += 1;
   }
-  if (typeof folder === "string" && VALID_FOLDERS.has(folder)) {
+  if (typeof folder === "string" && MUTABLE_FOLDERS.has(folder)) {
     updates.push(`folder = $${index}`);
     values.push(folder);
     index += 1;

@@ -4,6 +4,7 @@ const {
   studentRepository,
   companyRepository,
   notificationRepository,
+  documentRepository,
 } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 const { notifyNewMessage } = require("../utils/mail-notifier");
@@ -194,6 +195,67 @@ const resolveRecipients = async ({ actor, recipients }) => {
   return resolved;
 };
 
+const resolveAttachments = async ({ actor, attachments }) => {
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    return { attachments: [] };
+  }
+
+  if (actor.type !== "student") {
+    return {
+      error: "Attachments are currently available for student accounts only.",
+    };
+  }
+
+  const ids = [];
+  const seen = new Set();
+  for (const attachment of attachments) {
+    const documentId = attachment?.documentId;
+    if (!isUuid(documentId)) {
+      return { error: "Invalid attachment selection." };
+    }
+    if (seen.has(documentId)) continue;
+    seen.add(documentId);
+    ids.push(documentId);
+  }
+
+  if (ids.length === 0) {
+    return { attachments: [] };
+  }
+
+  const docs = await documentRepository.listByIds(ids);
+  const docsById = new Map(docs.map((doc) => [doc.id, doc]));
+  const resolved = [];
+
+  for (const documentId of ids) {
+    const doc = docsById.get(documentId);
+    if (!doc) {
+      return { error: "One or more selected attachments were not found." };
+    }
+    if (doc.creator_id !== actor.id || doc.creator_type !== "student") {
+      return { error: "You can only attach your own documents." };
+    }
+    if (doc.type !== "file" || !doc.link) {
+      return { error: "Only uploaded file documents can be attached." };
+    }
+    if (doc.quarantined || doc.scan_status === "infected") {
+      return {
+        error: "One or more selected documents are quarantined and cannot be attached.",
+      };
+    }
+
+    resolved.push({
+      documentId: doc.id,
+      title: doc.title,
+      link: doc.link,
+      extension: doc.extension || null,
+      mimeType: doc.mime_type || null,
+      sizeBytes: doc.size_bytes || null,
+    });
+  }
+
+  return { attachments: resolved };
+};
+
 exports.listFolder = async (req, res) => {
   try {
     const actor = await detectActor(req);
@@ -307,6 +369,14 @@ exports.compose = async (req, res) => {
       return res.status(400).send({ message: "No valid recipients selected." });
     }
 
+    const attachmentResult = await resolveAttachments({
+      actor,
+      attachments: req.body.attachments,
+    });
+    if (attachmentResult.error) {
+      return res.status(400).send({ message: attachmentResult.error });
+    }
+
     const message = await mailRepository.createMessageWithDelivery({
       senderId: actor.id,
       senderType: actor.type,
@@ -315,6 +385,7 @@ exports.compose = async (req, res) => {
       recipients,
       messageExtra: {
         source: "mailbox",
+        attachments: attachmentResult.attachments,
       },
     });
 
@@ -389,6 +460,13 @@ exports.saveDraft = async (req, res) => {
       actor,
       recipients: Array.isArray(req.body.recipients) ? req.body.recipients : [],
     });
+    const attachmentResult = await resolveAttachments({
+      actor,
+      attachments: req.body.attachments,
+    });
+    if (attachmentResult.error) {
+      return res.status(400).send({ message: attachmentResult.error });
+    }
 
     const draft = await mailRepository.saveDraft({
       ownerId: actor.id,
@@ -398,6 +476,7 @@ exports.saveDraft = async (req, res) => {
       recipients,
       messageExtra: {
         source: "mailbox",
+        attachments: attachmentResult.attachments,
       },
     });
 

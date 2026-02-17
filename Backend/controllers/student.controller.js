@@ -49,6 +49,18 @@ const mapStudentRow = (row) => ({
   _id: row.id,
 });
 
+const parseLimit = (value, fallback = 24, max = 100) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.floor(parsed), 1), max);
+};
+
+const parseOffset = (value, fallback = 0) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(Math.floor(parsed), 0);
+};
+
 exports.getPosts = async (req, res) => {
   try {
     const posts = await postRepository.listAll();
@@ -1535,6 +1547,45 @@ exports.getByFilters = async (req, res) => {
     res.status(200).send(docs.map(mapStudentRow));
   } catch (err) {
     res.status(500).send({ message: err.message || err });
+  }
+};
+
+exports.getCompaniesForBrowse = async (req, res) => {
+  try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const query = String(req.query.q || "").trim();
+    const limit = parseLimit(req.query.limit, 24, 100);
+    const offset = parseOffset(req.query.offset, 0);
+
+    const { rows, total } = await companyRepository.listForStudentBrowse({
+      query,
+      limit,
+      offset,
+    });
+
+    const data = rows.map((row) => ({
+      id: row.id,
+      _id: row.id,
+      name: row.name,
+      email: row.email,
+      logo: row.logo,
+    }));
+
+    return res.status(200).send({
+      data,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + data.length < total,
+      },
+    });
+  } catch (err) {
+    console.error("Browse companies failed:", err);
+    return res.status(500).send({ message: "Failed to fetch companies." });
   }
 };
 
