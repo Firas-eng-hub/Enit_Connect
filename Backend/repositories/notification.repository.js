@@ -109,6 +109,22 @@ const createNotification = async (data, client = null) => {
      )`,
     [data.recipientId, data.recipientType]
   );
+  // Push via SSE if user is connected
+  try {
+    const sseManager = require("../helpers/sse.manager");
+    if (sseManager.isUserConnected(data.recipientId)) {
+      sseManager.sendToUser(data.recipientId, "notification", {
+        id: result.rows[0].id,
+        title: data.title,
+        message: data.message,
+        type: data.type || "info",
+        createdAt: result.rows[0].created_at,
+      });
+    }
+  } catch {
+    // SSE push is best-effort
+  }
+
   return result.rows[0];
 };
 

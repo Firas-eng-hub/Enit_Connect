@@ -4,6 +4,7 @@ import httpClient from '@/shared/api/httpClient';
 import type { Offer } from '@/entities/offer/types';
 import type { News } from '@/entities/news/types';
 import { NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/components/NewsCard';
+import { RecommendedOffers } from '@/features/matching/components/RecommendedOffers';
 import { formatDate, cn } from '@/shared/lib/utils';
 import { config } from '@/app/config/env';
 
@@ -87,7 +88,7 @@ export function HomePage() {
 
   const handleApply = async () => {
     if (!selectedOffer || !applicationText.trim()) return;
-    
+
     // Ensure offer has valid ID
     if (!selectedOffer._id) {
       console.error('Offer ID is missing');
@@ -178,6 +179,9 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Personalized recommendations */}
+      <RecommendedOffers />
+
       <section className="mb-12">
         <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 shadow-sm mb-6">
           <div>
@@ -192,7 +196,7 @@ export function HomePage() {
           <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-emerald-50 rounded-3xl border-2 border-dashed border-primary-300 p-16 shadow-xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-emerald-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 -ml-32 -mb-32"></div>
-            
+
             <div className="relative text-center">
               <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
                 <Briefcase className="w-12 h-12 text-white" />
@@ -207,62 +211,62 @@ export function HomePage() {
               const company = getCompanyForOffer(offer.companyid);
               const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${index}`;
               return (
-              <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                {/* Colored top bar */}
-                <div className={cn(
-                  'h-1.5',
-                  offer.type === 'PFA' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                  offer.type === 'PFE' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
-                  offer.type === 'Intership' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                  'bg-gradient-to-r from-amber-500 to-amber-600'
-                )} />
-                
-                <div className="p-6">
-                  {/* Company info */}
-                  <div className="flex items-center gap-3 mb-4">
-                    {company?.logo ? (
-                      <img src={company.logo} alt={company.name} className="w-12 h-12 rounded-xl object-cover shadow-md" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-md">
-                        <Building2 className="w-6 h-6 text-gray-500" />
+                <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                  {/* Colored top bar */}
+                  <div className={cn(
+                    'h-1.5',
+                    offer.type === 'PFA' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                      offer.type === 'PFE' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
+                        offer.type === 'Intership' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                          'bg-gradient-to-r from-amber-500 to-amber-600'
+                  )} />
+
+                  <div className="p-6">
+                    {/* Company info */}
+                    <div className="flex items-center gap-3 mb-4">
+                      {company?.logo ? (
+                        <img src={company.logo} alt={company.name} className="w-12 h-12 rounded-xl object-cover shadow-md" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-md">
+                          <Building2 className="w-6 h-6 text-gray-500" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{company?.name || 'Unknown Company'}</p>
+                        {company?.sector && <p className="text-sm text-gray-500 truncate">{company.sector}</p>}
+                      </div>
+                    </div>
+
+                    {/* Offer type badge */}
+                    <span className={cn('inline-block px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide mb-3', typeColors[offer.type] || 'bg-gray-100 text-gray-700')}>
+                      {offer.type}
+                    </span>
+
+                    {/* Offer title and content */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">{offer.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{offer.content}</p>
+
+                    {/* Dates */}
+                    {(offer.start || offer.end) && (
+                      <div className="flex items-center text-sm text-gray-600 mb-4 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="font-medium">
+                          {offer.start && formatDate(offer.start)}{offer.start && offer.end && ' - '}{offer.end && formatDate(offer.end)}
+                        </span>
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{company?.name || 'Unknown Company'}</p>
-                      {company?.sector && <p className="text-sm text-gray-500 truncate">{company.sector}</p>}
-                    </div>
+
+                    {/* Apply button */}
+                    <button
+                      onClick={() => setSelectedOffer(offer)}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
+                    >
+                      <Send className="w-5 h-5" />
+                      Apply Now
+                    </button>
                   </div>
-
-                  {/* Offer type badge */}
-                  <span className={cn('inline-block px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide mb-3', typeColors[offer.type] || 'bg-gray-100 text-gray-700')}>
-                    {offer.type}
-                  </span>
-
-                  {/* Offer title and content */}
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">{offer.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{offer.content}</p>
-
-                  {/* Dates */}
-                  {(offer.start || offer.end) && (
-                    <div className="flex items-center text-sm text-gray-600 mb-4 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                      <span className="font-medium">
-                        {offer.start && formatDate(offer.start)}{offer.start && offer.end && ' - '}{offer.end && formatDate(offer.end)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Apply button */}
-                  <button
-                    onClick={() => setSelectedOffer(offer)}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
-                  >
-                    <Send className="w-5 h-5" />
-                    Apply Now
-                  </button>
                 </div>
-            </div>
-            );
+              );
             })}
           </div>
         )}

@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-
+.agent/
 # Environment variables
 .env
 .env.*

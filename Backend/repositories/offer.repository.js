@@ -162,6 +162,69 @@ const mapOfferRow = (row, candidacies = []) => ({
   candidacies,
 });
 
+const searchAdvanced = async (filters = {}) => {
+  const conditions = [];
+  const params = [];
+  let idx = 1;
+
+  if (filters.q) {
+    conditions.push(`(title ILIKE $${idx} OR content ILIKE $${idx})`);
+    params.push(`%${filters.q}%`);
+    idx += 1;
+  }
+  if (filters.type) {
+    if (Array.isArray(filters.type)) {
+      conditions.push(`type = ANY($${idx}::text[])`);
+      params.push(filters.type);
+    } else {
+      conditions.push(`type = $${idx}`);
+      params.push(filters.type);
+    }
+    idx += 1;
+  }
+  if (filters.companyId) {
+    conditions.push(`company_id = $${idx}`);
+    params.push(filters.companyId);
+    idx += 1;
+  }
+  if (filters.dateFrom) {
+    conditions.push(`created_at >= $${idx}`);
+    params.push(filters.dateFrom);
+    idx += 1;
+  }
+  if (filters.dateTo) {
+    conditions.push(`created_at <= $${idx}`);
+    params.push(filters.dateTo);
+    idx += 1;
+  }
+  if (filters.active) {
+    conditions.push(`(end_date IS NULL OR end_date::date >= CURRENT_DATE)`);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const sortMap = { title: "title ASC", type: "type ASC", date: "created_at DESC NULLS LAST" };
+  const orderBy = sortMap[filters.sort] || "created_at DESC NULLS LAST";
+
+  const limit = Math.min(Math.max(Number(filters.limit) || 20, 1), 100);
+  const offset = Math.max(Number(filters.offset) || 0, 0);
+
+  const countResult = await db.query(
+    `SELECT COUNT(*) AS total FROM offers ${where}`,
+    params
+  );
+  const totalCount = Number(countResult.rows[0]?.total || 0);
+
+  params.push(limit);
+  params.push(offset);
+  const result = await db.query(
+    `SELECT * FROM offers ${where} ORDER BY ${orderBy} LIMIT $${idx} OFFSET $${idx + 1}`,
+    params
+  );
+
+  return { rows: result.rows, totalCount };
+};
+
 module.exports = {
   createOffer,
   listOffers,
@@ -176,4 +239,5 @@ module.exports = {
   updateCandidacyStatus,
   mapCandidacyRow,
   mapOfferRow,
+  searchAdvanced,
 };

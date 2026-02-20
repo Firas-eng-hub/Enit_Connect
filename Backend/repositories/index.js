@@ -15,6 +15,11 @@ const messageRepository = require("./message.repository");
 const mailRepository = require("./mail.repository");
 const notificationRepository = require("./notification.repository");
 const refreshTokenRepository = require("./refreshToken.repository");
+const statsRepository = require("./stats.repository");
+const matchingRepository = require("./matching.repository");
+const offerViewRepository = require("./offerView.repository");
+const savedSearchRepository = require("./savedSearch.repository");
+const companyStatsRepository = require("./companyStats.repository");
 
 module.exports = {
   adminRepository,
@@ -34,4 +39,9 @@ module.exports = {
   mailRepository,
   notificationRepository,
   refreshTokenRepository,
+  statsRepository,
+  matchingRepository,
+  offerViewRepository,
+  savedSearchRepository,
+  companyStatsRepository,
 };

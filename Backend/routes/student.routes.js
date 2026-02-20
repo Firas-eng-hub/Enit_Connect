@@ -21,7 +21,7 @@ const authLimiter = rateLimit({
 // Get posts
 router.get("/posts", controller.getPosts);
 // Add Post
-router.post('/posts',controller.addPost);
+router.post('/posts', controller.addPost);
 //Register Student with validation
 router.post("/signup", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.studentSignup), verifySignUp.checkDuplicateEmail, controller.signup);
 //Confirm Email with validation
@@ -44,14 +44,16 @@ router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isStudent
 router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isStudent, notifications.markStudentReadAll);
 router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isStudent, notifications.markStudentRead);
 router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isStudent, notifications.deleteStudentNotification);
+//SSE Notification stream
+router.get("/notifications/subscribe", authJwt.verifyToken, authJwt.isStudent, notifications.subscribeStudent);
 //Search for Students by multiple filters
 router.get("/filter", authJwt.verifyToken, controller.getByFilters);
 //Search for Students by Name using String Similarity
 router.get("/find", authJwt.verifyToken, controller.getByName);
 //Upload picture
-router.post("/upload/:id",  authJwt.verifyToken, authJwt.isStudent,storage, controller.updatePicture);
+router.post("/upload/:id", authJwt.verifyToken, authJwt.isStudent, storage, controller.updatePicture);
 //Add folder
-router.post('/folder',authJwt.verifyToken, authJwt.isStudent, controller.createFolder);
+router.post('/folder', authJwt.verifyToken, authJwt.isStudent, controller.createFolder);
 //Add file
 router.post('/file', savedoc, controller.createFile);
 //Get documents

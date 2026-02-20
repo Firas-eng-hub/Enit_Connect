@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Home, Building2, Users, Search, Mail } from 'lucide-react';
+import { Home, Building2, Users, Search, Mail, BarChart2 } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
@@ -8,7 +8,8 @@ const sidebarSections: SidebarSection[] = [
   {
     title: 'Main',
     items: [
-      { path: '/company/home', label: 'Dashboard', icon: Home },
+      { path: '/company/home', label: 'Home', icon: Home },
+      { path: '/company/dashboard', label: 'Analytics', icon: BarChart2 },
       { path: '/company/profile', label: 'Company Profile', icon: Building2 },
     ],
   },

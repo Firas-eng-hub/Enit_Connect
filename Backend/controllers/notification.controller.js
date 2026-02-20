@@ -1,4 +1,5 @@
 const { notificationRepository } = require("../repositories");
+const sseManager = require("../helpers/sse.manager");
 
 const fetchNotifications = async (recipientType, req, res) => {
   try {
@@ -84,3 +85,24 @@ exports.markAdminReadAll = (req, res) => markAllRead("admin", req, res);
 exports.deleteStudentNotification = (req, res) => deleteNotification("student", req, res);
 exports.deleteCompanyNotification = (req, res) => deleteNotification("company", req, res);
 exports.deleteAdminNotification = (req, res) => deleteNotification("admin", req, res);
+
+// SSE subscription
+const subscribe = (recipientType) => (req, res) => {
+  sseManager.addClient(req.id, recipientType, res);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(":heartbeat\n\n");
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+  });
+};
+
+exports.subscribeStudent = subscribe("student");
+exports.subscribeCompany = subscribe("company");
+exports.subscribeAdmin = subscribe("admin");

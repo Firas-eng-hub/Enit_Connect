@@ -40,6 +40,8 @@ router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isAdmin, 
 router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isAdmin, notifications.markAdminReadAll);
 router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isAdmin, notifications.markAdminRead);
 router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isAdmin, notifications.deleteAdminNotification);
+//SSE Notification stream
+router.get("/notifications/subscribe", authJwt.verifyToken, authJwt.isAdmin, notifications.subscribeAdmin);
 //Send Email
 router.post("/contact", authJwt.verifyToken, authJwt.isAdmin, controller.sendEmail);
 router.post("/email", authJwt.verifyToken, authJwt.isAdmin, controller.sendEmail);

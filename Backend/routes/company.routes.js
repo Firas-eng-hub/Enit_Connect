@@ -36,6 +36,8 @@ router.get("/notifications/unread-count", authJwt.verifyToken, authJwt.isCompany
 router.patch("/notifications/read-all", authJwt.verifyToken, authJwt.isCompany, notifications.markCompanyReadAll);
 router.patch("/notifications/:id/read", authJwt.verifyToken, authJwt.isCompany, notifications.markCompanyRead);
 router.delete("/notifications/:id", authJwt.verifyToken, authJwt.isCompany, notifications.deleteCompanyNotification);
+//SSE Notification stream
+router.get("/notifications/subscribe", authJwt.verifyToken, authJwt.isCompany, notifications.subscribeCompany);
 //Get Company informations by ID
 router.get("/info", authJwt.verifyToken, company.getCompanyById);
 //Edit Company informations with validation

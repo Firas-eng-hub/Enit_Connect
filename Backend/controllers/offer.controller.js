@@ -3,6 +3,7 @@ const {
   companyRepository,
   studentRepository,
   notificationRepository,
+  offerViewRepository,
 } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
@@ -204,6 +205,12 @@ exports.getOfferById = async (req, res) => {
     if (!offer) {
       return res.status(404).send({ message: "Offer not found." });
     }
+
+    // Record view (best-effort, don't fail the request)
+    try {
+      await offerViewRepository.recordView(offer.id, req.id || null, req.cookies?.userType || "anonymous");
+    } catch { /* ignore */ }
+
     const candidacies = await offerRepository.listCandidacies(offer.id);
     const response = offerRepository.mapOfferRow(
       offer,

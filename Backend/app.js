@@ -17,6 +17,10 @@ const offer_routes = require("./routes/offer.routes");
 const auth_routes = require("./routes/auth.routes");
 const document_routes = require("./routes/document.routes");
 const mail_routes = require("./routes/mail.routes");
+const stats_routes = require("./routes/stats.routes");
+const matching_routes = require("./routes/matching.routes");
+const search_routes = require("./routes/search.routes");
+const companyStats_routes = require("./routes/companyStats.routes");
 const app = express();
 const path = require('path');
 
@@ -103,6 +107,10 @@ app.use("/api/company", company_routes);
 app.use("/api/offers", offer_routes);
 app.use("/api/documents", document_routes);
 app.use("/api/mail", mail_routes);
+app.use("/api/admin/stats", stats_routes);
+app.use("/api/student/matching", matching_routes);
+app.use("/api/search", search_routes);
+app.use("/api/company/stats", companyStats_routes);
 
 // ============================================
 // Error Handling Middleware (must be last)

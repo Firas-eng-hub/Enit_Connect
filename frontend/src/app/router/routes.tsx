@@ -28,8 +28,8 @@ const ErrorFallback = ({ error }: { error: Error }) => (
     <div className="text-center max-w-md">
       <h1 className="text-2xl font-bold text-red-600 mb-3">Error Loading Page</h1>
       <p className="text-muted-foreground mb-4">{error.message}</p>
-      <button 
-        onClick={() => window.location.reload()} 
+      <button
+        onClick={() => window.location.reload()}
         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
       >
         Reload Page
@@ -66,8 +66,10 @@ const CompanySearchPage = lazy(() => import('@/pages/company/SearchPage').then(m
 const CompanyNotificationsPage = lazy(() => import('@/pages/company/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const CompanySettingsPage = lazy(() => import('@/pages/company/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const CompanyMailboxPage = lazy(() => import('@/pages/company/MailboxPage').then(m => ({ default: m.MailboxPage })));
+const CompanyDashboardPage = lazy(() => import('@/pages/company/DashboardPage').then(m => ({ default: m.CompanyDashboardPage })));
 
 const AdminHomePage = lazy(() => import('@/pages/admin/HomePage').then(m => ({ default: m.HomePage })));
+const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AdminMailboxPage = lazy(() => import('@/pages/admin/MailboxPage').then(m => ({ default: m.MailboxPage })));
 const AdminSearchPage = lazy(() => import('@/pages/admin/SearchPage').then(m => ({ default: m.SearchPage })));
 const AddUsersPage = lazy(() => import('@/pages/admin/AddUsersPage').then(m => ({ default: m.AddUsersPage })));
@@ -198,6 +200,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/company/home" replace /> },
       { path: 'home', element: withSuspense(CompanyHomePage) },
+      { path: 'dashboard', element: withSuspense(CompanyDashboardPage) },
       { path: 'candidacies', element: withSuspense(CandidaciesListPage) },
       { path: 'candidacies/:id', element: withSuspense(CandidaciesPage) },
       { path: 'profile', element: withSuspense(CompanyProfilePage) },
@@ -219,6 +222,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/admin/home" replace /> },
       { path: 'home', element: withSuspense(AdminHomePage) },
+      { path: 'dashboard', element: withSuspense(AdminDashboardPage) },
       { path: 'mail', element: withSuspense(AdminMailboxPage) },
       { path: 'send', element: <Navigate to="/admin/mail" replace /> },
       { path: 'search', element: withSuspense(AdminSearchPage) },
