@@ -37,11 +37,14 @@ exports.addOffer = async (req, res) => {
       return res.status(401).send({ message: "Unauthorized!" });
     }
 
+    const start = req.body.start || req.body.start_date;
+    const end = req.body.end || req.body.end_date;
+
     const offer = await offerRepository.createOffer({
       title: req.body.title,
       type: req.body.type,
-      start: req.body.start,
-      end: req.body.end,
+      start,
+      end,
       content: req.body.content,
       companyId: req.id,
       createdAt: req.body.createdat || new Date(),
@@ -232,8 +235,8 @@ exports.updateOffer = async (req, res) => {
     const updated = await offerRepository.updateOffer(offerId, {
       title: req.body.title,
       type: req.body.type,
-      start: req.body.start,
-      end: req.body.end,
+      start: req.body.start || req.body.start_date,
+      end: req.body.end || req.body.end_date,
       content: req.body.content,
       docs: req.body.docs,
     });

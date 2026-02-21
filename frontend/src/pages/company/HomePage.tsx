@@ -12,12 +12,20 @@ import { NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/component
 import { formatDate, cn } from '@/shared/lib/utils';
 import { config } from '@/app/config/env';
 
+const optionalDate = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().optional()
+);
+
 const offerSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  content: z.string().min(1, 'Description is required'),
+  title: z.string().min(5, 'Title must be at least 5 characters'),
+  content: z.string().min(10, 'Description must be at least 10 characters'),
   type: z.enum(['PFA', 'PFE', 'Intership', 'Job'] as const),
   start: z.string().min(1, 'Start date is required'),
-  end: z.string().optional(),
+  end: optionalDate,
+}).refine((data) => !data.end || data.end > data.start, {
+  message: 'End date must be after start date',
+  path: ['end'],
 });
 
 type OfferFormData = z.infer<typeof offerSchema>;
@@ -101,9 +109,13 @@ export function HomePage() {
     setSubmitting(true);
     try {
       const companyId = localStorage.getItem('company_id');
+      const normalizedEnd = data.end && data.end.trim() ? data.end : undefined;
       const offerData = {
         ...data,
-        start: data.start || '', // Ensure start is never undefined
+        start: data.start || '',
+        end: normalizedEnd,
+        start_date: data.start || '',
+        end_date: normalizedEnd,
         companyid: companyId,
         createdat: new Date().toISOString(),
       };
@@ -351,6 +363,7 @@ export function HomePage() {
                       type="date" 
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" 
                     />
+                    {errors.end && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.end.message}</p>}
                   </div>
                 </div>
               </div>

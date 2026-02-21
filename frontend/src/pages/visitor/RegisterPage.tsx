@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { User, Building2, Eye, EyeOff, CheckCircle, UserPlus, ArrowLeft, Mail, Lock, Briefcase, GraduationCap, Sparkles, Globe, MapPin, Phone } from 'lucide-react';
@@ -58,6 +59,7 @@ const classes = [
 ];
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<UserType>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,9 +215,9 @@ export function RegisterPage() {
           {/* Features */}
           <div className="space-y-4">
             {[
-              { icon: Briefcase, text: 'Access to exclusive job opportunities' },
-              { icon: GraduationCap, text: 'Connect with ENIT alumni network' },
-              { icon: Mail, text: 'Get notified about new positions' },
+              { icon: Briefcase, text: t('registerPage.features.exclusiveJobs') },
+              { icon: GraduationCap, text: t('registerPage.features.alumniNetwork') },
+              { icon: Mail, text: t('registerPage.features.notifications') },
             ].map((feature, i) => (
               <div key={i} className="flex items-center gap-4 text-white/70">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">

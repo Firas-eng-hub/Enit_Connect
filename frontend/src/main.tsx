@@ -7,7 +7,9 @@ import { AuthProvider } from '@/features/auth/hooks/useAuth';
 import { ToastProvider } from '@/shared/ui/Toast';
 import { router } from '@/app/router';
 
+import '@/app/i18n';
 import './index.css';
+
 import 'leaflet/dist/leaflet.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

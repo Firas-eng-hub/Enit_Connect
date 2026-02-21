@@ -214,21 +214,55 @@ const updateCompanySchema = Joi.object({
 // Offer Validation Schemas
 // ============================================
 
+const offerTypeSchema = Joi.string().valid(
+  'PFA',
+  'PFE',
+  'Intership',
+  'Internship',
+  'Job',
+  'Summer Internship'
+);
+
 const createOfferSchema = Joi.object({
   title: Joi.string().min(5).max(200).trim().required(),
-  type: Joi.string().valid('Internship', 'Job', 'PFE', 'Summer Internship').required(),
-  start_date: Joi.date().iso().required(),
-  end_date: Joi.date().iso().greater(Joi.ref('start_date')),
+  type: offerTypeSchema.required(),
+  start: Joi.date().iso(),
+  start_date: Joi.date().iso(),
+  end: Joi.date().iso().empty(''),
+  end_date: Joi.date().iso().empty(''),
   content: Joi.string().min(10).max(10000).trim().required(),
-}).messages(customMessages);
+})
+  .custom((value, helpers) => {
+    const start = value.start || value.start_date;
+    const end = value.end || value.end_date;
+    if (!start) {
+      return helpers.error('any.required', { label: 'start' });
+    }
+    if (end && new Date(end) <= new Date(start)) {
+      return helpers.message('End date must be greater than start date');
+    }
+    return value;
+  })
+  .messages(customMessages);
 
 const updateOfferSchema = Joi.object({
   title: Joi.string().min(5).max(200).trim(),
-  type: Joi.string().valid('Internship', 'Job', 'PFE', 'Summer Internship'),
+  type: offerTypeSchema,
+  start: Joi.date().iso(),
   start_date: Joi.date().iso(),
-  end_date: Joi.date().iso(),
+  end: Joi.date().iso().empty(''),
+  end_date: Joi.date().iso().empty(''),
   content: Joi.string().min(10).max(10000).trim(),
-}).messages(customMessages);
+})
+  .custom((value, helpers) => {
+    const start = value.start || value.start_date;
+    const end = value.end || value.end_date;
+    if (start && end && new Date(end) <= new Date(start)) {
+      return helpers.message('End date must be greater than start date');
+    }
+    return value;
+  })
+  .messages(customMessages);
 
 // ============================================
 // Document Validation Schemas

@@ -6,12 +6,20 @@ import { Input } from '@/shared/ui/Input';
 import { Textarea } from '@/shared/ui/Textarea';
 import { Select } from '@/shared/ui/Select';
 
+const optionalDate = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().optional()
+);
+
 const schema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  content: z.string().min(1, 'Description is required'),
+  title: z.string().min(5, 'Title must be at least 5 characters'),
+  content: z.string().min(10, 'Description must be at least 10 characters'),
   type: z.enum(['PFA', 'PFE', 'Intership', 'Job']),
-  start: z.string().optional(),
-  end: z.string().optional(),
+  start: z.string().min(1, 'Start date is required'),
+  end: optionalDate,
+}).refine((data) => !data.end || data.end > data.start, {
+  message: 'End date must be after start date',
+  path: ['end'],
 });
 
 type FormData = z.infer<typeof schema>;

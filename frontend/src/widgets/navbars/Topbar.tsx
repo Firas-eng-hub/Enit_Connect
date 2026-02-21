@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Menu, Bell, ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/shared/ui/Dropdown';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import httpClient from '@/shared/api/httpClient';
+import { useSSENotifications } from '@/hooks/useSSENotifications';
 
 // Import the actual ENIT logo
 import enitLogo from '@/assets/img/ENIT.png';
@@ -15,14 +17,79 @@ interface TopbarProps {
 }
 
 const PREFERENCES_UPDATED_EVENT = 'auth:preferences-updated';
+const NOTIFICATIONS_REFRESH_EVENT = 'notifications:refresh';
+const NOTIFICATIONS_NEW_EVENT = 'notifications:new';
 
 export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
   const { user, userName, userType, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [notificationCount, setNotificationCount] = useState(0);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
   const pushNotificationsEnabledRef = useRef(true);
   const previousNotificationCount = useRef<number | null>(null);
+  const notificationRole = userType === 'admin' ? 'admin' : userType === 'company' ? 'company' : 'student';
+
+  const applyPushPreference = useCallback((enabled: boolean) => {
+    setPushNotificationsEnabled(enabled);
+    pushNotificationsEnabledRef.current = enabled;
+    if (
+      enabled &&
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
+      Notification.requestPermission().catch(() => { });
+    }
+  }, []);
+
+  const fetchPreferences = useCallback(() => {
+    httpClient.get('/api/auth/preferences')
+      .then((response) => {
+        const enabled = response.data?.notifications?.pushNotifications !== false;
+        applyPushPreference(enabled);
+      })
+      .catch(() => {
+        applyPushPreference(true);
+      });
+  }, [applyPushPreference]);
+
+  const fetchUnreadCount = useCallback(() => {
+    if (!userType) return;
+    const endpoint = userType === 'admin'
+      ? '/api/admin/notifications/unread-count'
+      : userType === 'company'
+        ? '/api/company/notifications/unread-count'
+        : '/api/student/notifications/unread-count';
+
+    httpClient.get(endpoint)
+      .then((response) => {
+        const nextCount = response.data?.count ?? 0;
+        const previousCount = previousNotificationCount.current;
+        setNotificationCount(nextCount);
+        if (
+          pushNotificationsEnabledRef.current &&
+          previousCount !== null &&
+          nextCount > previousCount &&
+          typeof window !== 'undefined' &&
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          const delta = nextCount - previousCount;
+          const label = userType === 'admin' ? 'admin' : userType === 'company' ? 'company' : 'student';
+          const body =
+            delta === 1
+              ? t('notifications.newOne')
+              : t('notifications.newMany', { count: delta });
+          new Notification(`ENIT Connect (${label})`, { body });
+        }
+        previousNotificationCount.current = nextCount;
+      })
+      .catch(() => {
+        setNotificationCount(0);
+        previousNotificationCount.current = null;
+      });
+  }, [userType, t]);
 
   useEffect(() => {
     pushNotificationsEnabledRef.current = pushNotificationsEnabled;
@@ -31,67 +98,6 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
   useEffect(() => {
     if (!userType) return;
     previousNotificationCount.current = null;
-
-    const applyPushPreference = (enabled: boolean) => {
-      setPushNotificationsEnabled(enabled);
-      pushNotificationsEnabledRef.current = enabled;
-      if (
-        enabled &&
-        typeof window !== 'undefined' &&
-        'Notification' in window &&
-        Notification.permission === 'default'
-      ) {
-        Notification.requestPermission().catch(() => {});
-      }
-    };
-
-    const fetchPreferences = () => {
-      httpClient.get('/api/auth/preferences')
-        .then((response) => {
-          const enabled = response.data?.notifications?.pushNotifications !== false;
-          applyPushPreference(enabled);
-        })
-        .catch(() => {
-          applyPushPreference(true);
-        });
-    };
-
-    const fetchUnreadCount = () => {
-      const endpoint = userType === 'admin'
-        ? '/api/admin/notifications/unread-count'
-        : userType === 'company'
-          ? '/api/company/notifications/unread-count'
-          : '/api/student/notifications/unread-count';
-
-      httpClient.get(endpoint)
-        .then((response) => {
-          const nextCount = response.data?.count ?? 0;
-          const previousCount = previousNotificationCount.current;
-          setNotificationCount(nextCount);
-          if (
-            pushNotificationsEnabledRef.current &&
-            previousCount !== null &&
-            nextCount > previousCount &&
-            typeof window !== 'undefined' &&
-            'Notification' in window &&
-            Notification.permission === 'granted'
-          ) {
-            const delta = nextCount - previousCount;
-            const label = userType === 'admin' ? 'admin' : userType === 'company' ? 'company' : 'student';
-            const body =
-              delta === 1
-                ? 'You received a new notification.'
-                : `You received ${delta} new notifications.`;
-            // Browser notification for critical awareness while user is in other tabs/apps.
-            new Notification(`ENIT Connect (${label})`, { body });
-          }
-          previousNotificationCount.current = nextCount;
-        })
-        .catch(() => {
-          setNotificationCount(0);
-          previousNotificationCount.current = null;
-        });
-    };
 
     fetchPreferences();
     fetchUnreadCount();
@@ -108,19 +114,26 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
 
     const handleRefresh = () => fetchUnreadCount();
     window.addEventListener(PREFERENCES_UPDATED_EVENT, handlePreferencesUpdated);
-    window.addEventListener('notifications:refresh', handleRefresh);
+    window.addEventListener(NOTIFICATIONS_REFRESH_EVENT, handleRefresh);
 
     const intervalId = window.setInterval(fetchUnreadCount, 30000);
     return () => {
       window.removeEventListener(PREFERENCES_UPDATED_EVENT, handlePreferencesUpdated);
-      window.removeEventListener('notifications:refresh', handleRefresh);
+      window.removeEventListener(NOTIFICATIONS_REFRESH_EVENT, handleRefresh);
       window.clearInterval(intervalId);
     };
-  }, [userType]);
+  }, [applyPushPreference, fetchPreferences, fetchUnreadCount, userType]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  useSSENotifications({
+    role: notificationRole,
+    enabled: Boolean(userType),
+    onNotification: () => {
+      fetchUnreadCount();
+      window.dispatchEvent(new Event(NOTIFICATIONS_NEW_EVENT));
+    },
+  });
+
+  const handleLogout = async () => { await logout(); };
 
   const handleNotifications = () => {
     const basePath = userType === 'admin' ? '/admin' : userType === 'company' ? '/company' : '/user';
@@ -131,21 +144,18 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
     const basePath = userType === 'admin' ? '/admin' : userType === 'company' ? '/company' : '/user';
     navigate(`${basePath}/settings`);
   };
-  
+
   const handleProfile = () => {
-    if (userType === 'admin') {
-      navigate('/admin/settings');
-      return;
-    }
+    if (userType === 'admin') { navigate('/admin/settings'); return; }
     const basePath = userType === 'company' ? '/company' : '/user';
     navigate(`${basePath}/profile`);
   };
 
   const userMenuTrigger = (
     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
-      <Avatar 
+      <Avatar
         src={null}
-        fallback={userName || user?.name || 'User'} 
+        fallback={userName || user?.name || 'User'}
         size="sm"
       />
       <div className="hidden md:block text-left">
@@ -172,17 +182,17 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
               <Menu className="w-5 h-5" />
             </button>
           )}
-          
+
           {/* Logo & Brand */}
           <Link to="/" className="flex items-center gap-3">
-            <img 
-              src={enitLogo} 
-              alt="ENIT Logo" 
+            <img
+              src={enitLogo}
+              alt="ENIT Logo"
               className="w-10 h-10 object-contain"
             />
             <div className="hidden sm:block">
               <h1 className="text-lg font-bold text-primary-900">ENIT-Connect</h1>
-              <p className="text-xs text-muted-foreground -mt-0.5">Career Platform</p>
+              <p className="text-xs text-muted-foreground -mt-0.5">{t('topbar.tagline')}</p>
             </div>
           </Link>
         </div>
@@ -190,9 +200,10 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
         {/* Right section */}
         <div className="flex items-center gap-2">
           {/* Notifications */}
-          <button 
+          <button
             onClick={handleNotifications}
             className="relative p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
+            aria-label={t('nav.notifications')}
           >
             <Bell className="w-5 h-5" />
             {notificationCount > 0 && (
@@ -205,21 +216,21 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
           {/* User menu */}
           <Dropdown trigger={userMenuTrigger} align="right">
             <DropdownItem icon={<User className="w-4 h-4" />} onClick={handleProfile}>
-              Profile
+              {t('nav.profile')}
             </DropdownItem>
-            <DropdownItem 
+            <DropdownItem
               icon={<Settings className="w-4 h-4" />}
               onClick={handleSettings}
             >
-              Settings
+              {t('nav.settings')}
             </DropdownItem>
             <DropdownDivider />
-            <DropdownItem 
-              icon={<LogOut className="w-4 h-4" />} 
+            <DropdownItem
+              icon={<LogOut className="w-4 h-4" />}
               onClick={handleLogout}
               danger
             >
-              Sign out
+              {t('auth.logout')}
             </DropdownItem>
           </Dropdown>
         </div>

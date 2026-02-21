@@ -1,37 +1,39 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Users, Mail, FileText, MessageSquare, UserPlus, Handshake, BarChart2 } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
-const sidebarSections: SidebarSection[] = [
-  {
-    title: 'Overview',
-    items: [
-      { path: '/admin/home', label: 'Dashboard', icon: Home },
-      { path: '/admin/dashboard', label: 'Analytics', icon: BarChart2 },
-    ],
-  },
-  {
-    title: 'User Management',
-    items: [
-      { path: '/admin/search', label: 'All Users', icon: Users },
-      { path: '/admin/add', label: 'Add Users', icon: UserPlus },
-    ],
-  },
-  {
-    title: 'Content',
-    items: [
-      { path: '/admin/documents', label: 'Documents', icon: FileText },
-      { path: '/admin/partners', label: 'Partners', icon: Handshake },
-      { path: '/admin/mail', label: 'Mailbox', icon: Mail },
-      { path: '/admin/messages', label: 'Support Inbox', icon: MessageSquare },
-    ],
-  },
-];
-
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const sidebarSections: SidebarSection[] = [
+    {
+      title: t('nav._overview'),
+      items: [
+        { path: '/admin/home', label: t('nav.dashboard'), icon: Home },
+        { path: '/admin/dashboard', label: t('nav.analytics'), icon: BarChart2 },
+      ],
+    },
+    {
+      title: t('nav._userMgmt'),
+      items: [
+        { path: '/admin/search', label: t('nav.users'), icon: Users },
+        { path: '/admin/add', label: t('nav.addUsers'), icon: UserPlus },
+      ],
+    },
+    {
+      title: t('nav._content'),
+      items: [
+        { path: '/admin/documents', label: t('nav.documents'), icon: FileText },
+        { path: '/admin/partners', label: t('nav.partners'), icon: Handshake },
+        { path: '/admin/mail', label: t('nav.mail'), icon: Mail },
+        { path: '/admin/messages', label: t('nav.support'), icon: MessageSquare },
+      ],
+    },
+  ];
 
   return (
     <div className="dashboard-shell">

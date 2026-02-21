@@ -1,10 +1,14 @@
 import { Building2, Bell, Lock, Globe, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import httpClient from '@/shared/api/httpClient';
+import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher';
 
 const PREFERENCES_UPDATED_EVENT = 'auth:preferences-updated';
 
 export function SettingsPage() {
+  const { t } = useTranslation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -22,92 +26,62 @@ export function SettingsPage() {
       setPushNotifications(Boolean(notifications.pushNotifications));
       setPrefsMessage(null);
     } catch {
-      setPrefsMessage('Failed to load notification preferences.');
+      setPrefsMessage(t('common.error'));
     } finally {
       setPrefsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadPreferences();
-  }, []);
+  useEffect(() => { loadPreferences(); }, []);
 
-  const savePreferences = async (patch: {
-    emailNotifications?: boolean;
-    pushNotifications?: boolean;
-  }) => {
+  const savePreferences = async (patch: { emailNotifications?: boolean; pushNotifications?: boolean }) => {
     setPrefsSaving(true);
     try {
       const response = await httpClient.patch('/api/auth/preferences', patch);
       const notifications = response.data?.notifications || {};
       setEmailNotifications(Boolean(notifications.emailNotifications));
       setPushNotifications(Boolean(notifications.pushNotifications));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(PREFERENCES_UPDATED_EVENT, {
-            detail: { notifications },
-          })
-        );
-      }
-      setPrefsMessage('Preferences saved.');
+      window.dispatchEvent(new CustomEvent(PREFERENCES_UPDATED_EVENT, { detail: { notifications } }));
+      setPrefsMessage(t('common.success'));
     } catch {
-      setPrefsMessage('Unable to save preferences. Please retry.');
+      setPrefsMessage(t('common.error'));
       await loadPreferences();
     } finally {
       setPrefsSaving(false);
     }
   };
 
-  const toggleEmailNotifications = () => {
-    if (prefsLoading || prefsSaving) return;
-    savePreferences({ emailNotifications: !emailNotifications });
-  };
-
-  const togglePushNotifications = () => {
-    if (prefsLoading || prefsSaving) return;
-    savePreferences({ pushNotifications: !pushNotifications });
-  };
+  const toggleEmail = () => { if (!prefsLoading && !prefsSaving) savePreferences({ emailNotifications: !emailNotifications }); };
+  const togglePush = () => { if (!prefsLoading && !prefsSaving) savePreferences({ pushNotifications: !pushNotifications }); };
 
   return (
     <div>
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-primary-100 text-lg">Manage your company account preferences</p>
+        <h1 className="text-4xl font-bold text-white mb-2">{t('settings.title')}</h1>
+        <p className="text-primary-100 text-lg">{t('settings.companySubtitle')}</p>
       </div>
 
       <div className="space-y-6">
-        {/* Company Settings */}
+        {/* Company account */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Company Settings</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('settings.account.title')}</h2>
             </div>
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Company Email</label>
-              <input
-                type="email"
-                defaultValue="contact@company.com"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-              />
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('settings.account.email')}</label>
+              <input type="email" defaultValue="contact@company.com" className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Change Password</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('settings.account.changePassword')}</label>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter new password"
-                  className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600"
-                >
+                <input type={showPassword ? 'text' : 'password'} placeholder={t('settings.account.passwordPlaceholder')} className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
@@ -115,122 +89,75 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Notification Preferences */}
+        {/* Notifications */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
                 <Bell className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Notification Preferences</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('settings.notifications.title')}</h2>
             </div>
           </div>
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Email Notifications</h3>
-                <p className="text-sm text-gray-600">Receive new applications via email</p>
+            {[
+              { label: t('settings.notifications.email'), desc: t('settings.notifications.emailDescCompany'), value: emailNotifications, toggle: toggleEmail },
+              { label: t('settings.notifications.push'), desc: t('settings.notifications.pushDescCompany'), value: pushNotifications, toggle: togglePush },
+            ].map(({ label, desc, value, toggle }) => (
+              <div key={label} className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{label}</h3>
+                  <p className="text-sm text-gray-600">{desc}</p>
+                </div>
+                <button onClick={toggle} disabled={prefsLoading || prefsSaving} className={`relative w-14 h-8 rounded-full transition-colors ${value ? 'bg-primary-600' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${value ? 'translate-x-6' : ''}`} />
+                </button>
               </div>
-              <button
-                onClick={toggleEmailNotifications}
-                disabled={prefsLoading || prefsSaving}
-                className={`relative w-14 h-8 rounded-full transition-colors ${
-                  emailNotifications ? 'bg-primary-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                    emailNotifications ? 'translate-x-6' : ''
-                  }`}
-                />
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Push Notifications</h3>
-                <p className="text-sm text-gray-600">Receive browser notifications for applications</p>
-              </div>
-              <button
-                onClick={togglePushNotifications}
-                disabled={prefsLoading || prefsSaving}
-                className={`relative w-14 h-8 rounded-full transition-colors ${
-                  pushNotifications ? 'bg-primary-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                    pushNotifications ? 'translate-x-6' : ''
-                  }`}
-                />
-              </button>
-            </div>
+            ))}
           </div>
           {prefsMessage && (
-            <p className={`text-sm ${prefsMessage.includes('saved') ? 'text-emerald-600' : 'text-red-600'}`}>
-              {prefsMessage}
-            </p>
+            <p className={`text-sm px-6 pb-4 ${prefsMessage === t('common.success') ? 'text-emerald-600' : 'text-red-600'}`}>{prefsMessage}</p>
           )}
         </div>
 
-        {/* Privacy Settings */}
+        {/* Privacy */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
                 <Lock className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Privacy Settings</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('settings.privacy.title')}</h2>
             </div>
           </div>
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Company Profile Visibility</label>
-              <select
-                value={profileVisibility}
-                onChange={(e) => setProfileVisibility(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
-              >
-                <option value="public">Public - Visible to all students</option>
-                <option value="verified">Verified Only - Visible to verified students</option>
-                <option value="private">Private - Only visible in your offers</option>
-              </select>
-            </div>
+          <div className="p-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('settings.privacy.visibilityCompany')}</label>
+            <select value={profileVisibility} onChange={(e) => setProfileVisibility(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white">
+              <option value="public">{t('settings.privacy.publicCompany')}</option>
+              <option value="verified">{t('settings.privacy.verifiedCompany')}</option>
+              <option value="private">{t('settings.privacy.privateCompany')}</option>
+            </select>
           </div>
         </div>
 
-        {/* Language & Region */}
+        {/* Language */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                 <Globe className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Language & Region</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('settings.language.title')}</h2>
             </div>
           </div>
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Language</label>
-              <select className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white">
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="ar">العربية</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Timezone</label>
-              <select className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white">
-                <option value="africa/tunis">Africa/Tunis (GMT+1)</option>
-                <option value="europe/paris">Europe/Paris (GMT+1)</option>
-              </select>
-            </div>
+          <div className="p-6">
+            <LanguageSwitcher variant="settings" />
           </div>
         </div>
 
-        {/* Save Button */}
         <div className="flex justify-end">
           <span className="px-6 py-3 text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Notification preferences save automatically
+            {t('settings.notifications.autoSave')}
           </span>
         </div>
       </div>
