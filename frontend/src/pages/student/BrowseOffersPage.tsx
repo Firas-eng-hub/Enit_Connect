@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Building2, Calendar, Briefcase, Send } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Offer } from '@/entities/offer/types';
@@ -12,6 +13,7 @@ interface CompanyInfo {
 }
 
 export function BrowseOffersPage() {
+  const { t } = useTranslation();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [companiesInfo, setCompaniesInfo] = useState<CompanyInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,15 +108,15 @@ export function BrowseOffersPage() {
   return (
     <div>
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Browse Offers</h1>
-        <p className="text-primary-100 text-lg">Find and apply to internships and job opportunities</p>
+        <h1 className="text-4xl font-bold text-white mb-2">{t('offers.browseOffers')}</h1>
+        <p className="text-primary-100 text-lg">{t('offers.browseOffersSubtitle')}</p>
       </div>
 
       {/* Filters */}
       {offers.length > 0 && (
         <div className="flex items-center gap-3 mb-8 bg-white rounded-xl p-4 shadow-md border border-gray-200">
           <Briefcase className="w-5 h-5 text-gray-500" />
-          <span className="text-sm font-semibold text-gray-700">Filter by Type:</span>
+          <span className="text-sm font-semibold text-gray-700">{t('offers.filterByType')}</span>
           {['all', 'PFA', 'PFE', 'Intership', 'Job'].map((f) => (
             <button
               key={f}
@@ -125,7 +127,7 @@ export function BrowseOffersPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {f === 'all' ? 'All Offers' : f}
+              {f === 'all' ? t('offers.allOffers') : f}
             </button>
           ))}
         </div>
@@ -141,12 +143,12 @@ export function BrowseOffersPage() {
               <Briefcase className="w-12 h-12 text-white" />
             </div>
             <h3 className="text-3xl font-bold text-gray-900 mb-3">
-              {filter === 'all' ? 'No Offers Available Yet' : `No ${filter} Offers Found`}
+              {filter === 'all' ? t('home.noOffers') : t('offers.noFilterOffers', { type: filter })}
             </h3>
             <p className="text-lg text-gray-600 mb-4 max-w-md mx-auto">
               {filter === 'all' 
-                ? 'New opportunities are posted regularly. Check back soon!' 
-                : 'Try selecting a different offer type to see more opportunities.'}
+                ? t('home.noOffersDesc') 
+                : t('offers.noFilterOffersHint')}
             </p>
           </div>
         </div>
@@ -177,7 +179,7 @@ export function BrowseOffersPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{company?.name || 'Unknown Company'}</p>
+                      <p className="font-semibold text-gray-900 truncate">{company?.name || t('home.unknownCompany')}</p>
                       {company?.sector && <p className="text-sm text-gray-500 truncate">{company.sector}</p>}
                     </div>
                   </div>
@@ -207,7 +209,7 @@ export function BrowseOffersPage() {
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
                   >
                     <Send className="w-5 h-5" />
-                    Apply Now
+                    {t('home.applyNow')}
                   </button>
                 </div>
               </div>
@@ -225,16 +227,16 @@ export function BrowseOffersPage() {
                 <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-emerald-500/40">
                   <Send className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Application Sent!</h3>
-                <p className="text-gray-600">Your application has been submitted successfully.</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('home.applicationSent')}</h3>
+                <p className="text-gray-600">{t('home.applicationSentDesc')}</p>
               </div>
             ) : (
               <>
                 <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 rounded-t-2xl">
                   <h3 className="text-2xl font-bold text-white mb-1">
-                    Apply to: {selectedOffer.title}
+                    {t('home.applyTo', { title: selectedOffer.title })}
                   </h3>
-                  <p className="text-primary-100">Write a compelling cover letter for your application</p>
+                  <p className="text-primary-100">{t('home.coverLetterSubtitle')}</p>
                 </div>
 
                 <div className="p-8">
@@ -252,7 +254,7 @@ Highlight your relevant skills, experience, and passion for the role."
                       onClick={() => setSelectedOffer(null)}
                       className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={handleApply}
@@ -262,12 +264,12 @@ Highlight your relevant skills, experience, and passion for the role."
                       {applyLoading ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                          Submitting...
+                          {t('home.submitting')}
                         </>
                       ) : (
                         <>
                           <Send className="w-5 h-5" />
-                          Submit Application
+                          {t('home.submitApplication')}
                         </>
                       )}
                     </button>

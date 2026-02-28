@@ -1,16 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Newspaper, BarChart3, Users, Info } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
-const navItems = [
-  { path: '/visitor/news', label: 'News', icon: Newspaper },
-  { path: '/visitor/statistics', label: 'Statistics', icon: BarChart3 },
-  { path: '/visitor/how-it-works', label: 'How It Works', icon: Users },
-  { path: '/visitor/about', label: 'About', icon: Info },
-];
-
 export function VisitorSidebar() {
+  const { t } = useTranslation();
   const location = useLocation();
+
+  const navItems = [
+    { path: '/visitor/news', label: t('nav.news'), icon: Newspaper },
+    { path: '/visitor/statistics', label: t('nav.statistics'), icon: BarChart3 },
+    { path: '/visitor/how-it-works', label: t('nav.howItWorks'), icon: Users },
+    { path: '/visitor/about', label: t('nav.about'), icon: Info },
+  ];
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-gray-200">
@@ -56,13 +58,13 @@ export function VisitorSidebar() {
             to="/login"
             className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
           >
-            Login
+            {t('nav.login')}
           </Link>
           <Link
             to="/register"
             className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           >
-            Register
+            {t('nav.register')}
           </Link>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,17 +13,12 @@ import { NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/component
 import { formatDate, cn } from '@/shared/lib/utils';
 import { config } from '@/app/config/env';
 
-const optionalDate = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-  z.string().optional()
-);
-
 const offerSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   content: z.string().min(10, 'Description must be at least 10 characters'),
   type: z.enum(['PFA', 'PFE', 'Intership', 'Job'] as const),
   start: z.string().min(1, 'Start date is required'),
-  end: optionalDate,
+  end: z.string().optional(),
 }).refine((data) => !data.end || data.end > data.start, {
   message: 'End date must be after start date',
   path: ['end'],
@@ -31,6 +27,7 @@ const offerSchema = z.object({
 type OfferFormData = z.infer<typeof offerSchema>;
 
 export function HomePage() {
+  const { t } = useTranslation();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -132,7 +129,7 @@ export function HomePage() {
   };
 
   const handleDelete = async (offerId: string) => {
-    if (!confirm('Are you sure you want to delete this offer?')) return;
+    if (!confirm(t('home.confirmDeleteOffer'))) return;
 
     try {
       await httpClient.delete('/api/offers', { params: { id: offerId } });
@@ -167,28 +164,28 @@ export function HomePage() {
         <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-emerald-300/20 rounded-full blur-3xl" />
         <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Company Dashboard</h1>
-            <p className="text-primary-100 text-lg">Post opportunities, review applicants, and follow campus updates</p>
+            <h1 className="text-4xl font-bold text-white mb-2">{t('home.companyTitle')}</h1>
+            <p className="text-primary-100 text-lg">{t('home.companySubtitle')}</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold shadow-lg hover:bg-primary-50 transition-all"
           >
             <Plus className="w-5 h-5" />
-            Create Offer
+            {t('home.createOffer')}
           </button>
         </div>
         <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-8">
           <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">Active Offers</div>
+            <div className="text-sm text-gray-500 mb-2">{t('home.activeOffers')}</div>
             <div className="text-3xl font-bold text-gray-900">{totalOffers}</div>
           </div>
           <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">Total Applicants</div>
+            <div className="text-sm text-gray-500 mb-2">{t('home.totalApplicants')}</div>
             <div className="text-3xl font-bold text-gray-900">{totalApplicants}</div>
           </div>
           <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">News for Companies</div>
+            <div className="text-sm text-gray-500 mb-2">{t('home.newsForCompanies')}</div>
             <div className="text-3xl font-bold text-gray-900">{news.length}</div>
           </div>
         </div>
@@ -199,16 +196,16 @@ export function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold uppercase tracking-wide mb-3">
-                Company Feed
+                {t('home.companyFeed')}
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Latest News</h2>
-              <p className="text-gray-600">Updates curated for companies</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('home.latestNews')}</h2>
+              <p className="text-gray-600">{t('home.updatesForCompanies')}</p>
             </div>
             <button
               onClick={fetchNews}
               className="px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
             >
-              Refresh
+              {t('common.refresh')}
             </button>
           </div>
 
@@ -242,13 +239,13 @@ export function HomePage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
-              <h3 className="text-lg font-bold text-white">Full Article</h3>
+              <h3 className="text-lg font-bold text-white">{t('home.fullArticle')}</h3>
               <button
                 type="button"
                 onClick={() => setSelectedNews(null)}
                 className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
             <div className="p-6 space-y-5 overflow-y-auto">
@@ -275,7 +272,7 @@ export function HomePage() {
                   <Calendar className="w-4 h-4" />
                   {selectedNews.date || selectedNews.createdAt
                     ? formatDate((selectedNews.date || selectedNews.createdAt)!)
-                    : 'No date'}
+                    : t('common.noDate')}
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -292,8 +289,8 @@ export function HomePage() {
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl my-8" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-white">Create New Offer</h2>
-              <p className="text-primary-100 mt-1">Fill in the details to post a new opportunity</p>
+              <h2 className="text-2xl font-bold text-white">{t('home.createNewOffer')}</h2>
+              <p className="text-primary-100 mt-1">{t('home.fillOfferDetails')}</p>
             </div>
 
             <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
@@ -302,12 +299,12 @@ export function HomePage() {
                 <div className="space-y-6 mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <div className="w-1 h-6 bg-primary-600 rounded-full"></div>
-                    Basic Information
+                    {t('home.basicInformation')}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Position Title *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.positionTitle')} *</label>
                       <input 
                         {...register('title')} 
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" 
@@ -317,7 +314,7 @@ export function HomePage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Offer Type *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.offerType')} *</label>
                       <select {...register('type')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white">
                         <option value="PFA">PFA - Projet de Fin d'Année</option>
                         <option value="PFE">PFE - Projet de Fin d'Études</option>
@@ -327,7 +324,7 @@ export function HomePage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.description')} *</label>
                       <textarea 
                         {...register('content')} 
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none" 
@@ -343,12 +340,12 @@ export function HomePage() {
               <div className="space-y-6 mb-8 pb-8 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <div className="w-1 h-6 bg-primary-600 rounded-full"></div>
-                  Timeline
+                  {t('home.timeline')}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date *</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.startDate')} *</label>
                     <input 
                       {...register('start')} 
                       type="date" 
@@ -357,7 +354,7 @@ export function HomePage() {
                     {errors.start && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.start.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">End Date (Optional)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.endDate')}</label>
                     <input 
                       {...register('end')} 
                       type="date" 
@@ -375,7 +372,7 @@ export function HomePage() {
                   onClick={() => setShowForm(false)} 
                   className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button 
                   type="submit" 
@@ -385,12 +382,12 @@ export function HomePage() {
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                      Creating...
+                      {t('common.creating')}
                     </>
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      Create Offer
+                      {t('home.createOffer')}
                     </>
                   )}
                 </button>
@@ -406,17 +403,17 @@ export function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wide mb-3">
-                Hiring Pipeline
+                {t('home.hiringPipeline')}
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Your Offers</h2>
-              <p className="text-gray-600">Track, edit, and manage recruitment opportunities</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('home.yourOffers')}</h2>
+              <p className="text-gray-600">{t('home.offersSubtitleCompany')}</p>
             </div>
             <button
               onClick={() => setShowForm(true)}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-lg hover:bg-emerald-200 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New Offer
+              {t('home.newOffer')}
             </button>
           </div>
         </div>
@@ -434,12 +431,11 @@ export function HomePage() {
               </div>
               
               {/* Title */}
-              <h3 className="text-3xl font-bold text-gray-900 mb-3">Start Your Recruitment Journey</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-3">{t('home.noOffersCompany')}</h3>
               
               {/* Description */}
               <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                Post your first job offer and connect with talented students from ENIT. 
-                Build your team with the best candidates in engineering and technology.
+                {t('home.noOffersCompanyDesc')}
               </p>
               
               {/* Features grid */}
@@ -448,24 +444,24 @@ export function HomePage() {
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                     <Users className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-gray-900 mb-2">Reach Students</h4>
-                  <p className="text-sm text-gray-600">Access talented engineering students</p>
+                  <h4 className="font-bold text-gray-900 mb-2">{t('home.reachStudents')}</h4>
+                  <p className="text-sm text-gray-600">{t('home.reachStudentsDesc')}</p>
                 </div>
                 
                 <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-200">
                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                     <Briefcase className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-gray-900 mb-2">Manage Offers</h4>
-                  <p className="text-sm text-gray-600">Create PFA, PFE, internships & jobs</p>
+                  <h4 className="font-bold text-gray-900 mb-2">{t('home.manageOffers')}</h4>
+                  <p className="text-sm text-gray-600">{t('home.manageOffersDesc')}</p>
                 </div>
                 
                 <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-200">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-gray-900 mb-2">Track Applications</h4>
-                  <p className="text-sm text-gray-600">Review and manage candidacies easily</p>
+                  <h4 className="font-bold text-gray-900 mb-2">{t('home.trackApplications')}</h4>
+                  <p className="text-sm text-gray-600">{t('home.trackApplicationsDesc')}</p>
                 </div>
               </div>
               
@@ -475,7 +471,7 @@ export function HomePage() {
                 className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold text-lg shadow-2xl shadow-primary-500/40 hover:shadow-3xl hover:shadow-primary-500/50 hover:scale-105 transform"
               >
                 <Plus className="w-6 h-6" />
-                Create Your First Offer
+                {t('home.createFirstOffer')}
               </button>
             </div>
           </div>
@@ -526,7 +522,7 @@ export function HomePage() {
                           <span className="font-bold text-emerald-700 text-lg">
                             {offer.candidacies?.length || 0}
                           </span>
-                          <span className="text-emerald-600 font-medium text-sm">applicant{offer.candidacies?.length !== 1 ? 's' : ''}</span>
+                          <span className="text-emerald-600 font-medium text-sm">{t('home.applicants_other', { count: offer.candidacies?.length || 0 }).split(' ').slice(1).join(' ')}</span>
                         </div>
                       </div>
                     </div>
@@ -538,14 +534,14 @@ export function HomePage() {
                       className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold text-sm shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
                     >
                         <Eye className="w-5 h-5" />
-                        View Applications
+                        {t('home.viewApplications')}
                       </Link>
                       <button
                         onClick={() => handleDelete(offer._id)}
                         className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:border-red-400 hover:text-red-600 transition-all font-semibold text-sm hover:scale-105 transform"
                       >
                         <Trash2 className="w-5 h-5" />
-                        Delete
+                        {t('common.delete')}
                       </button>
                     </div>
                   </div>

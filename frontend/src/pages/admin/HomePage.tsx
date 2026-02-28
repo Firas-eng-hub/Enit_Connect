@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +34,7 @@ type MessagePreview = {
 };
 
 export function HomePage() {
+  const { t } = useTranslation();
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(true);
@@ -169,7 +171,7 @@ export function HomePage() {
   };
 
   const handleDelete = async (newsId: string) => {
-    if (!confirm('Are you sure you want to delete this news?')) return;
+    if (!confirm(t('home.confirmDeleteNews'))) return;
 
     try {
       await httpClient.delete(`/api/admin/news/${newsId}`);
@@ -258,8 +260,8 @@ export function HomePage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-6 shadow-xl flex-1 mr-6">
-          <h1 className="text-3xl font-bold text-white">News Management</h1>
-          <p className="text-primary-100 mt-1">Create and manage platform news</p>
+          <h1 className="text-3xl font-bold text-white">{t('home.newsManagement')}</h1>
+          <p className="text-primary-100 mt-1">{t('home.createAndManageNews')}</p>
         </div>
         <button
           onClick={() => {
@@ -281,7 +283,7 @@ export function HomePage() {
           className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl flex items-center gap-2 shrink-0"
         >
           <Plus className="w-5 h-5" />
-          Create News
+          {t('home.createNews')}
         </button>
       </div>
 
@@ -290,8 +292,8 @@ export function HomePage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl my-8" onClick={(e) => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-white">{editingNews ? 'Edit News' : 'Create News'}</h2>
-              <p className="text-primary-100 mt-1">Share important updates with the community</p>
+              <h2 className="text-2xl font-bold text-white">{editingNews ? t('home.editNews') : t('home.createNews')}</h2>
+              <p className="text-primary-100 mt-1">{t('home.shareUpdates')}</p>
             </div>
 
             <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
@@ -302,20 +304,20 @@ export function HomePage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.titleField')} *</label>
                   <input {...register('title')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="Enter news title" />
                   {errors.title && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.title.message}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Content *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.contentField')} *</label>
                   <textarea {...register('content')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none" rows={6} placeholder="Write the news content..." />
                   {errors.content && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.content.message}</p>}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date *</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.dateField')} *</label>
                     <input
                       type="date"
                       {...register('date')}
@@ -324,21 +326,21 @@ export function HomePage() {
                     {errors.date && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.date.message}</p>}
                   </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Status *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.statusField')} *</label>
                   <select
                     {...register('status')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
                   >
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
+                    <option value="published">{t('common.published')}</option>
+                    <option value="draft">{t('common.draft')}</option>
                   </select>
                   {errors.status && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.status.message}</p>}
-                  <p className="mt-2 text-xs text-gray-500">Drafts are visible only in the admin dashboard.</p>
+                  <p className="mt-2 text-xs text-gray-500">{t('home.draftsNote')}</p>
                 </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Visible To *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.visibleTo')} *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {(['student', 'company', 'visitor'] as const).map((audience) => (
                       <label key={audience} className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
@@ -357,7 +359,7 @@ export function HomePage() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Category (optional)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.categoryOptional')}</label>
                     <input
                       {...register('category')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
@@ -365,7 +367,7 @@ export function HomePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Tags (optional)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.tagsOptional')}</label>
                     <input
                       {...register('tags')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
@@ -375,7 +377,7 @@ export function HomePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Image (optional)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.imageOptional')}</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-primary-400 transition-colors">
                     {imagePreview ? (
                       <div className="relative">
@@ -397,8 +399,8 @@ export function HomePage() {
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-3">
                           <Image className="w-8 h-8 text-primary-600" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700 mb-1">Click to upload an image</span>
-                        <span className="text-xs text-gray-500">PNG, JPG up to 10MB</span>
+                        <span className="text-sm font-medium text-gray-700 mb-1">{t('home.clickToUpload')}</span>
+                        <span className="text-xs text-gray-500">{t('home.imageFormats')}</span>
                         <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
                       </label>
                     )}
@@ -417,18 +419,18 @@ export function HomePage() {
                     }}
                     className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button type="submit" disabled={submitting} className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {submitting ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                        Publishing...
+                        {t('home.publishing')}
                       </>
                     ) : (
                       <>
                         <Newspaper className="w-5 h-5" />
-                        {editingNews ? 'Save Changes' : 'Publish News'}
+                        {editingNews ? t('common.saveChanges') : t('home.publishNews')}
                       </>
                     )}
                   </button>
@@ -449,11 +451,11 @@ export function HomePage() {
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
               <Newspaper className="w-12 h-12 text-white" />
             </div>
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">No News Posted Yet</h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">Create your first news article to keep users informed about important updates and announcements</p>
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">{t('home.noNewsPosted')}</h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">{t('home.noNewsPostedDesc')}</p>
             <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold text-lg shadow-2xl shadow-primary-500/40 hover:shadow-3xl hover:shadow-primary-500/50 hover:scale-105 transform">
               <Plus className="w-6 h-6" />
-              Create First News
+              {t('home.createFirstNews')}
             </button>
           </div>
         </div>
@@ -462,7 +464,7 @@ export function HomePage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5">
             <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
               <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common.search')}</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -472,13 +474,13 @@ export function HomePage() {
                       setCurrentPage(1);
                     }}
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                    placeholder="Search by title or content"
+                    placeholder={t('home.searchByTitleContent')}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.statusLabel')}</label>
                   <select
                     value={statusFilter}
                     onChange={(e) => {
@@ -487,13 +489,13 @@ export function HomePage() {
                     }}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
                   >
-                    <option value="all">All</option>
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
+                    <option value="all">{t('common.all')}</option>
+                    <option value="published">{t('common.published')}</option>
+                    <option value="draft">{t('common.draft')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">From</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.fromLabel')}</label>
                   <input
                     type="date"
                     value={dateFrom}
@@ -505,7 +507,7 @@ export function HomePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">To</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.toLabel')}</label>
                   <input
                     type="date"
                     value={dateTo}
@@ -518,7 +520,7 @@ export function HomePage() {
                 </div>
               </div>
               <div className="min-w-[140px]">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Page Size</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.pageSizeLabel')}</label>
                 <select
                   value={pageSize}
                   onChange={(e) => {
@@ -528,20 +530,20 @@ export function HomePage() {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
                 >
                   {[6, 12, 24].map((size) => (
-                    <option key={size} value={size}>{size} per page</option>
+                    <option key={size} value={size}>{t('common.perPage', { n: size })}</option>
                   ))}
                 </select>
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
               <Filter className="w-4 h-4 text-gray-400" />
-              Showing {filteredNews.length} result{filteredNews.length === 1 ? '' : 's'}
+              Showing {filteredNews.length} {filteredNews.length === 1 ? t('home.showing', { count: filteredNews.length }) : t('home.showing_plural', { count: filteredNews.length })}
             </div>
           </div>
 
           {paginatedNews.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 lg:p-10 text-center text-gray-600">
-              No news matched your filters.
+              {t('home.noNewsMatched')}
             </div>
           ) : (
             paginatedNews.map((item) => {
@@ -585,11 +587,11 @@ export function HomePage() {
                       <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold ${
                         item.status === 'draft' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
                       }`}>
-                        {item.status === 'draft' ? 'Draft' : 'Published'}
+                        {item.status === 'draft' ? t('common.draft') : t('common.published')}
                       </span>
                       <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
                         <Users className="w-3.5 h-3.5" />
-                        {(item.audience || []).length} audience
+                        {(item.audience || []).length} {t('home.audience')}
                       </span>
                       {item.category && (
                         <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold">
@@ -630,7 +632,7 @@ export function HomePage() {
                 disabled={currentPageSafe === 1}
                 className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
               >
-                Previous
+                {t('common.previous')}
               </button>
               <button
                 type="button"
@@ -638,7 +640,7 @@ export function HomePage() {
                 disabled={currentPageSafe === totalPages}
                 className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
               >
-                Next
+                {t('common.next')}
               </button>
             </div>
           </div>
@@ -652,12 +654,12 @@ export function HomePage() {
               <MessageSquare className="w-6 h-6 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Messages Center</h2>
-              <p className="mt-2 text-gray-600">Manage incoming contact messages, reply quickly, and keep your inbox organized.</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('home.messagesCenter')}</h2>
+              <p className="mt-2 text-gray-600">{t('home.messagesCenterDesc')}</p>
             </div>
           </div>
           <Link to="/admin/messages">
-            <Button variant="outline" size="sm">Open Inbox</Button>
+            <Button variant="outline" size="sm">{t('common.openInbox')}</Button>
           </Link>
         </div>
 
@@ -665,12 +667,12 @@ export function HomePage() {
           {messagesLoading ? (
             <div className="flex items-center gap-3 text-gray-500">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600" />
-              Loading recent messages...
+              {t('home.loadingMessages')}
             </div>
           ) : messagesError ? (
             <div className="text-sm text-red-600">{messagesError}</div>
           ) : recentUnread.length === 0 ? (
-            <div className="text-sm text-gray-500">No unread messages right now.</div>
+            <div className="text-sm text-gray-500">{t('home.noUnread')}</div>
           ) : (
             <div className="grid gap-3">
               {recentUnread.map((msg) => (

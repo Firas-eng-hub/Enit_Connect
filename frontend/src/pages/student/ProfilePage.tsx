@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { User, Mail, Phone, MapPin, GraduationCap, Calendar, Camera, Briefcase, Linkedin, FileText } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -16,6 +17,7 @@ const classes = [
 ];
 
 export function ProfilePage() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,8 +149,8 @@ export function ProfilePage() {
     <div>
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">My Profile</h1>
-        <p className="text-primary-100 text-lg">Manage your personal information and preferences</p>
+        <h1 className="text-4xl font-bold text-white mb-2">{t('profile.myProfile')}</h1>
+        <p className="text-primary-100 text-lg">{t('profile.manageInfo')}</p>
       </div>
 
       {/* Success/Error Messages */}
@@ -160,7 +162,7 @@ export function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="font-semibold">Profile updated successfully!</span>
+            <span className="font-semibold">{t('profile.profileUpdated')}</span>
           </div>
         </div>
       )}
@@ -246,8 +248,8 @@ export function ProfilePage() {
         <form onSubmit={handleSubmit(onSubmit)} className="p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">Personal Information</h3>
-              <p className="text-gray-500 mt-1">Update your profile details and contact information</p>
+              <h3 className="text-2xl font-bold text-gray-900">{t('profile.personalInfo')}</h3>
+              <p className="text-gray-500 mt-1">{t('profile.personalInfoDesc')}</p>
             </div>
             {!editing ? (
               <button
@@ -255,7 +257,7 @@ export function ProfilePage() {
                 onClick={() => setEditing(true)}
                 className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl"
               >
-                Edit Profile
+                {t('common.editProfile')}
               </button>
             ) : (
               <div className="flex gap-3">
@@ -267,7 +269,7 @@ export function ProfilePage() {
                   }}
                   className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button 
                   type="submit" 
@@ -277,10 +279,10 @@ export function ProfilePage() {
                   {saving ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                      <span>Saving...</span>
+                      <span>{t('common.saving')}</span>
                     </div>
                   ) : (
-                    'Save Changes'
+                    t('common.saveChanges')
                   )}
                 </button>
               </div>
@@ -290,7 +292,7 @@ export function ProfilePage() {
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <User className="w-4 h-4 text-primary-600" /> First Name
+                <User className="w-4 h-4 text-primary-600" /> {t('profile.firstName')}
               </label>
               <input
                 {...register('firstname')}
@@ -304,7 +306,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <User className="w-4 h-4 text-primary-600" /> Last Name
+                <User className="w-4 h-4 text-primary-600" /> {t('profile.lastName')}
               </label>
               <input
                 {...register('lastname')}
@@ -318,18 +320,18 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <Mail className="w-4 h-4 text-primary-600" /> Email
+                <Mail className="w-4 h-4 text-primary-600" /> {t('profile.email')}
               </label>
               <input
                 value={profile?.email || ''}
                 disabled
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-gray-500 mt-1">{t('profile.emailCannotChange')}</p>
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <Phone className="w-4 h-4 text-primary-600" /> Phone
+                <Phone className="w-4 h-4 text-primary-600" /> {t('profile.phone')}
               </label>
               <input
                 {...register('phone')}
@@ -344,7 +346,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <GraduationCap className="w-4 h-4 text-primary-600" /> Class
+                <GraduationCap className="w-4 h-4 text-primary-600" /> {t('profile.classLabel')}
               </label>
               <select 
                 {...register('class')} 
@@ -355,7 +357,7 @@ export function ProfilePage() {
                     : 'border-gray-200 bg-gray-50 text-gray-600'
                 }`}
               >
-                <option value="">Select class</option>
+                <option value="">{t('profile.selectClass')}</option>
                 {classes.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -363,7 +365,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 text-primary-600" /> Promotion
+                <Calendar className="w-4 h-4 text-primary-600" /> {t('profile.promotion')}
               </label>
               <select 
                 {...register('promotion')} 
@@ -374,7 +376,7 @@ export function ProfilePage() {
                     : 'border-gray-200 bg-gray-50 text-gray-600'
                 }`}
               >
-                <option value="">Select year</option>
+                <option value="">{t('profile.selectYear')}</option>
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
@@ -382,7 +384,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 text-primary-600" /> Country
+                <MapPin className="w-4 h-4 text-primary-600" /> {t('profile.country')}
               </label>
               <input
                 {...register('country')}
@@ -397,7 +399,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 text-primary-600" /> City
+                <MapPin className="w-4 h-4 text-primary-600" /> {t('profile.city')}
               </label>
               <input
                 {...register('city')}
@@ -412,7 +414,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 text-primary-600" /> Address
+                <MapPin className="w-4 h-4 text-primary-600" /> {t('profile.address')}
               </label>
               <input
                 {...register('address')}
@@ -424,11 +426,11 @@ export function ProfilePage() {
                 }`}
                 placeholder="Enter address"
               />
-              <p className="text-xs text-gray-500 mt-1">Required for map location</p>
+              <p className="text-xs text-gray-500 mt-1">{t('profile.addressRequired')}</p>
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <Briefcase className="w-4 h-4 text-primary-600" /> Currently Working At
+                <Briefcase className="w-4 h-4 text-primary-600" /> {t('profile.workingAt')}
               </label>
               <input
                 {...register('workAt')}
@@ -443,7 +445,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <Linkedin className="w-4 h-4 text-primary-600" /> LinkedIn Profile
+                <Linkedin className="w-4 h-4 text-primary-600" /> {t('profile.linkedin')}
               </label>
               <input
                 {...register('linkedin')}
@@ -458,7 +460,7 @@ export function ProfilePage() {
             </div>
             <div className="md:col-span-2">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <FileText className="w-4 h-4 text-primary-600" /> About Me
+                <FileText className="w-4 h-4 text-primary-600" /> {t('profile.aboutMe')}
               </label>
               <textarea
                 {...register('aboutme')}

@@ -42,14 +42,14 @@ export function LanguageSwitcher({ variant = 'compact' }: LanguageSwitcherProps)
                             <span className="text-2xl">{lang.flag}</span>
                             <span>{lang.label}</span>
                             {current === lang.code && (
-                                <span className="text-xs font-bold text-primary-600">✓ Active</span>
+                                <span className="text-xs font-bold text-primary-600">{t('common.active')}</span>
                             )}
                         </button>
                     ))}
                 </div>
                 {current === 'ar' && (
                     <p className="mt-3 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        ⚠️ Arabic (RTL) mode is active. The layout will mirror automatically.
+                        {t('languageSwitcher.arabicRtlNote')}
                     </p>
                 )}
             </div>

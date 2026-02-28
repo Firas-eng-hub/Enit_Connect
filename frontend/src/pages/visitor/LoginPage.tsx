@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 type UserType = 'student' | 'company' | 'admin';
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<UserType>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +73,9 @@ export function LoginPage() {
   };
 
   const typeOptions = [
-    { type: 'student' as UserType, label: 'Student', icon: User, gradient: 'from-blue-500 to-indigo-600' },
-    { type: 'company' as UserType, label: 'Company', icon: Building2, gradient: 'from-emerald-500 to-teal-600' },
-    { type: 'admin' as UserType, label: 'Admin', icon: Shield, gradient: 'from-purple-500 to-violet-600' },
+    { type: 'student' as UserType, label: t('auth.student'), icon: User, gradient: 'from-blue-500 to-indigo-600' },
+    { type: 'company' as UserType, label: t('auth.company'), icon: Building2, gradient: 'from-emerald-500 to-teal-600' },
+    { type: 'admin' as UserType, label: t('auth.admin'), icon: Shield, gradient: 'from-purple-500 to-violet-600' },
   ];
 
   return (
@@ -96,7 +98,7 @@ export function LoginPage() {
             <img src={enitLogo} alt="ENIT" className="w-14 h-14 object-contain drop-shadow-lg group-hover:scale-105 transition-transform duration-300" />
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">ENIT-Connect</h1>
-              <p className="text-white/60 text-sm font-medium">Career Platform</p>
+              <p className="text-white/60 text-sm font-medium">{t('auth.careerPlatform')}</p>
             </div>
           </Link>
         </div>
@@ -104,21 +106,21 @@ export function LoginPage() {
         <div className="space-y-10">
           <div>
             <h2 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
-              Your gateway to
+              {t('auth.gatewayTitle')}
               <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-accent-400 via-accent-300 to-yellow-300">
-                career success
+                {t('auth.gatewayHighlight')}
               </span>
             </h2>
             <p className="mt-8 text-xl text-white/70 max-w-lg leading-relaxed">
-              Connect with Tunisia's top engineering talent and leading companies. Build your future with ENIT's premier career platform.
+              {t('auth.gatewayDesc')}
             </p>
           </div>
 
           <div className="flex items-center gap-10">
             {[
-              { value: '500+', label: 'Students' },
-              { value: '50+', label: 'Companies' },
-              { value: '200+', label: 'Opportunities' },
+              { value: '500+', label: t('auth.students') },
+              { value: '50+', label: t('auth.companies') },
+              { value: '200+', label: t('auth.opportunities') },
             ].map((stat, i) => (
               <div key={i} className="text-center group cursor-default">
                 <div className="text-4xl xl:text-5xl font-bold text-white group-hover:text-accent-400 transition-colors duration-300">{stat.value}</div>
@@ -152,14 +154,14 @@ export function LoginPage() {
             
             <div className="relative">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome back</h2>
-                <p className="text-gray-500 mt-2">Sign in to continue your journey</p>
+                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{t('auth.welcomeBack')}</h2>
+                <p className="text-gray-500 mt-2">{t('auth.signInContinue')}</p>
               </div>
 
               {/* User Type Selection */}
               <div className="mb-8">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  I am a:
+                  {t('auth.iAmA')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {typeOptions.map(({ type, label, icon: Icon, gradient }) => (
@@ -191,7 +193,7 @@ export function LoginPage() {
                           to={`/verify?type=${selectedType}${pendingEmail ? `&email=${encodeURIComponent(pendingEmail)}` : ''}`}
                           className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700"
                         >
-                          Verify now
+                          {t('auth.verifyNow')}
                           <ArrowRight className="w-4 h-4" />
                         </Link>
                       </div>
@@ -201,7 +203,7 @@ export function LoginPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
+                    {t('auth.emailAddress')}
                   </label>
                   <input
                     {...register('email')}
@@ -222,7 +224,7 @@ export function LoginPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
+                    {t('auth.password')}
                   </label>
                   <div className="relative">
                     <input
@@ -259,12 +261,12 @@ export function LoginPage() {
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-3">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Signing in...</span>
+                      <span>{t('auth.signingIn')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <LogIn className="w-5 h-5" />
-                      <span>Sign In</span>
+                      <span>{t('auth.signIn')}</span>
                     </div>
                   )}
                 </Button>
@@ -276,14 +278,14 @@ export function LoginPage() {
                   <div className="w-full border-t-2 border-gray-100" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-gray-400 font-medium">New to ENIT-Connect?</span>
+                  <span className="bg-white px-4 text-sm text-gray-400 font-medium">{t('auth.newToEnitConnect')}</span>
                 </div>
               </div>
 
               {/* Register Link */}
               <Link to="/register" className="block">
                 <button className="w-full py-4 px-6 rounded-xl border-2 border-gray-200 text-gray-700 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 group">
-                  Create an Account
+                  {t('auth.createAccount')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
@@ -296,7 +298,7 @@ export function LoginPage() {
               to="/visitor/news" 
               className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium transition-colors duration-200"
             >
-              ← Back to Home
+              {t('auth.backToHome')}
             </Link>
           </div>
         </div>

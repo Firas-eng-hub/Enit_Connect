@@ -1,18 +1,20 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Building2, Search, LogOut } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-const navItems = [
-  { path: '/company/home', label: 'Manage Offers', icon: Home },
-  { path: '/company/profile', label: 'Profile', icon: Building2 },
-  { path: '/company/search', label: 'Search Students', icon: Search },
-];
-
 export function CompanySidebar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+
+  const navItems = [
+    { path: '/company/home', label: t('nav.manageOffers'), icon: Home },
+    { path: '/company/profile', label: t('nav.profile'), icon: Building2 },
+    { path: '/company/search', label: t('nav.searchStudents'), icon: Search },
+  ];
 
   const handleLogout = async () => {
     await logout();
@@ -39,7 +41,7 @@ export function CompanySidebar() {
             <p className="text-sm font-medium text-gray-900 truncate">
               {user?.name || 'Company'}
             </p>
-            <p className="text-xs text-gray-500">Company Account</p>
+            <p className="text-xs text-gray-500">{t('profile.companyAccount')}</p>
           </div>
         </div>
       </div>
@@ -79,7 +81,7 @@ export function CompanySidebar() {
           className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Logout
+          {t('nav.logout')}
         </button>
       </div>
     </aside>

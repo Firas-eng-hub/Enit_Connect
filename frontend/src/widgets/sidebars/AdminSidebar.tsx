@@ -1,21 +1,23 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Shield, Mail, Search, UserPlus, FileText, MessageSquare, LogOut } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-const navItems = [
-  { path: '/admin/home', label: 'News Management', icon: Home },
-  { path: '/admin/send', label: 'Send Email', icon: Mail },
-  { path: '/admin/search', label: 'Search Users', icon: Search },
-  { path: '/admin/add', label: 'Add Users', icon: UserPlus },
-  { path: '/admin/documents', label: 'Documents', icon: FileText },
-  { path: '/admin/messages', label: 'Messages', icon: MessageSquare },
-];
-
 export function AdminSidebar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+
+  const navItems = [
+    { path: '/admin/home', label: t('nav.newsManagement'), icon: Home },
+    { path: '/admin/send', label: t('nav.sendEmail'), icon: Mail },
+    { path: '/admin/search', label: t('nav.searchUsers'), icon: Search },
+    { path: '/admin/add', label: t('nav.addUsers'), icon: UserPlus },
+    { path: '/admin/documents', label: t('nav.documents'), icon: FileText },
+    { path: '/admin/messages', label: t('nav.messages'), icon: MessageSquare },
+  ];
 
   const handleLogout = async () => {
     await logout();
@@ -29,7 +31,7 @@ export function AdminSidebar() {
         <div className="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center">
           <Shield className="w-6 h-6 text-white" />
         </div>
-        <span className="text-xl font-bold">Admin Panel</span>
+        <span className="text-xl font-bold">{t('nav.dashboard')}</span>
       </div>
 
       {/* Admin info */}
@@ -42,7 +44,7 @@ export function AdminSidebar() {
             <p className="text-sm font-medium truncate">
               {user?.name || 'Admin'}
             </p>
-            <p className="text-xs text-gray-400">Administrator</p>
+            <p className="text-xs text-gray-400">{t('profile.administrator')}</p>
           </div>
         </div>
       </div>
@@ -81,7 +83,7 @@ export function AdminSidebar() {
           className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-400 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Logout
+          {t('nav.logout')}
         </button>
       </div>
     </aside>

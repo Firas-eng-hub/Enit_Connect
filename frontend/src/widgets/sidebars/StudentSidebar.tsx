@@ -1,20 +1,22 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, User, Search, FileText, LogOut, Briefcase } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-const navItems = [
-  { path: '/user/home', label: 'Home', icon: Home },
-  { path: '/user/offers', label: 'Browse Offers', icon: Briefcase },
-  { path: '/user/profile', label: 'Profile', icon: User },
-  { path: '/user/search', label: 'Search Students', icon: Search },
-  { path: '/user/documents', label: 'Documents', icon: FileText },
-];
-
 export function StudentSidebar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+
+  const navItems = [
+    { path: '/user/home', label: t('nav.home'), icon: Home },
+    { path: '/user/offers', label: t('nav.offers'), icon: Briefcase },
+    { path: '/user/profile', label: t('nav.profile'), icon: User },
+    { path: '/user/search', label: t('nav.searchStudents'), icon: Search },
+    { path: '/user/documents', label: t('nav.documents'), icon: FileText },
+  ];
 
   const handleLogout = async () => {
     await logout();
@@ -41,7 +43,7 @@ export function StudentSidebar() {
             <p className="text-sm font-medium text-gray-900 truncate">
               {user?.name || 'Student'}
             </p>
-            <p className="text-xs text-gray-500">Student</p>
+            <p className="text-xs text-gray-500">{t('auth.student')}</p>
           </div>
         </div>
       </div>
@@ -80,7 +82,7 @@ export function StudentSidebar() {
           className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Logout
+          {t('nav.logout')}
         </button>
       </div>
     </aside>

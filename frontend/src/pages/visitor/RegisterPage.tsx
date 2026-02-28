@@ -135,19 +135,19 @@ export function RegisterPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 mb-6 shadow-xl shadow-emerald-500/30">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">You're all set!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">{t('registerPage.allSet')}</h2>
             <p className="text-gray-500 mb-8 leading-relaxed">
-              We've sent a 6-digit verification code to your inbox. Enter it to activate your account.
+              {t('registerPage.verificationSent')}
             </p>
             <div className="space-y-3">
               <Link to={`/verify?type=${selectedType}${successEmail ? `&email=${encodeURIComponent(successEmail)}` : ''}`}>
                 <Button className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30" size="lg">
-                  Enter Verification Code
+                  {t('registerPage.enterVerificationCode')}
                 </Button>
               </Link>
               <Link to="/login">
                 <Button variant="secondary" className="w-full py-4 rounded-xl font-bold" size="lg">
-                  Continue to Sign In
+                  {t('registerPage.continueToSignIn')}
                 </Button>
               </Link>
             </div>
@@ -199,16 +199,16 @@ export function RegisterPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/80 text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4 text-accent-400" />
-              Join our growing community
+              {t('registerPage.joinCommunity')}
             </div>
             <h2 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
-              Start your
+              {t('registerPage.startYour')}
               <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-accent-400 via-accent-300 to-yellow-300">
-                success story
+                {t('registerPage.successStory')}
               </span>
             </h2>
             <p className="mt-8 text-xl text-white/70 max-w-lg leading-relaxed">
-              Create your account and unlock access to exclusive internship opportunities, career resources, and a network of industry professionals.
+              {t('registerPage.createDesc')}
             </p>
           </div>
 
@@ -252,7 +252,7 @@ export function RegisterPage() {
             className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to home
+            {t('registerPage.backToHome')}
           </Link>
 
           {/* Glassmorphism Form Card */}
@@ -262,11 +262,11 @@ export function RegisterPage() {
             
             <div className="relative">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Create your account</h2>
+                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{t('registerPage.createYourAccount')}</h2>
                 <p className="text-gray-500 mt-2">
-                  Already have an account?{' '}
+                  {t('registerPage.alreadyHaveAccount')}{' '}
                   <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-                    Sign in
+                    {t('registerPage.signIn')}
                   </Link>
                 </p>
               </div>
@@ -274,7 +274,7 @@ export function RegisterPage() {
               {/* User Type Selection */}
               <div className="mb-8">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  I want to register as:
+                  {t('registerPage.registerAs')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
@@ -294,9 +294,9 @@ export function RegisterPage() {
                       <User className={cn('w-6 h-6', selectedType === 'student' ? 'text-white' : 'text-blue-600')} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold">Student</div>
+                      <div className="font-bold">{t('registerPage.studentLabel')}</div>
                       <div className={cn('text-xs', selectedType === 'student' ? 'text-white/70' : 'text-gray-400')}>
-                        Find opportunities
+                        {t('registerPage.studentDesc')}
                       </div>
                     </div>
                   </button>
@@ -318,9 +318,9 @@ export function RegisterPage() {
                       <Building2 className={cn('w-6 h-6', selectedType === 'company' ? 'text-white' : 'text-emerald-600')} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold">Company</div>
+                      <div className="font-bold">{t('registerPage.companyLabel')}</div>
                       <div className={cn('text-xs', selectedType === 'company' ? 'text-white/70' : 'text-gray-400')}>
-                        Hire top talent
+                        {t('registerPage.companyDesc')}
                       </div>
                     </div>
                   </button>
@@ -338,7 +338,7 @@ export function RegisterPage() {
                 <form onSubmit={studentForm.handleSubmit(onSubmitStudent)} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">First name</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.firstName')}</label>
                       <input
                         {...studentForm.register('firstname')}
                         placeholder="John"
@@ -349,7 +349,7 @@ export function RegisterPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Last name</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.lastName')}</label>
                       <input
                         {...studentForm.register('lastname')}
                         placeholder="Doe"
@@ -364,7 +364,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Mail className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Email Address
+                      {t('registerPage.emailAddress')}
                     </label>
                     <input
                       {...studentForm.register('email')}
@@ -380,7 +380,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Lock className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Password
+                      {t('registerPage.password')}
                     </label>
                     <div className="relative">
                       <input
@@ -404,18 +404,18 @@ export function RegisterPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.classLabel')}</label>
                       <select {...studentForm.register('class')} className={selectClass}>
-                        <option value="">Select class</option>
+                        <option value="">{t('registerPage.selectClass')}</option>
                         {classes.map((c) => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Promotion</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.promotion')}</label>
                       <select {...studentForm.register('promotion')} className={selectClass}>
-                        <option value="">Select year</option>
+                        <option value="">{t('registerPage.selectYear')}</option>
                         {years.map((y) => (
                           <option key={y} value={y}>{y}</option>
                         ))}
@@ -433,10 +433,10 @@ export function RegisterPage() {
                     {isLoading ? (
                       <div className="flex items-center justify-center gap-3">
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Creating account...</span>
+                        <span>{t('registerPage.creatingAccount')}</span>
                       </div>
                     ) : (
-                      'Create Student Account'
+                      t('registerPage.createStudentAccount')
                     )}
                   </Button>
                 </form>
@@ -448,7 +448,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Building2 className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Company Name
+                      {t('registerPage.companyName')}
                     </label>
                     <input
                       {...companyForm.register('name')}
@@ -463,7 +463,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Mail className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Business Email
+                      {t('registerPage.businessEmail')}
                     </label>
                     <input
                       {...companyForm.register('email')}
@@ -479,7 +479,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Lock className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Password
+                      {t('registerPage.password')}
                     </label>
                     <div className="relative">
                       <input
@@ -504,7 +504,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Globe className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Website
+                      {t('registerPage.website')}
                     </label>
                     <input
                       {...companyForm.register('website')}
@@ -520,7 +520,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <Phone className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Phone Number
+                      {t('registerPage.phone')}
                     </label>
                     <input
                       {...companyForm.register('phone')}
@@ -536,7 +536,7 @@ export function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <MapPin className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      Address
+                      {t('registerPage.address')}
                     </label>
                     <input
                       {...companyForm.register('address')}
@@ -550,7 +550,7 @@ export function RegisterPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.city')}</label>
                       <input
                         {...companyForm.register('city')}
                         placeholder="Tunis"
@@ -561,7 +561,7 @@ export function RegisterPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.country')}</label>
                       <input
                         {...companyForm.register('country')}
                         placeholder="Tunisia"
@@ -574,11 +574,11 @@ export function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">About Company (Optional)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.aboutCompany')}</label>
                     <textarea
                       {...companyForm.register('about')}
                       rows={3}
-                      placeholder="Tell us about your company..."
+                      placeholder={t('registerPage.aboutCompanyPlaceholder')}
                       className={cn(inputClass(false), 'resize-none')}
                     />
                   </div>
@@ -593,10 +593,10 @@ export function RegisterPage() {
                     {isLoading ? (
                       <div className="flex items-center justify-center gap-3">
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Creating account...</span>
+                        <span>{t('registerPage.creatingAccount')}</span>
                       </div>
                     ) : (
-                      'Create Company Account'
+                      t('registerPage.createCompanyAccount')
                     )}
                   </Button>
                 </form>
@@ -604,10 +604,10 @@ export function RegisterPage() {
 
               {/* Terms */}
               <p className="text-center text-xs text-gray-400 mt-6">
-                By creating an account, you agree to our{' '}
-                <a href="#" className="text-primary-600 hover:underline">Terms of Service</a>
-                {' '}and{' '}
-                <a href="#" className="text-primary-600 hover:underline">Privacy Policy</a>
+                {t('registerPage.termsAgreement')}{' '}
+                <a href="#" className="text-primary-600 hover:underline">{t('registerPage.termsOfService')}</a>
+                {' '}{t('registerPage.and')}{' '}
+                <a href="#" className="text-primary-600 hover:underline">{t('registerPage.privacyPolicy')}</a>
               </p>
             </div>
           </div>
