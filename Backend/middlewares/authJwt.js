@@ -3,13 +3,14 @@ const config = require("../config/auth.config.js");
 const { adminRepository, studentRepository, companyRepository } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
-// Cookie configuration for JWT tokens
+// Cookie configuration for JWT tokens (env-driven for production)
 const cookieOptions = {
-  httpOnly: true,        // Prevents JavaScript access (XSS protection)
-  secure: false,         // Set to true only if using HTTPS
-  sameSite: 'lax',      // CSRF protection
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-  path: '/'
+  httpOnly: true,
+  secure: process.env.COOKIE_SECURE === 'true',
+  sameSite: process.env.COOKIE_SAMESITE || 'lax',
+  maxAge: 24 * 60 * 60 * 1000,
+  path: '/',
+  ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
 };
 
 const refreshCookieOptions = {

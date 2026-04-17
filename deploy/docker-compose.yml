@@ -1,6 +1,6 @@
 # ============================================
-# TIC-Connect Docker Compose Configuration
-# Production-ready setup for Azure VPS
+# ENIT-Connect Production Docker Compose
+# Deploy on Azure VPS with pre-built images
 # ============================================
 
 services:
@@ -14,7 +14,7 @@ services:
     environment:
       POSTGRES_DB: enit_connect
       POSTGRES_USER: enit_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -27,20 +27,16 @@ services:
       start_period: 20s
 
   # ==========================================
-  # Backend API Service (Node.js/Express)
+  # Backend API (pre-built from Docker Hub)
   # ==========================================
   backend:
     container_name: tic-backend
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile
-    # image: firaskali/enit-connect-backend:latest  # Uncomment for Docker Hub push
+    image: firaskali/enit-connect-backend:latest
     restart: unless-stopped
     env_file:
-      - ./Backend/.env
+      - .env
     volumes:
-      # Persist uploads across container restarts
-      - ./Backend/uploads:/app/uploads
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -59,20 +55,16 @@ services:
         max-file: "3"
 
   # ==========================================
-  # Frontend (React + Vite + Nginx)
+  # Frontend (pre-built from Docker Hub)
   # ==========================================
   frontend:
     container_name: tic-frontend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    # image: firaskali/enit-connect-frontend:latest  # Uncomment for Docker Hub push
+    image: firaskali/enit-connect-frontend:latest
     restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      # Mount custom nginx config
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -90,17 +82,11 @@ services:
         max-size: "10m"
         max-file: "3"
 
-# ==========================================
-# Networks
-# ==========================================
 networks:
   tic-network:
     driver: bridge
     name: tic-connect-network
 
-# ==========================================
-# Volumes
-# ==========================================
 volumes:
   postgres_data:
     name: tic-postgres

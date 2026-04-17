@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod 600 /home/ubuntu/ENIT-connect_key.pem)",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 azureenit@4.235.113.195 \"echo 'SSH OK' && uname -a && docker --version 2>/dev/null || echo 'DOCKER_NOT_INSTALLED'\")",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem -o StrictHostKeyChecking=no azureenit@4.235.113.195 'sudo apt-get update -qq && sudo apt-get install -y -qq ca-certificates curl gnupg && sudo install -m 0755 -d /etc/apt/keyrings && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg && sudo chmod a+r /etc/apt/keyrings/docker.gpg && echo \"deb [arch=$\\(dpkg --print-architecture\\) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $\\(. /etc/os-release && echo $VERSION_CODENAME\\) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && sudo apt-get update -qq && sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin && sudo usermod -aG docker azureenit && echo '\\\\''DOCKER_INSTALL_OK'\\\\''')",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"mkdir -p ~/enit-connect\")",
+      "Bash(scp -i /home/ubuntu/ENIT-connect_key.pem /home/ubuntu/Desktop/ENIT-CONNECT/deploy/.env /home/ubuntu/Desktop/ENIT-CONNECT/deploy/docker-compose.yml /home/ubuntu/Desktop/ENIT-CONNECT/deploy/nginx.conf azureenit@4.235.113.195:~/enit-connect/)",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"cd ~/enit-connect && ls -la && cat docker-compose.yml | head -5\")",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"cd ~/enit-connect && sudo docker compose up -d 2>&1\")",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"sudo docker compose -f ~/enit-connect/docker-compose.yml ps && echo '---LOGS---' && sudo docker compose -f ~/enit-connect/docker-compose.yml logs --tail=20 backend\")",
+      "Bash(scp -i /home/ubuntu/ENIT-connect_key.pem /home/ubuntu/Desktop/ENIT-CONNECT/deploy/docker-compose.yml azureenit@4.235.113.195:~/enit-connect/docker-compose.yml)",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"cd ~/enit-connect && mkdir -p uploads && sudo docker compose down && sudo docker compose up -d 2>&1 | tail -20\")",
+      "Bash(ssh -i /home/ubuntu/ENIT-connect_key.pem azureenit@4.235.113.195 \"sudo docker compose -f ~/enit-connect/docker-compose.yml ps && echo '---' && ls -la ~/enit-connect/uploads/\")"
+    ]
+  }
+}
