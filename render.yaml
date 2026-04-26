@@ -1,0 +1,66 @@
+databases:
+  - name: enit-connect-db
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: enit_connect
+    user: enit_user
+
+services:
+  - type: web
+    name: enit-connect-backend
+    runtime: image
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    image:
+      url: docker.io/YOUR_DOCKERHUB_USER/enit-backend:render
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: enit-connect-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: FRONTEND_URL
+        value: https://enit-connect-frontend.onrender.com
+      - key: BASE_URL
+        value: https://enit-connect-backend.onrender.com
+      - key: APP_URL
+        value: https://enit-connect-backend.onrender.com
+      - key: FILE_BASE_URL
+        value: https://enit-connect-backend.onrender.com
+
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: none
+
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: MAIL_NOTIFICATIONS_ENABLED
+        value: "true"
+      - key: MAIL_IMMEDIATE_ADMIN_NOTICE
+        value: "true"
+      - key: GEOCODER_API_KEY
+        sync: false
+      - key: DOC_AV_SCAN_URL
+        value: ""
+
+  - type: web
+    name: enit-connect-frontend
+    runtime: image
+    plan: starter
+    image:
+      url: docker.io/YOUR_DOCKERHUB_USER/enit-frontend:render
