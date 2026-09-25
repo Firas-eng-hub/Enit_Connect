@@ -13,7 +13,20 @@ const parseJson = (value, fallback) => {
   }
 };
 
+// Safe allowlist lookup for user-supplied keys.
+//
+// `map[userKey]` reaches inherited properties: "constructor", "toString",
+// "valueOf" and "__proto__" all return truthy non-values that pass a simple
+// falsiness check, and any prototype pollution would return attacker data.
+// Several call sites interpolate the result directly into SQL, so the lookup
+// must only ever see the map's OWN keys.
+const pickAllowed = (map, key) =>
+  typeof key === "string" && Object.prototype.hasOwnProperty.call(map, key)
+    ? map[key]
+    : null;
+
 module.exports = {
   isUuid,
   parseJson,
+  pickAllowed,
 };

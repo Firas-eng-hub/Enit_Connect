@@ -69,7 +69,7 @@ describe("Offer Repository - searchAdvanced", () => {
 
         await offerRepository.searchAdvanced({ active: true });
         const countCall = db.query.mock.calls[0];
-        expect(countCall[0]).toContain("end_date IS NULL OR end_date >= CURRENT_DATE");
+        expect(countCall[0]).toContain("end_date IS NULL OR end_date::date >= CURRENT_DATE");
     });
 
     it("should apply pagination", async () => {

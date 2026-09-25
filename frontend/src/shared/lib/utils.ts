@@ -27,10 +27,13 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
-// Format file size for display
-export function formatFileSize(bytes: number): string {
+// Format file size for display.
+// Note: bigint columns (e.g. size_bytes) arrive from the API as strings, so
+// coerce defensively and fall back to '—' for non-numeric/invalid input.
+export function formatFileSize(bytes: number | string | null | undefined): string {
   const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
+  let size = typeof bytes === 'number' ? bytes : Number(bytes);
+  if (!Number.isFinite(size)) return '—';
   let unitIndex = 0;
 
   while (size >= 1024 && unitIndex < units.length - 1) {

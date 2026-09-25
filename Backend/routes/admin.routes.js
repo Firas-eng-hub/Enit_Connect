@@ -143,7 +143,7 @@ router.post('/news', authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
 //Update news
 router.patch('/news/:id', authJwt.verifyToken, authJwt.isAdmin, controller.updateNews);
 //Save docs for news
-router.post('/newsdoc', newsdoc, controller.newsDoc);
+router.post('/newsdoc', authJwt.verifyToken, authJwt.isAdmin, newsdoc, controller.newsDoc);
 //Get news
 router.get('/news', controller.getNews);
 

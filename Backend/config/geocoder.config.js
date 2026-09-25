@@ -143,10 +143,26 @@ function latlng(req, res, callback) {
   });
 }
 
+// Only lat/lon are ever forwarded to the geocoding provider. Passing the whole
+// req.query through let a caller inject arbitrary extra parameters into the
+// outbound provider request (and would be an options-injection gadget under
+// prototype pollution).
+const toCoordinate = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 function reverse(req, res, callback) {
   const { lat, lon, latitude, longitude } = req.query || {};
-  const latValue = lat ?? latitude;
-  const lonValue = lon ?? longitude;
+  const latValue = toCoordinate(lat ?? latitude);
+  const lonValue = toCoordinate(lon ?? longitude);
+
+  if (latValue === null || lonValue === null) {
+    return callback(null);
+  }
+
+  const reverseQuery = { lat: latValue, lon: lonValue };
+
   if (geoapifyKey && latValue != null && lonValue != null) {
     geoapifyReverse(latValue, lonValue)
       .then(result => {
@@ -155,12 +171,12 @@ function reverse(req, res, callback) {
           return;
         }
         const geocoder = getOpenStreetGeocoder();
-        return geocoder.reverse(req.query).then(callback);
+        return geocoder.reverse(reverseQuery).then(callback);
       })
       .catch(err => {
         console.error('Geoapify reverse failed:', err.message);
         const geocoder = getOpenStreetGeocoder();
-        return geocoder.reverse(req.query).then(callback);
+        return geocoder.reverse(reverseQuery).then(callback);
       })
       .catch(err => {
         console.error('Reverse geocoding failed:', err.message);
@@ -169,7 +185,7 @@ function reverse(req, res, callback) {
     return;
   }
   const geocoder = getOpenStreetGeocoder();
-  geocoder.reverse(req.query)
+  geocoder.reverse(reverseQuery)
     .then(result => {
       callback(result);
     })

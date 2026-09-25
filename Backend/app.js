@@ -40,12 +40,14 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Prevent HTTP Parameter Pollution
-app.use(hpp());
-
 // Body parser with size limits (prevent large payload attacks)
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
+
+// Prevent HTTP Parameter Pollution.
+// MUST come after the body parsers: hpp inspects req.body at call time, so
+// mounting it earlier silently skipped body protection entirely.
+app.use(hpp());
 
 // Cookie parser for HTTP-only JWT cookies
 app.use(cookieParser());
@@ -59,6 +61,11 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
+
+// CSRF protection for cookie-authenticated, state-changing requests.
+// Must come after CORS so that blocked responses still carry CORS headers.
+const { csrfGuard } = require('./middlewares/csrfGuard');
+app.use(csrfGuard);
 
 // Rate limiting - prevent brute force attacks (after CORS so rate limit responses include CORS headers)
 const limiter = rateLimit({

@@ -7,7 +7,8 @@ exports.getOverview = async (req, res) => {
         const overview = await companyStatsRepository.getOverview(req.id);
         res.status(200).send(overview);
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };
 
@@ -27,7 +28,8 @@ exports.getTrends = async (req, res) => {
             applicationTrend: applicationTrendData,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };
 
@@ -36,7 +38,8 @@ exports.getConversions = async (req, res) => {
         const conversions = await companyStatsRepository.conversionRates(req.id);
         res.status(200).send(conversions);
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };
 
@@ -52,6 +55,7 @@ exports.getDemographics = async (req, res) => {
             statusBreakdown,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };

@@ -19,9 +19,9 @@ const authLimiter = rateLimit({
 });
 
 // Get posts
-router.get("/posts", controller.getPosts);
+router.get("/posts", authJwt.verifyToken, controller.getPosts);
 // Add Post
-router.post('/posts', controller.addPost);
+router.post('/posts', authJwt.verifyToken, authJwt.isStudent, controller.addPost);
 //Register Student with validation
 router.post("/signup", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.studentSignup), verifySignUp.checkDuplicateEmail, controller.signup);
 //Confirm Email with validation
@@ -30,7 +30,7 @@ router.post("/resend-confirmation", authLimiter, validation.sqlInjectionCheck, c
 //Login Student with validation
 router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
 //Get All Student
-router.get("/all", controller.getAll);
+router.get("/all", authJwt.verifyToken, controller.getAll);
 
 //Get All Companies
 router.get("/companies", authJwt.verifyToken, authJwt.isStudent, controller.getCompaniesForBrowse);
@@ -55,7 +55,7 @@ router.post("/upload/:id", authJwt.verifyToken, authJwt.isStudent, storage, cont
 //Add folder
 router.post('/folder', authJwt.verifyToken, authJwt.isStudent, controller.createFolder);
 //Add file
-router.post('/file', savedoc, controller.createFile);
+router.post('/file', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.createFile);
 //Get documents
 router.get('/documents', authJwt.verifyToken, authJwt.isStudent, controller.listDocuments);
 router.post('/documents', authJwt.verifyToken, controller.getDocuments);

@@ -13,7 +13,8 @@ const fetchNotifications = async (recipientType, req, res) => {
       notifications.map(notificationRepository.mapNotificationRow)
     );
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -22,7 +23,8 @@ const fetchUnreadCount = async (recipientType, req, res) => {
     const count = await notificationRepository.countUnread(recipientType, req.id);
     res.status(200).send({ count });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -37,7 +39,8 @@ const markRead = async (recipientType, req, res) => {
       deleted: result.deleted,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -50,7 +53,8 @@ const markAllRead = async (recipientType, req, res) => {
       updatedCount: summary.updatedCount || 0,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -62,7 +66,8 @@ const deleteNotification = async (recipientType, req, res) => {
     }
     res.status(200).send({ message: "Notification deleted." });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 

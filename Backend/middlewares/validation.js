@@ -373,6 +373,17 @@ const validate = (schema, property = 'body') => {
       });
     }
 
+    // Defence in depth against prototype injection.
+    //
+    // JSON.parse turns a `__proto__` key into an own property, and Joi <17.13.6
+    // promotes it to the validated object's PROTOTYPE. stripUnknown only
+    // removes unknown OWN keys, so the attacker's properties survive as
+    // inherited ones and every `req.body.<field>` read in the controllers picks
+    // them up -- defeating the schema allowlist entirely.
+    if (value && typeof value === 'object') {
+      Object.setPrototypeOf(value, Object.prototype);
+    }
+
     // Replace request data with validated/sanitized data
     if (property === 'body') {
       req.body = value;
@@ -390,9 +401,14 @@ const validate = (schema, property = 'body') => {
 // Sanitization Middleware
 // ============================================
 
+// Keys that mutate an object's prototype when assigned through a computed
+// property. Any loop that copies user-supplied keys must skip these.
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 const sanitizeInput = (req, res, next) => {
   if (req.body) {
     Object.keys(req.body).forEach((key) => {
+      if (FORBIDDEN_KEYS.has(key)) return;
       if (typeof req.body[key] === 'string') {
         // Remove potentially dangerous characters
         req.body[key] = req.body[key]
@@ -472,6 +488,10 @@ const xssPrevention = (req, res, next) => {
     if (typeof value === 'object' && value !== null) {
       const sanitized = {};
       for (const key of Object.keys(value)) {
+        // `sanitized["__proto__"] = {...}` invokes the __proto__ setter and
+        // reparents the object, turning attacker JSON into inherited
+        // properties on req.body. Never copy prototype-mutating keys.
+        if (FORBIDDEN_KEYS.has(key)) continue;
         sanitized[key] = sanitizeValue(value[key]);
       }
       return sanitized;

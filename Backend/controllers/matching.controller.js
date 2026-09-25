@@ -111,6 +111,7 @@ exports.getRecommendations = async (req, res) => {
             total: scored.length,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };

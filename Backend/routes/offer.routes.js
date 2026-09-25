@@ -20,9 +20,9 @@ router.post("/", authJwt.verifyToken, authJwt.isCompany, validation.sqlInjection
 //Get Offer by ID with UUID validation
 router.get("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), offer.getOfferById);
 //Edit Offer of Company with validation
-router.patch("/", authJwt.verifyToken, validation.sqlInjectionCheck, validation.validate(validation.schemas.updateOffer), offer.updateOffer);
+router.patch("/", authJwt.verifyToken, authJwt.isCompany, validation.sqlInjectionCheck, validation.validate(validation.schemas.updateOffer), offer.updateOffer);
 //Delete Offer of Company with UUID validation
-router.delete("/", authJwt.verifyToken, offer.deleteOffre);
-router.delete("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), offer.deleteOffre);
+router.delete("/", authJwt.verifyToken, authJwt.isCompany, offer.deleteOffre);
+router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), offer.deleteOffre);
 
 module.exports = router;

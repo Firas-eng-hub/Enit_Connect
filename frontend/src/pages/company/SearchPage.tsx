@@ -219,7 +219,9 @@ export function SearchPage() {
                       <h3 className="font-medium text-gray-900">
                         {student.firstname} {student.lastname}
                       </h3>
-                      <p className="text-sm text-gray-500">{student.email}</p>
+                      <p className="text-sm text-gray-500">
+                        {[student.class, student.promotion].filter(Boolean).join(' · ')}
+                      </p>
                     </div>
                   </div>
 

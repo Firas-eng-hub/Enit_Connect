@@ -1,17 +1,5 @@
-const multer = require('multer');
-let storage1 = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(req.query);
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + uniqueSuffix + '.' + req.query.type)
-  }
-});
+const { createUploadMiddleware } = require('./uploadSanitize');
 
-let upload = multer({storage: storage1});
-
-const newsdoc =upload.single('file');
+const newsdoc = createUploadMiddleware('file', 'Invalid or unsupported file type.');
 
 module.exports = newsdoc;

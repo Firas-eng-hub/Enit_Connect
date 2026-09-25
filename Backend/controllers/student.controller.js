@@ -24,8 +24,14 @@ const {
   documentVersionRepository,
   documentAuditRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
 const crypto = require("crypto");
+
+// A well-formed bcrypt hash of a discarded random value. Compared against when
+// no account matches, so an unknown email costs the same time as a known one
+// and cannot be distinguished by response latency.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$T5kVuZGqo8hrqAziZa3pcOwGlBpsxO4M63pWnEeiDkEggG2vtF.xi";
 
 const mapStudentRow = (row) => ({
   firstname: row.firstname,
@@ -49,6 +55,26 @@ const mapStudentRow = (row) => ({
   _id: row.id,
 });
 
+// Directory projection: deliberately omits the direct-contact and
+// geolocation fields (email, phone, address, latitude, longitude) that
+// mapStudentRow exposes. Used for listings, where no caller needs them.
+const mapStudentDirectoryRow = (row) => ({
+  firstname: row.firstname,
+  lastname: row.lastname,
+  status: row.status,
+  country: row.country,
+  city: row.city,
+  type: row.type,
+  workAt: row.work_at,
+  class: row.class,
+  promotion: row.promotion,
+  linkedin: row.linkedin,
+  picture: row.picture,
+  aboutme: row.aboutme,
+  id: row.id,
+  _id: row.id,
+});
+
 const parseLimit = (value, fallback = 24, max = 100) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
@@ -67,23 +93,42 @@ exports.getPosts = async (req, res) => {
     const response = posts.map(postRepository.mapPostRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
 exports.addPost = async (req, res) => {
   try {
+    if (!isUuid(req.id)) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    // The author is derived from the verified token, never from the request
+    // body: accepting `req.body.userName` let anyone post as any user.
+    const author = await studentRepository.findById(req.id);
+    if (!author) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+
+    const title = String(req.body.title || "").trim();
+    const body = String(req.body.body || "").trim();
+    if (!title || !body) {
+      return res.status(400).send({ message: "Title and body are required." });
+    }
+
     await postRepository.createPost({
-      title: req.body.title,
-      topic: req.body.topic,
+      title: title.slice(0, 200),
+      topic: String(req.body.topic || "").trim().slice(0, 100),
       date: req.body.date,
-      userName: req.body.userName,
-      body: req.body.body,
-      description: req.body.description,
+      userName: `${author.firstname} ${author.lastname}`.trim(),
+      body: body.slice(0, 10000),
+      description: String(req.body.description || "").trim().slice(0, 2000),
     });
     res.status(201).send({ message: "Post was added successfully!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("addPost failed:", err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -159,7 +204,8 @@ exports.apply = async (req, res) => {
     res.status(200).send({ message: "Application submitted successfully!" });
   } catch (err) {
     console.error("Apply error:", err);
-    res.status(500).send({ message: err.message || "Error applying to offer" });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -900,7 +946,7 @@ exports.batchDownloadDocuments = async (req, res) => {
         const filename = getFilenameFromLink(doc.link);
         if (!filename) return;
         const filePath = path.join(__dirname, "..", "uploads", filename);
-        archive.file(filePath, { name: doc.title || filename });
+        archive.file(filePath, { name: path.basename(doc.title || filename) });
       } catch (err) {
         console.error("Add file to archive failed:", err);
       }
@@ -1123,7 +1169,8 @@ exports.searchDocument = async (req, res) => {
     const docs = await documentRepository.searchByTitle(req.body.title || "");
     res.status(200).send(docs.map(documentRepository.mapDocumentRow));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1141,7 +1188,8 @@ exports.deleteDocument = async (req, res) => {
     res.status(200).send({ message: `${req.body.type} deleted` });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1166,7 +1214,8 @@ exports.createFile = async (req, res) => {
     });
     res.status(201).send({ message: "File was uploaded successfully!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1186,7 +1235,8 @@ exports.createFolder = async (req, res) => {
     });
     res.status(201).send({ message: "Folder was created successfully!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1195,7 +1245,8 @@ exports.getDocuments = async (req, res) => {
     const docs = await documentRepository.listByEmplacement(req.body.emp);
     res.status(200).send(docs.map(documentRepository.mapDocumentRow));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1214,7 +1265,8 @@ exports.updatePicture = async (req, res) => {
     res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1301,26 +1353,27 @@ exports.signin = async (req, res) => {
     const email = (req.body.email || "").trim().toLowerCase();
     const student = await studentRepository.findByEmail(email);
 
-    if (!student) {
+    // Always run a bcrypt comparison, even when no account exists, so the
+    // response time does not reveal whether the email is registered.
+    let passwordIsValid = false;
+    try {
+      passwordIsValid = await bcrypt.compare(
+        req.body.password || "",
+        student ? student.password : DUMMY_PASSWORD_HASH
+      );
+    } catch (compareError) {
+      passwordIsValid = false;
+    }
+
+    if (!student || !passwordIsValid) {
       return res.status(401).send({ message: "Invalid email or password." });
     }
 
+    // Account status is only disclosed AFTER the password is proven. Checking
+    // it first turned this endpoint into an account-existence oracle.
     if (student.status !== "Active") {
       return res.status(401).send({
         message: "Pending Account. Please Verify Your Email!",
-      });
-    }
-
-    let passwordIsValid = false;
-    try {
-      passwordIsValid = bcrypt.compareSync(req.body.password, student.password);
-    } catch (compareError) {
-      return res.status(401).send({ message: "Invalid email or password." });
-    }
-
-    if (!passwordIsValid) {
-      return res.status(401).send({
-        message: "Invalid email or password.",
       });
     }
 
@@ -1338,7 +1391,8 @@ exports.signin = async (req, res) => {
       userType: "student",
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1392,7 +1446,8 @@ exports.verifyUser = async (req, res) => {
     await studentRepository.verifyStudent(student.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1447,10 +1502,11 @@ exports.getLocation = (req, res) => {
 exports.getAll = async (req, res) => {
   try {
     const students = await studentRepository.listAll();
-    const response = students.map(mapStudentRow);
+    const response = students.map(mapStudentDirectoryRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("getAll failed:", err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1464,12 +1520,13 @@ exports.getByName = async (req, res) => {
     students.forEach((doc) => {
       const name = `${doc.firstname} ${doc.lastname}`;
       if (stringSimilarity.compareTwoStrings(name.toLowerCase(), req.query.q.toLowerCase()) > 0.45) {
-        response.push(mapStudentRow(doc));
+        response.push(mapStudentDirectoryRow(doc));
       }
     });
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1477,14 +1534,13 @@ exports.getStudentLocations = async (req, res) => {
   const allowed = {
     firstname: "firstname",
     lastname: "lastname",
-    email: "email",
     country: "country",
     city: "city",
     class: "\"class\"",
     promotion: "promotion",
     type: "type",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
@@ -1502,7 +1558,8 @@ exports.getStudentLocations = async (req, res) => {
     }));
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1510,24 +1567,24 @@ exports.getByKey = async (req, res) => {
   const allowed = {
     firstname: "firstname",
     lastname: "lastname",
-    email: "email",
     country: "country",
     city: "city",
     class: "\"class\"",
     promotion: "promotion",
     type: "type",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
 
   try {
     const docs = await studentRepository.searchByKey(column, req.query.key);
-    const response = docs.map(mapStudentRow);
+    const response = docs.map(mapStudentDirectoryRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1544,9 +1601,10 @@ exports.getByFilters = async (req, res) => {
       promotion,
       className,
     });
-    res.status(200).send(docs.map(mapStudentRow));
+    res.status(200).send(docs.map(mapStudentDirectoryRow));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1598,9 +1656,13 @@ exports.getStudentById = async (req, res) => {
     if (!student) {
       return res.status(404).send({ message: "User Not found." });
     }
-    return res.status(200).send(mapStudentRow(student));
+    // Only the student themselves sees their contact and geolocation fields;
+    // any other authenticated caller gets the public directory projection.
+    const isSelf = String(req.id) === String(student.id);
+    return res.status(200).send(isSelf ? mapStudentRow(student) : mapStudentDirectoryRow(student));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1651,7 +1713,8 @@ exports.updateStudent = async (req, res) => {
     return res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error("Failed to update student:", err);
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -1697,6 +1760,7 @@ exports.deleteStudent = async (req, res) => {
     res.status(200).send({ message: "User deleted" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };

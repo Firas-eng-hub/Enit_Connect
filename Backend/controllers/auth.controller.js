@@ -149,7 +149,8 @@ exports.getPreferences = async (req, res) => {
       notifications: getNotificationPreferences(current.user.extra),
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -191,7 +192,8 @@ exports.updatePreferences = async (req, res) => {
       notifications: getNotificationPreferences(updated.extra),
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 

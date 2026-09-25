@@ -21,7 +21,8 @@ exports.getOverview = async (req, res) => {
             candidacies,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };
 
@@ -57,6 +58,7 @@ exports.getTrends = async (req, res) => {
             topCompanies,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        console.error("[500]", req.method, req.originalUrl, err);
+        res.status(500).send({ message: "Internal server error." });
     }
 };

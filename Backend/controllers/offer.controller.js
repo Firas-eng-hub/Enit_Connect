@@ -5,7 +5,7 @@ const {
   notificationRepository,
   offerViewRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
 
 const allowedSearchFields = {
   title: "title",
@@ -15,9 +15,19 @@ const allowedSearchFields = {
   end: "end_date",
 };
 
-const buildOffersWithCandidacies = async (offers) => {
+// Candidacies carry applicants' personal data (studentSnapshot, application
+// body, documents), so they are only ever returned to the company that owns
+// the offer. Everyone else gets the offer with an empty candidacies list.
+const isOfferOwner = (offer, callerId) =>
+  Boolean(callerId) && String(offer.company_id) === String(callerId);
+
+const buildOffersWithCandidacies = async (offers, callerId) => {
   if (!offers.length) return [];
-  const offerIds = offers.map((offer) => offer.id);
+  const ownedOffers = offers.filter((offer) => isOfferOwner(offer, callerId));
+  if (!ownedOffers.length) {
+    return offers.map((offer) => offerRepository.mapOfferRow(offer, []));
+  }
+  const offerIds = ownedOffers.map((offer) => offer.id);
   const candidacyRows = await offerRepository.listCandidaciesByOfferIds(offerIds);
   const candidacyMap = new Map();
   candidacyRows.forEach((row) => {
@@ -76,32 +86,35 @@ exports.addOffer = async (req, res) => {
 
     res.status(201).send({ message: "Offer added successfully!" });
   } catch (error) {
-    res.status(500).send({ message: error.message || error });
+    console.error("[500]", req.method, req.originalUrl, error);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
 exports.getAll = async (req, res) => {
   try {
     const offers = await offerRepository.listOffers();
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
 exports.getByKey = async (req, res) => {
   try {
     const { property, key } = req.query;
-    const column = allowedSearchFields[property];
+    const column = pickAllowed(allowedSearchFields, property);
     if (!column || !key) {
       return res.status(400).send({ message: "Invalid search parameters." });
     }
     const offers = await offerRepository.searchByKey(column, key);
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -112,10 +125,11 @@ exports.getCompanyOffers = async (req, res) => {
       return res.status(400).send({ message: "Invalid company id." });
     }
     const offers = await offerRepository.listOffersByCompany(companyId);
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -130,6 +144,9 @@ exports.getCandidacies = async (req, res) => {
     if (!offer) {
       return res.status(404).send({ message: "No Candidacies found." });
     }
+    if (!isOfferOwner(offer, req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
 
     const candidacies = await offerRepository.listCandidacies(offerId);
     const response = offerRepository.mapOfferRow(
@@ -138,7 +155,8 @@ exports.getCandidacies = async (req, res) => {
     );
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -195,7 +213,8 @@ exports.updateCandidacyStatus = async (req, res) => {
 
     return res.status(200).send({ message: "Candidacy updated." });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -214,14 +233,17 @@ exports.getOfferById = async (req, res) => {
       await offerViewRepository.recordView(offer.id, req.id || null, req.cookies?.userType || "anonymous");
     } catch { /* ignore */ }
 
-    const candidacies = await offerRepository.listCandidacies(offer.id);
+    const candidacies = isOfferOwner(offer, req.id)
+      ? await offerRepository.listCandidacies(offer.id)
+      : [];
     const response = offerRepository.mapOfferRow(
       offer,
       candidacies.map(offerRepository.mapCandidacyRow)
     );
     return res.status(200).send(response);
   } catch (err) {
-    return res.status(500).send({ message: "error" + err.message });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -232,6 +254,16 @@ exports.updateOffer = async (req, res) => {
   }
 
   try {
+    // Ownership check: an offer may only be modified by the company that owns
+    // it. Without this any authenticated user could rewrite any offer by id.
+    const existing = await offerRepository.findById(offerId);
+    if (!existing) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    if (String(existing.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
+
     const updated = await offerRepository.updateOffer(offerId, {
       title: req.body.title,
       type: req.body.type,
@@ -246,7 +278,8 @@ exports.updateOffer = async (req, res) => {
     return res.status(200).send({ message: "Offer updated" });
   } catch (err) {
     console.error(err);
-    return res.status(500).send({ message: err.message || err });
+    console.error("[500]", req.method, req.originalUrl, err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -256,6 +289,15 @@ exports.deleteOffre = async (req, res) => {
     return res.status(400).send({ message: "Invalid offer id." });
   }
   try {
+    // Ownership check: only the owning company may delete an offer.
+    const existing = await offerRepository.findById(offerId);
+    if (!existing) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    if (String(existing.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
+
     const deleted = await offerRepository.deleteOffer(offerId);
     if (!deleted) {
       return res.status(404).send({ message: "Offer not found." });
@@ -263,6 +305,7 @@ exports.deleteOffre = async (req, res) => {
     return res.status(200).send({ message: "Offer deleted" });
   } catch (error) {
     console.error(error);
-    return res.status(500).send({ message: error.message || error });
+    console.error("[500]", req.method, req.originalUrl, error);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };

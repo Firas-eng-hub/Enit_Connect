@@ -25,11 +25,15 @@ exports.setAuthCookies = (res, accessToken, refreshToken, userType) => {
   res.cookie('userType', userType, { ...cookieOptions, httpOnly: false }); // Allow JS to read user type
 };
 
-// Helper function to clear auth cookies
+// Helper function to clear auth cookies.
+// The clearing options MUST mirror the attributes used when the cookies were
+// set (secure / sameSite / domain), otherwise the browser treats them as a
+// different cookie and logout silently leaves the session in place.
 exports.clearAuthCookies = (res) => {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/' });
-  res.clearCookie('userType', { path: '/' });
+  const { maxAge, ...clearOptions } = cookieOptions;
+  res.clearCookie('accessToken', clearOptions);
+  res.clearCookie('refreshToken', clearOptions);
+  res.clearCookie('userType', { ...clearOptions, httpOnly: false });
 };
 
 // Verify token from cookie or Authorization header (for backward compatibility)
@@ -46,7 +50,7 @@ exports.verifyToken = (req, res, next) => {
     return res.status(403).send({ message: "No token provided!" });
   }
 
-  jwt.verify(token, config.secret, (err, decoded) => {
+  jwt.verify(token, config.secret, { algorithms: ["HS256"] }, (err, decoded) => {
     if (err) {
       // Token expired or invalid
       return res.status(401).send({ message: "Unauthorized! Token invalid or expired." });
@@ -73,7 +77,8 @@ exports.isAdmin = (req, res, next) => {
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error" + err.message });
+      console.error("Authorization check failed:", err);
+      res.status(500).send({ message: "Authorization check failed." });
     });
 };
 
@@ -90,12 +95,17 @@ exports.isStudent = (req, res, next) => {
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error" + err.message });
+      console.error("Authorization check failed:", err);
+      res.status(500).send({ message: "Authorization check failed." });
     });
 };
 
+// Authorizes the AUTHENTICATED caller only. A request parameter must never be
+// able to select the subject of an authorization decision: honouring
+// `req.query.id` here let any authenticated user (including a student) pass
+// this gate by naming an existing company.
 exports.isCompany = (req, res, next) => {
-  const companyId = req.query.id || req.id;
+  const companyId = req.id;
   if (!isUuid(companyId)) {
     return res.status(401).send({ message: "Unauthorized!" });
   }
@@ -108,7 +118,8 @@ exports.isCompany = (req, res, next) => {
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error " + err.message });
+      console.error("Authorization check failed:", err);
+      res.status(500).send({ message: "Authorization check failed." });
     });
 };
 
@@ -130,7 +141,7 @@ exports.verifyTokenOptional = (req, res, next) => {
   }
 
   // If token exists, verify it
-  jwt.verify(token, config.secret, (err, decoded) => {
+  jwt.verify(token, config.secret, { algorithms: ["HS256"] }, (err, decoded) => {
     if (err) {
       // Invalid token - proceed without authentication
       req.id = null;
