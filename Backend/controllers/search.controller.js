@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const {
     offerRepository,
     savedSearchRepository,
@@ -33,8 +34,7 @@ exports.searchAdvanced = async (req, res) => {
             offset: Number(filters.offset) || 0,
         });
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };
 
@@ -50,8 +50,7 @@ exports.listSavedSearches = async (req, res) => {
         const searches = await savedSearchRepository.listByUser(req.id, userType);
         res.status(200).send(searches);
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };
 
@@ -70,8 +69,7 @@ exports.createSavedSearch = async (req, res) => {
         });
         res.status(201).send(saved);
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };
 
@@ -90,8 +88,7 @@ exports.updateSavedSearch = async (req, res) => {
         }
         res.status(200).send(updated);
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };
 
@@ -106,7 +103,6 @@ exports.deleteSavedSearch = async (req, res) => {
         }
         res.status(200).send({ message: "Search deleted." });
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };

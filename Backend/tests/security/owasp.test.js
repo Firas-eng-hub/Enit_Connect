@@ -42,6 +42,7 @@ const updateStudentMock = spies.updateStudent;
 const updateOfferMock = spies.updateOffer;
 const deleteOfferMock = spies.deleteOffer;
 const createPostMock = spies.createPost;
+const createDocumentMock = spies.createDocument;
 const searchByKeyMock = spies.searchByKey;
 const listCandidaciesMock = spies.listCandidacies;
 const listCandidaciesByOfferIdsMock = spies.listCandidaciesByOfferIds;
@@ -74,6 +75,10 @@ jest.mock("../../db", () => ({
   checkConnection: jest.fn(async () => true),
   pool: { on: jest.fn() },
 }));
+
+// archiver >= 8 is ESM-only, which Jest's CommonJS runtime cannot require.
+// No test here exercises zip downloads, so a stub is sufficient.
+jest.mock("archiver", () => jest.fn());
 
 // ---------------------------------------------------------------------------
 // App under test
@@ -137,22 +142,28 @@ describe("A01:2021 Broken Access Control", () => {
   });
 
   // Finding #3
-  it("GET /api/student/all requires authentication (finding #3)", async () => {
+  it("the unauthenticated full-directory dump GET /api/student/all is gone (finding #3)", async () => {
     const res = await request(app).get("/api/student/all");
     expect([401, 403]).toContain(res.status);
+    const authed = await auth(request(app).get("/api/student/all"), studentToken());
+    expect(authed.status).not.toBe(200);
+    expect(spies.listAll).not.toHaveBeenCalled();
   });
 
-  it("the student directory never exposes contact or geolocation PII (finding #3)", async () => {
-    const res = await auth(request(app).get("/api/student/all"), studentToken());
+  it("another user's student profile never exposes contact or geolocation PII (finding #3)", async () => {
+    const res = await auth(request(app).get(`/api/student/${STUDENT_ID}`), companyToken());
     expect(res.status).toBe(200);
-    const [row] = res.body;
-    expect(row).toBeDefined();
-    for (const leaked of ["email", "phone", "address", "latitude", "longitude"]) {
-      expect(row).not.toHaveProperty(leaked);
-    }
+    expectNoPii(res.body);
+    expect(res.body).not.toHaveProperty("status");
     // Non-sensitive directory fields are still present.
-    expect(row).toHaveProperty("firstname");
-    expect(row).toHaveProperty("promotion");
+    expect(res.body).toHaveProperty("firstname");
+    expect(res.body).toHaveProperty("promotion");
+  });
+
+  it("a student still sees their own full profile (no over-blocking)", async () => {
+    const res = await auth(request(app).get(`/api/student/${STUDENT_ID}`), studentToken());
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("email");
   });
 
   it.each([
@@ -224,7 +235,7 @@ describe("A01:2021 Broken Access Control", () => {
       request(app).get(`/api/offers/candidacies?id=${OFFER_ID}`),
       studentToken()
     );
-    expect(res.status).toBe(403);
+    expect([401, 403]).toContain(res.status);
     expect(listCandidaciesMock).not.toHaveBeenCalled();
   });
 
@@ -237,14 +248,13 @@ describe("A01:2021 Broken Access Control", () => {
     expect(listCandidaciesMock).toHaveBeenCalledWith(OFFER_ID);
   });
 
-  it("listing another company's offers never loads their candidacies", async () => {
+  it("/myoffers ignores ?id= and never lists another company's offers", async () => {
     const res = await auth(
       request(app).get(`/api/offers/myoffers?id=${VICTIM_COMPANY_ID}`),
       companyToken()
     );
     expect(res.status).toBe(200);
-    expect(res.body[0].candidacies).toEqual([]);
-    expect(listCandidaciesByOfferIdsMock).not.toHaveBeenCalled();
+    expect(res.body.map((o) => o.id)).toEqual([OFFER_ID]);
   });
 
   it("a company's own offer listing still includes candidacies", async () => {
@@ -256,11 +266,22 @@ describe("A01:2021 Broken Access Control", () => {
     expect(listCandidaciesByOfferIdsMock).toHaveBeenCalledWith([OFFER_ID]);
   });
 
-  it("a single offer viewed by a non-owner has no candidacies", async () => {
+  it("a single offer viewed by a non-owner exposes no other applicant's candidacy", async () => {
+    listCandidaciesMock.mockResolvedValueOnce([
+      { studentId: GHOST_ID, body: "someone else's application" },
+    ]);
     const res = await auth(request(app).get(`/api/offers/${VICTIM_OFFER_ID}`), studentToken());
     expect(res.status).toBe(200);
     expect(res.body.candidacies).toEqual([]);
-    expect(listCandidaciesMock).not.toHaveBeenCalled();
+  });
+
+  it("a non-owning company viewing an offer sees no candidacies", async () => {
+    listCandidaciesMock.mockResolvedValueOnce([
+      { studentId: STUDENT_ID, body: "application" },
+    ]);
+    const res = await auth(request(app).get(`/api/offers/${VICTIM_OFFER_ID}`), companyToken());
+    expect(res.status).toBe(200);
+    expect(res.body.candidacies).toEqual([]);
   });
 
   // Finding #5
@@ -304,27 +325,13 @@ describe("A01:2021 Broken Access Control", () => {
   });
 
   // Finding #7
-  it("POST /api/student/posts requires authentication (finding #7)", async () => {
-    const res = await request(app).post("/api/student/posts").send({
-      title: "Spam",
-      body: "Spam body",
-      userName: "Impersonated Admin",
-    });
-    expect([401, 403]).toContain(res.status);
+  it("the legacy POST /api/student/posts endpoint is gone (finding #7)", async () => {
+    const res = await auth(
+      request(app).post("/api/student/posts").set("Origin", process.env.FRONTEND_URL),
+      studentToken()
+    ).send({ title: "Spam", body: "Spam body", userName: "Impersonated Admin" });
+    expect(res.status).toBe(404);
     expect(createPostMock).not.toHaveBeenCalled();
-  });
-
-  it("post authorship is derived from the token, not the body (finding #7)", async () => {
-    const res = await auth(request(app).post("/api/student/posts"), studentToken()).send({
-      title: "Hello",
-      body: "World",
-      userName: "Impersonated Admin",
-    });
-
-    expect(res.status).toBe(201);
-    expect(createPostMock).toHaveBeenCalled();
-    expect(createPostMock.mock.calls[0][0].userName).toBe("Test Student");
-    expect(createPostMock.mock.calls[0][0].userName).not.toContain("Impersonated");
   });
 });
 
@@ -357,7 +364,8 @@ describe("A02:2021 Cryptographic Failures", () => {
   });
 
   it("the student directory never returns password hashes", async () => {
-    const res = await auth(request(app).get("/api/student/all"), studentToken());
+    const res = await auth(request(app).get("/api/student/find?q=Test"), companyToken());
+    expect(res.status).toBe(200);
     expect(JSON.stringify(res.body)).not.toMatch(/\$2[aby]\$/);
   });
 
@@ -470,32 +478,32 @@ describe("A04:2021 Insecure Design", () => {
   it("blocks a cross-origin state-changing request (finding #6)", async () => {
     const res = await auth(
       request(app)
-        .post("/api/student/posts")
+        .post("/api/student/folder")
         .set("Origin", "https://evil.example.com"),
       studentToken()
     ).send({ title: "CSRF", body: "CSRF" });
 
     expect(res.status).toBe(403);
-    expect(createPostMock).not.toHaveBeenCalled();
+    expect(createDocumentMock).not.toHaveBeenCalled();
   });
 
   it("blocks a cross-origin urlencoded POST, the CORS-simple bypass (finding #6)", async () => {
     const res = await auth(
       request(app)
-        .post("/api/student/posts")
+        .post("/api/student/folder")
         .set("Origin", "https://evil.example.com")
         .type("form"),
       studentToken()
     ).send("title=CSRF&body=CSRF");
 
     expect(res.status).toBe(403);
-    expect(createPostMock).not.toHaveBeenCalled();
+    expect(createDocumentMock).not.toHaveBeenCalled();
   });
 
   it("blocks a cross-origin request identified only by Referer (finding #6)", async () => {
     const res = await auth(
       request(app)
-        .post("/api/student/posts")
+        .post("/api/student/folder")
         .set("Referer", "https://evil.example.com/attack.html"),
       studentToken()
     ).send({ title: "CSRF", body: "CSRF" });
@@ -505,38 +513,38 @@ describe("A04:2021 Insecure Design", () => {
 
   it("blocks an opaque `Origin: null` request (sandboxed iframe bypass)", async () => {
     const res = await auth(
-      request(app).post("/api/student/posts").set("Origin", "null").type("form"),
+      request(app).post("/api/student/folder").set("Origin", "null").type("form"),
       studentToken()
     ).send("title=CSRF&body=CSRF");
 
     expect(res.status).toBe(403);
-    expect(createPostMock).not.toHaveBeenCalled();
+    expect(createDocumentMock).not.toHaveBeenCalled();
   });
 
   it("blocks a request whose only Referer cannot be parsed", async () => {
     const res = await auth(
-      request(app).post("/api/student/posts").set("Referer", "not a url"),
+      request(app).post("/api/student/folder").set("Referer", "not a url"),
       studentToken()
     ).send({ title: "CSRF", body: "CSRF" });
 
     expect(res.status).toBe(403);
-    expect(createPostMock).not.toHaveBeenCalled();
+    expect(createDocumentMock).not.toHaveBeenCalled();
   });
 
   it("allows the legitimate frontend origin (no over-blocking) (finding #6)", async () => {
     const res = await auth(
-      request(app).post("/api/student/posts").set("Origin", process.env.FRONTEND_URL),
+      request(app).post("/api/student/folder").set("Origin", process.env.FRONTEND_URL),
       studentToken()
-    ).send({ title: "Legit", body: "Legit post" });
+    ).send({ title: "Legit", emplacement: "root" });
 
     expect(res.status).toBe(201);
-    expect(createPostMock).toHaveBeenCalled();
+    expect(createDocumentMock).toHaveBeenCalled();
   });
 
   it("does not block safe (GET) cross-origin requests", async () => {
     const res = await auth(
-      request(app).get("/api/student/all").set("Origin", "https://evil.example.com"),
-      studentToken()
+      request(app).get("/api/student/find?q=Test").set("Origin", "https://evil.example.com"),
+      companyToken()
     );
     expect(res.status).toBe(200);
   });
@@ -574,14 +582,14 @@ describe("A05:2021 Security Misconfiguration", () => {
   it("collapses duplicated body parameters (hpp is effective) (finding #10)", async () => {
     await auth(
       request(app)
-        .post("/api/student/posts")
+        .post("/api/student/folder")
         .set("Origin", process.env.FRONTEND_URL)
         .type("form"),
       studentToken()
-    ).send("title=first&title=second&body=hello");
+    ).send("title=first&title=second&emplacement=root");
 
-    expect(createPostMock).toHaveBeenCalled();
-    const sent = createPostMock.mock.calls[0][0];
+    expect(createDocumentMock).toHaveBeenCalled();
+    const sent = createDocumentMock.mock.calls[0][0];
     expect(Array.isArray(sent.title)).toBe(false);
     expect(typeof sent.title).toBe("string");
   });
@@ -601,7 +609,7 @@ describe("A05:2021 Security Misconfiguration", () => {
       new Error('relation "students" does not exist at character 15')
     );
 
-    const res = await auth(request(app).get("/api/student/all"), studentToken());
+    const res = await auth(request(app).get("/api/student/find?q=Test"), companyToken());
 
     expect(res.status).toBe(500);
     expect(res.body.message).toBe("Internal server error.");
@@ -631,7 +639,7 @@ describe("A06:2021 Vulnerable and Outdated Components", () => {
 
   it("the declared joi range cannot resolve back to a vulnerable version", () => {
     const pkg = require("../../package.json");
-    expect(pkg.dependencies.joi).toMatch(/\^17\.13\.([6-9]|\d{2,})/);
+    expect(pkg.dependencies.joi).toMatch(/^\^(17\.13\.([6-9]|\d{2,})|1[89]\.|[2-9]\d\.)/);
   });
 });
 
@@ -641,32 +649,32 @@ describe("A06:2021 Vulnerable and Outdated Components", () => {
 
 describe("A07:2021 Identification and Authentication Failures", () => {
   it("rejects a request with no token", async () => {
-    const res = await request(app).get("/api/student/all");
+    const res = await request(app).get("/api/student/find?q=Test");
     expect([401, 403]).toContain(res.status);
   });
 
   it("rejects a token signed with the wrong secret", async () => {
     const forged = jwt.sign({ id: STUDENT_ID }, "not-the-real-secret", { expiresIn: "1h" });
-    const res = await auth(request(app).get("/api/student/all"), forged);
+    const res = await auth(request(app).get("/api/student/find?q=Test"), forged);
     expect(res.status).toBe(401);
   });
 
   it("rejects an expired token", async () => {
     const expired = jwt.sign({ id: STUDENT_ID }, config.secret, { expiresIn: -10 });
-    const res = await auth(request(app).get("/api/student/all"), expired);
+    const res = await auth(request(app).get("/api/student/find?q=Test"), expired);
     expect(res.status).toBe(401);
   });
 
   it("rejects an alg=none unsigned token", async () => {
     const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
     const payload = Buffer.from(JSON.stringify({ id: STUDENT_ID })).toString("base64url");
-    const res = await auth(request(app).get("/api/student/all"), `${header}.${payload}.`);
+    const res = await auth(request(app).get("/api/student/find?q=Test"), `${header}.${payload}.`);
     expect(res.status).toBe(401);
   });
 
   it("rejects a token whose subject is not a UUID", async () => {
     const res = await auth(
-      request(app).get("/api/student/all"),
+      request(app).get("/api/student/find?q=Test"),
       jwt.sign({ id: "'; DROP TABLE students; --" }, config.secret, { expiresIn: "1h" })
     );
     expect(res.status).toBe(401);
@@ -792,7 +800,7 @@ describe("A09:2021 Security Logging and Monitoring Failures", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 
     await auth(
-      request(app).post("/api/student/posts").set("Origin", "https://evil.example.com"),
+      request(app).post("/api/student/folder").set("Origin", "https://evil.example.com"),
       studentToken()
     ).send({ title: "x", body: "y" });
 
@@ -821,8 +829,9 @@ describe("A09:2021 Security Logging and Monitoring Failures", () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     spies.listAll.mockRejectedValueOnce(new Error("pg: connection terminated"));
 
-    const res = await auth(request(app).get("/api/student/all"), studentToken());
+    const res = await auth(request(app).get("/api/student/find?q=Test"), companyToken());
 
+    expect(res.status).toBe(500);
     expect(res.body.message).toBe("Internal server error.");
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
@@ -918,12 +927,12 @@ describe("Upload error handling", () => {
     expect(res.status).toBe(400);
   });
 
-  it("still rejects a disallowed extension with 400", async () => {
+  it("still rejects a disallowed file type with 415", async () => {
     const res = await auth(
       request(app).post(`/api/student/upload/${STUDENT_ID}`),
       studentToken()
     ).attach("image", Buffer.from("p"), { filename: "x.pug", contentType: "text/x-pug" });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(415);
   });
 });

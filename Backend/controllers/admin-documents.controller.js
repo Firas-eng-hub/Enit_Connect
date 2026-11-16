@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 // REST-style admin document endpoints.
 // Admin auth is enforced at the router level.
 
@@ -138,8 +139,7 @@ exports.listDocuments = async (req, res) => {
       pageSize: pageSize || null,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -193,8 +193,7 @@ exports.createDocument = async (req, res) => {
 
     res.status(201).send(documentRepository.mapDocumentRow(doc));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -222,8 +221,7 @@ exports.createFolder = async (req, res) => {
 
     res.status(201).send(documentRepository.mapDocumentRow(folder));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -268,8 +266,7 @@ exports.renameFolder = async (req, res) => {
 
     res.status(200).send(documentRepository.mapDocumentRow(folder));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -294,8 +291,7 @@ exports.deleteFolder = async (req, res) => {
 
     res.status(204).send();
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -356,8 +352,7 @@ exports.updateDocument = async (req, res) => {
 
     res.status(200).send(documentRepository.mapDocumentRow(doc));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -417,8 +412,7 @@ exports.createShareLink = async (req, res) => {
       audience,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -450,8 +444,7 @@ exports.listShareLinks = async (req, res) => {
       })
     );
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -484,8 +477,7 @@ exports.revokeShareLink = async (req, res) => {
       audience,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -556,8 +548,7 @@ exports.replaceDocumentFile = async (req, res) => {
 
     res.status(200).send(documentRepository.mapDocumentRow(doc));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -586,8 +577,7 @@ exports.listDocumentVersions = async (req, res) => {
       }))
     );
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -648,8 +638,7 @@ exports.restoreDocumentVersion = async (req, res) => {
 
     res.status(200).send(documentRepository.mapDocumentRow(updated));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -687,8 +676,7 @@ exports.deleteDocument = async (req, res) => {
     // Returning 204 keeps the client logic simple.
     res.status(204).send();
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -739,8 +727,7 @@ exports.bulkDelete = async (req, res) => {
       message: `Deleted ${successIds.length} document(s).`,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -801,8 +788,7 @@ exports.bulkMove = async (req, res) => {
       message: `Moved ${successIds.length} document(s).`,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -854,7 +840,6 @@ exports.bulkDownload = async (req, res) => {
 
     archive.finalize();
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };

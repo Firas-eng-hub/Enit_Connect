@@ -299,6 +299,13 @@ const createNewsSchema = Joi.object({
   tags: Joi.array().items(Joi.string().max(50).trim()).max(20),
 }).messages(customMessages);
 
+// Public contact form (POST /api/admin/message). date/read are set server-side.
+const contactMessageSchema = Joi.object({
+  name: Joi.string().min(1).max(150).trim().required(),
+  email: emailSchema.required(),
+  message: Joi.string().min(1).max(5000).trim().required(),
+}).messages(customMessages);
+
 const createPartnerSchema = Joi.object({
   name: Joi.string().min(2).max(120).trim().required(),
   logoUrl: Joi.string()
@@ -544,6 +551,7 @@ module.exports = {
     // News
     createNews: createNewsSchema,
     createPartner: createPartnerSchema,
+    contactMessage: contactMessageSchema,
 
     // Search & Pagination
     search: searchSchema,

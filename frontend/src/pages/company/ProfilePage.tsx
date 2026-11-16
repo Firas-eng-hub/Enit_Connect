@@ -71,8 +71,7 @@ export function ProfilePage() {
     setSaving(true);
     setError(null);
     try {
-      const companyId = localStorage.getItem('company_id');
-      await httpClient.patch(`/api/company/update?id=${companyId}`, data);
+      await httpClient.patch(`/api/company/update`, data);
       setSuccess(true);
       setEditing(false);
       fetchProfile();

@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry } = require("../utils/verification");
@@ -98,8 +99,7 @@ exports.getNews = async (req, res) => {
     const response = docs.map(newsRepository.mapNewsRow);
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -111,8 +111,7 @@ exports.deleteNews = async (req, res) => {
     }
     res.status(200).send({ message: "News deleted !" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -185,8 +184,7 @@ exports.addNews = async (req, res) => {
 
     res.status(201).send({ message: "News was added successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -257,8 +255,7 @@ exports.updateNews = async (req, res) => {
 
     res.status(200).send({ message: "News was updated successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -270,8 +267,7 @@ exports.deleteMessage = async (req, res) => {
     }
     res.status(200).send({ message: "Message deleted !" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -280,8 +276,7 @@ exports.getNbMessage = async (req, res) => {
     const count = await messageRepository.countUnread();
     res.status(200).send({ nb: count });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -292,8 +287,7 @@ exports.getMessage = async (req, res) => {
     const response = docs.map(messageRepository.mapMessageRow);
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -306,8 +300,7 @@ exports.markMessageRead = async (req, res) => {
     }
     res.status(200).send({ message: "Message updated." });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -320,8 +313,7 @@ exports.archiveMessage = async (req, res) => {
     }
     res.status(200).send({ message: "Message updated." });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -338,8 +330,7 @@ exports.bulkUpdateMessages = async (req, res) => {
     const updated = await messageRepository.bulkUpdate({ ids, read, archived });
     res.status(200).send({ updated: updated.length });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -348,8 +339,7 @@ exports.markAllMessagesRead = async (req, res) => {
     await messageRepository.markAllRead();
     res.status(200).send({ message: "Messages updated." });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -358,8 +348,7 @@ exports.markAllMessagesUnread = async (req, res) => {
     await messageRepository.markAllUnread();
     res.status(200).send({ message: "Messages updated." });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -368,14 +357,13 @@ exports.saveMessage = async (req, res) => {
     await messageRepository.createMessage({
       name: req.body.name,
       email: req.body.email,
-      date: req.body.date,
+      date: new Date().toISOString(),
       message: req.body.message,
-      read: req.body.lu,
+      read: false,
     });
     res.status(201).send({ message: "Message was sent successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -384,8 +372,7 @@ exports.searchDocument = async (req, res) => {
     const docs = await documentRepository.searchByTitle(req.body.title || "");
     res.status(200).send(docs.map(documentRepository.mapDocumentRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -405,8 +392,7 @@ exports.createFolder = async (req, res) => {
     });
     res.status(201).send({ message: "Folder was created successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -423,8 +409,7 @@ exports.deleteDocument = async (req, res) => {
     await documentRepository.deleteByTitleAndEmplacement(req.body.title, req.body.emplacement);
     res.status(200).send({ message: `${req.body.type} deleted` });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -448,8 +433,7 @@ exports.createFile = async (req, res) => {
     });
     res.status(201).send({ message: "File was uploaded successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -458,8 +442,7 @@ exports.getDocuments = async (req, res) => {
     const docs = await documentRepository.listByEmplacement(req.body.emp);
     res.status(200).send(docs.map(documentRepository.mapDocumentRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -474,7 +457,12 @@ exports.signin = async (req, res) => {
       return res.status(401).send({ message: "Invalid email or password." });
     }
 
-    if (req.body.password !== admin.password) {
+    const passwordOk =
+      typeof req.body.password === "string" &&
+      typeof admin.password === "string" &&
+      admin.password.startsWith("$2") &&
+      (await bcrypt.compare(req.body.password, admin.password));
+    if (!passwordOk) {
       return res.status(401).send({
         message: "Invalid email or password.",
       });
@@ -502,8 +490,7 @@ exports.getAllStudents = async (req, res) => {
     const docs = await studentRepository.listAll();
     res.status(200).send(docs.map(mapStudentRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -512,8 +499,7 @@ exports.getAllCompanies = async (req, res) => {
     const docs = await companyRepository.listAll();
     res.status(200).send(docs.map(mapCompanyRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -543,8 +529,7 @@ exports.getUsersForBrowse = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -584,8 +569,7 @@ exports.getStudentsByKey = async (req, res) => {
     const docs = await studentRepository.searchByKey(column, req.query.key);
     res.status(200).send(docs.map(mapStudentRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -607,8 +591,7 @@ exports.getCompaniesByKey = async (req, res) => {
     const docs = await companyRepository.searchByKey(column, req.query.key);
     res.status(200).send(docs.map(mapCompanyRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -623,8 +606,7 @@ exports.getStudentById = async (req, res) => {
     }
     return res.status(200).send(mapStudentRow(student));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -656,8 +638,7 @@ exports.getCompanyById = async (req, res) => {
       offers: response,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -691,8 +672,7 @@ exports.updateStudent = async (req, res) => {
     res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -719,8 +699,7 @@ exports.updateCompany = async (req, res) => {
     res.status(200).send({ message: "Company updated" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -736,8 +715,7 @@ exports.deleteStudent = async (req, res) => {
     res.status(200).send({ message: "User deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -753,8 +731,7 @@ exports.deleteCompany = async (req, res) => {
     res.status(200).send({ message: "Company deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -770,8 +747,7 @@ exports.deleteStudents = async (req, res) => {
     res.status(200).send({ message: "Deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -788,16 +764,19 @@ exports.deleteCompanies = async (req, res) => {
     res.status(200).send({ message: "Deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
 exports.addStudents = async (req, res) => {
   const st = Array.isArray(req.body.students) ? req.body.students : [req.body];
+  // No default passwords: every account must be created with an explicit one.
+  if (st.some((item) => typeof item?.password !== "string" || item.password.length < 8)) {
+    return res.status(400).send({ message: "Each user needs a password of at least 8 characters." });
+  }
   try {
     for (const item of st) {
-      const plainPassword = item.password || "123456789";
+      const plainPassword = item.password;
       const hash = await bcrypt.hash(plainPassword, 10);
       let confirmCode = generateVerificationCode();
       const verificationExpiresAt = getVerificationExpiry();
@@ -823,13 +802,15 @@ exports.addStudents = async (req, res) => {
     }
     return res.status(200).send({ message: "Users were registered successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 
 exports.addCompany = async (req, res) => {
   try {
+    if (typeof req.body.password !== "string" || req.body.password.length < 8) {
+      return res.status(400).send({ message: "Password must be at least 8 characters." });
+    }
     const hash = await bcrypt.hash(req.body.password, 10);
     let confirmCode = generateVerificationCode();
     const verificationExpiresAt = getVerificationExpiry();
@@ -875,7 +856,6 @@ exports.addCompany = async (req, res) => {
 
     return res.status(201).send({ message: "Company was registered successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };

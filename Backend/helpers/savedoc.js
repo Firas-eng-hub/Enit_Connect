@@ -1,5 +1,9 @@
-const { createUploadMiddleware } = require('./uploadSanitize');
+// Document upload (PDF / Word / images).
+const { createUpload, DOCUMENT_TYPES } = require("./upload-factory");
 
-const savedoc = createUploadMiddleware('file', 'Invalid or unsupported file type.');
-
-module.exports = savedoc;
+module.exports = createUpload({
+  field: "file",
+  types: DOCUMENT_TYPES,
+  maxBytes: 10 * 1024 * 1024,
+  prefix: "file",
+});

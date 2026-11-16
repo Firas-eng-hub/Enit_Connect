@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const fs = require("fs");
 const path = require("path");
 const { partnerRepository } = require("../repositories");
@@ -39,8 +40,7 @@ exports.listPartners = async (req, res) => {
     const rows = await partnerRepository.listAll();
     res.status(200).send(rows.map(partnerRepository.mapPartnerRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -56,8 +56,7 @@ exports.createPartner = async (req, res) => {
     const created = await partnerRepository.createPartner({ name, logoUrl });
     return res.status(201).send(partnerRepository.mapPartnerRow(created));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 
@@ -71,8 +70,7 @@ exports.deletePartner = async (req, res) => {
     await cleanupLogoFile(deleted.logo_url);
     return res.status(200).send({ message: "Partner deleted successfully." });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 

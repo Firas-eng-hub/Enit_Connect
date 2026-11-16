@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
@@ -47,11 +48,14 @@ exports.getUserInfo = async (req, res) => {
   }
 
   try {
-    // Applicant contact details are only disclosed to the student themselves
-    // or to a company the student has applied to.
+    // Contact details are only disclosed to the student themselves, a company
+    // the student applied to, or an admin.
     const isSelf = String(req.id) === String(req.params.id);
     if (!isSelf && !(await offerRepository.hasCandidacyForCompany(req.id, req.params.id))) {
-      return res.status(403).send({ message: "Unauthorized!" });
+      const admin = await adminRepository.findById(req.id);
+      if (!admin) {
+        return res.status(403).send({ message: "Forbidden." });
+      }
     }
 
     const student = await studentRepository.findById(req.params.id);
@@ -77,8 +81,7 @@ exports.getUserInfo = async (req, res) => {
       longitude: student.longitude,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -197,8 +200,7 @@ exports.signin = async (req, res) => {
       userType: "company",
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 
@@ -252,8 +254,7 @@ exports.verifyCompany = async (req, res) => {
     await companyRepository.verifyCompany(company.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -381,8 +382,7 @@ exports.getByKey = async (req, res) => {
     const response = docs.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -401,8 +401,7 @@ exports.getByName = async (req, res) => {
     });
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -434,8 +433,7 @@ exports.getCompanyById = async (req, res) => {
       offers: response,
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -460,15 +458,13 @@ exports.getCompanyLocations = async (req, res) => {
     }));
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
 exports.updateCompany = async (req, res) => {
   try {
-    // Identity comes from the verified token only. Trusting `req.query.id`
-    // here allowed any authenticated caller to update an arbitrary company.
+    // Always act on the authenticated company; never trust a client-supplied id.
     const companyId = req.id;
     if (!isUuid(companyId)) {
       return res.status(400).send({ message: "Invalid company id." });
@@ -491,8 +487,7 @@ exports.updateCompany = async (req, res) => {
     res.status(200).send({ message: "Company updated" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -516,8 +511,7 @@ exports.updateLogo = async (req, res) => {
     res.status(200).send({ message: "Company updated" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -536,8 +530,7 @@ exports.deleteCompany = async (req, res) => {
     res.status(200).send({ message: "Company deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -547,7 +540,6 @@ exports.getAllCompanies = async (req, res) => {
     const response = companies.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };

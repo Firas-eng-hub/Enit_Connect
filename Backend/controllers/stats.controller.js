@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const {
     statsRepository,
 } = require("../repositories");
@@ -21,8 +22,7 @@ exports.getOverview = async (req, res) => {
             candidacies,
         });
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };
 
@@ -58,7 +58,6 @@ exports.getTrends = async (req, res) => {
             topCompanies,
         });
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };

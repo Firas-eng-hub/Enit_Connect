@@ -9,6 +9,7 @@ const controller = require("../controllers/student.controller");
 const notifications = require("../controllers/notification.controller");
 const storage = require('../helpers/storage');
 const savedoc = require('../helpers/savedoc');
+const { verifyLimiter } = require("../middlewares/rateLimiters");
 
 // Rate limiter for authentication endpoints
 const authLimiter = rateLimit({
@@ -18,19 +19,13 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-// Get posts
-router.get("/posts", authJwt.verifyToken, controller.getPosts);
-// Add Post
-router.post('/posts', authJwt.verifyToken, authJwt.isStudent, controller.addPost);
 //Register Student with validation
 router.post("/signup", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.studentSignup), verifySignUp.checkDuplicateEmail, controller.signup);
 //Confirm Email with validation
-router.post("/confirm", validation.sqlInjectionCheck, validation.validate(validation.schemas.emailVerification), controller.verifyUser);
+router.post("/confirm", verifyLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.emailVerification), controller.verifyUser);
 router.post("/resend-confirmation", authLimiter, validation.sqlInjectionCheck, controller.resendVerificationCode);
 //Login Student with validation
 router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
-//Get All Student
-router.get("/all", authJwt.verifyToken, controller.getAll);
 
 //Get All Companies
 router.get("/companies", authJwt.verifyToken, authJwt.isStudent, controller.getCompaniesForBrowse);
@@ -54,11 +49,8 @@ router.get("/find", authJwt.verifyToken, controller.getByName);
 router.post("/upload/:id", authJwt.verifyToken, authJwt.isStudent, storage, controller.updatePicture);
 //Add folder
 router.post('/folder', authJwt.verifyToken, authJwt.isStudent, controller.createFolder);
-//Add file
-router.post('/file', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.createFile);
 //Get documents
 router.get('/documents', authJwt.verifyToken, authJwt.isStudent, controller.listDocuments);
-router.post('/documents', authJwt.verifyToken, controller.getDocuments);
 //Upload document
 router.post('/documents/upload', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.uploadDocument);
 //Create folder
@@ -84,14 +76,10 @@ router.get('/documents/shared', authJwt.verifyToken, authJwt.isStudent, controll
 //Requests
 router.get('/document-requests', authJwt.verifyToken, authJwt.isStudent, controller.listDocumentRequests);
 router.patch('/document-requests/:id', authJwt.verifyToken, authJwt.isStudent, controller.updateDocumentRequestStatus);
-//Delete document
-router.post('/deldoc', authJwt.verifyToken, controller.deleteDocument);
-//Search for document
-router.post('/searchdoc', authJwt.verifyToken, controller.searchDocument);
 //Get compnies info
 router.post('/companiesinfo', authJwt.verifyToken, controller.companiesInfo);
 // Add Candidacy
-router.post('/apply/:id', authJwt.verifyToken, controller.apply);
+router.post('/apply/:id', authJwt.verifyToken, authJwt.isStudent, controller.apply);
 
 //Get Student informations by ID with UUID validation
 router.get("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), controller.getStudentById);

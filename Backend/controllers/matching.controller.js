@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const stringSimilarity = require("string-similarity");
 const { studentRepository, matchingRepository } = require("../repositories");
 const { isUuid } = require("../utils/validation");
@@ -111,7 +112,6 @@ exports.getRecommendations = async (req, res) => {
             total: scored.length,
         });
     } catch (err) {
-        console.error("[500]", req.method, req.originalUrl, err);
-        res.status(500).send({ message: "Internal server error." });
+        serverError(res, err);
     }
 };

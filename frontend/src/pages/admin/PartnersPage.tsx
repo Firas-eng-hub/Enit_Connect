@@ -181,7 +181,7 @@ export function PartnersPage() {
                     Choose File
                     <input
                       type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      accept="image/png,image/jpeg,image/webp"
                       className="hidden"
                       onChange={handleFileChange}
                     />
@@ -197,7 +197,7 @@ export function PartnersPage() {
                     </>
                   )}
                 </div>
-                <p className="mt-3 text-xs text-gray-600">Accepted formats: PNG, JPG, WEBP, SVG (max 3MB).</p>
+                <p className="mt-3 text-xs text-gray-600">Accepted formats: PNG, JPG, WEBP (max 3MB).</p>
               </div>
             </div>
 
@@ -252,7 +252,7 @@ export function PartnersPage() {
             <div className="mt-3 space-y-2 text-sm text-gray-600">
               <p>Use logos with transparent backgrounds for best visual integration.</p>
               <p>Keep width-to-height ratios balanced to avoid stretching in the marquee.</p>
-              <p>Prefer SVG or high-resolution PNG for crisp rendering on large screens.</p>
+              <p>Prefer high-resolution PNG or WEBP for crisp rendering on large screens.</p>
               <p>Use the refresh button below to verify newly added logos in the list.</p>
             </div>
           </div>

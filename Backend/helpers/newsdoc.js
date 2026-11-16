@@ -1,5 +1,9 @@
-const { createUploadMiddleware } = require('./uploadSanitize');
+// News attachment upload (PDF / Word / images). Admin-only route.
+const { createUpload, DOCUMENT_TYPES } = require("./upload-factory");
 
-const newsdoc = createUploadMiddleware('file', 'Invalid or unsupported file type.');
-
-module.exports = newsdoc;
+module.exports = createUpload({
+  field: "file",
+  types: DOCUMENT_TYPES,
+  maxBytes: 10 * 1024 * 1024,
+  prefix: "news",
+});

@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
@@ -56,12 +57,12 @@ const mapStudentRow = (row) => ({
 });
 
 // Directory projection: deliberately omits the direct-contact and
-// geolocation fields (email, phone, address, latitude, longitude) that
-// mapStudentRow exposes. Used for listings, where no caller needs them.
+// geolocation fields (email, phone, address, latitude, longitude) and the
+// account status that mapStudentRow exposes. Used for listings and for other
+// users' profiles, where no caller needs them.
 const mapStudentDirectoryRow = (row) => ({
   firstname: row.firstname,
   lastname: row.lastname,
-  status: row.status,
   country: row.country,
   city: row.city,
   type: row.type,
@@ -85,51 +86,6 @@ const parseOffset = (value, fallback = 0) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(Math.floor(parsed), 0);
-};
-
-exports.getPosts = async (req, res) => {
-  try {
-    const posts = await postRepository.listAll();
-    const response = posts.map(postRepository.mapPostRow);
-    res.status(200).send(response);
-  } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
-exports.addPost = async (req, res) => {
-  try {
-    if (!isUuid(req.id)) {
-      return res.status(401).send({ message: "Unauthorized!" });
-    }
-
-    // The author is derived from the verified token, never from the request
-    // body: accepting `req.body.userName` let anyone post as any user.
-    const author = await studentRepository.findById(req.id);
-    if (!author) {
-      return res.status(401).send({ message: "Unauthorized!" });
-    }
-
-    const title = String(req.body.title || "").trim();
-    const body = String(req.body.body || "").trim();
-    if (!title || !body) {
-      return res.status(400).send({ message: "Title and body are required." });
-    }
-
-    await postRepository.createPost({
-      title: title.slice(0, 200),
-      topic: String(req.body.topic || "").trim().slice(0, 100),
-      date: req.body.date,
-      userName: `${author.firstname} ${author.lastname}`.trim(),
-      body: body.slice(0, 10000),
-      description: String(req.body.description || "").trim().slice(0, 2000),
-    });
-    res.status(201).send({ message: "Post was added successfully!" });
-  } catch (err) {
-    console.error("addPost failed:", err);
-    res.status(500).send({ message: "Internal server error." });
-  }
 };
 
 exports.apply = async (req, res) => {
@@ -204,8 +160,7 @@ exports.apply = async (req, res) => {
     res.status(200).send({ message: "Application submitted successfully!" });
   } catch (err) {
     console.error("Apply error:", err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err, "Error applying to offer.");
   }
 };
 
@@ -628,8 +583,12 @@ exports.updateDocumentRequestStatus = async (req, res) => {
       return res.status(400).send({ message: "Invalid request id." });
     }
 
+    const allowedStatuses = ["open", "fulfilled", "declined"];
     const status = req.body.status || "fulfilled";
-    const request = await documentRequestRepository.updateStatus(req.params.id, status);
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).send({ message: "Invalid status." });
+    }
+    const request = await documentRequestRepository.updateStatus(req.params.id, status, req.id);
     if (!request) {
       return res.status(404).send({ message: "Request not found." });
     }
@@ -1164,61 +1123,6 @@ exports.restoreDocumentVersion = async (req, res) => {
   }
 };
 
-exports.searchDocument = async (req, res) => {
-  try {
-    const docs = await documentRepository.searchByTitle(req.body.title || "");
-    res.status(200).send(docs.map(documentRepository.mapDocumentRow));
-  } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
-exports.deleteDocument = async (req, res) => {
-  if (req.body.type === "file") {
-    try {
-      fs.unlinkSync(`uploads/${req.body.link.split("/").pop()}`);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  try {
-    await documentRepository.deleteByTitleAndEmplacement(req.body.title, req.body.emplacement);
-    res.status(200).send({ message: `${req.body.type} deleted` });
-  } catch (err) {
-    console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
-exports.createFile = async (req, res) => {
-  let filePath = `${process.env.BASE_URL}/uploads/`;
-  if (req.file && req.file.filename) {
-    filePath += req.file.filename;
-  }
-
-  try {
-    const creatorId = isUuid(req.query.idcreator) ? req.query.idcreator : null;
-    await documentRepository.createDocument({
-      creatorId,
-      creatorName: req.query.namecreator,
-      date: req.query.date,
-      title: req.query.title,
-      type: "file",
-      link: filePath,
-      extension: req.query.type,
-      emplacement: req.query.emplacement,
-      size: req.query.size,
-    });
-    res.status(201).send({ message: "File was uploaded successfully!" });
-  } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
 exports.createFolder = async (req, res) => {
   try {
     const creatorId = isUuid(req.body.idcreator) ? req.body.idcreator : null;
@@ -1235,18 +1139,7 @@ exports.createFolder = async (req, res) => {
     });
     res.status(201).send({ message: "Folder was created successfully!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
-exports.getDocuments = async (req, res) => {
-  try {
-    const docs = await documentRepository.listByEmplacement(req.body.emp);
-    res.status(200).send(docs.map(documentRepository.mapDocumentRow));
-  } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1265,8 +1158,7 @@ exports.updatePicture = async (req, res) => {
     res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1391,8 +1283,7 @@ exports.signin = async (req, res) => {
       userType: "student",
     });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 
@@ -1446,8 +1337,7 @@ exports.verifyUser = async (req, res) => {
     await studentRepository.verifyStudent(student.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1499,17 +1389,6 @@ exports.getLocation = (req, res) => {
     });
 };
 
-exports.getAll = async (req, res) => {
-  try {
-    const students = await studentRepository.listAll();
-    const response = students.map(mapStudentDirectoryRow);
-    res.status(200).send(response);
-  } catch (err) {
-    console.error("getAll failed:", err);
-    res.status(500).send({ message: "Internal server error." });
-  }
-};
-
 exports.getByName = async (req, res) => {
   try {
     if (!req.query.q) {
@@ -1525,8 +1404,7 @@ exports.getByName = async (req, res) => {
     });
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1558,8 +1436,7 @@ exports.getStudentLocations = async (req, res) => {
     }));
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1583,8 +1460,7 @@ exports.getByKey = async (req, res) => {
     const response = docs.map(mapStudentDirectoryRow);
     res.status(200).send(response);
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1603,8 +1479,7 @@ exports.getByFilters = async (req, res) => {
     });
     res.status(200).send(docs.map(mapStudentDirectoryRow));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1656,13 +1531,10 @@ exports.getStudentById = async (req, res) => {
     if (!student) {
       return res.status(404).send({ message: "User Not found." });
     }
-    // Only the student themselves sees their contact and geolocation fields;
-    // any other authenticated caller gets the public directory projection.
     const isSelf = String(req.id) === String(student.id);
     return res.status(200).send(isSelf ? mapStudentRow(student) : mapStudentDirectoryRow(student));
   } catch (err) {
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };
 
@@ -1713,8 +1585,7 @@ exports.updateStudent = async (req, res) => {
     return res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error("Failed to update student:", err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    return res.status(500).send({ message: "Internal server error." });
+    return serverError(res, err);
   }
 };
 
@@ -1760,7 +1631,6 @@ exports.deleteStudent = async (req, res) => {
     res.status(200).send({ message: "User deleted" });
   } catch (err) {
     console.error(err);
-    console.error("[500]", req.method, req.originalUrl, err);
-    res.status(500).send({ message: "Internal server error." });
+    serverError(res, err);
   }
 };

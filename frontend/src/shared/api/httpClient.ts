@@ -21,6 +21,9 @@ httpClient.interceptors.request.use(
   }
 );
 
+// In-flight refresh request shared by concurrent 401 handlers
+let refreshPromise: Promise<unknown> | null = null;
+
 // Response interceptor - handle common errors
 httpClient.interceptors.response.use(
   (response) => response,
@@ -38,8 +41,14 @@ httpClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh the token
-        await httpClient.post('/api/auth/refresh');
+        // Attempt to refresh the token. Concurrent 401s share one refresh call,
+        // because the server rotates the refresh token on every use.
+        if (!refreshPromise) {
+          refreshPromise = httpClient.post('/api/auth/refresh').finally(() => {
+            refreshPromise = null;
+          });
+        }
+        await refreshPromise;
         // Retry the original request
         return httpClient(originalRequest);
       } catch (refreshError) {

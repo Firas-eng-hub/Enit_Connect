@@ -8,9 +8,9 @@ const { offer } = require("../controllers");
 //Get All Offers
 router.get("/", authJwt.verifyToken, offer.getAll);
 //Get All Offers of a company
-router.get("/myoffers", authJwt.verifyToken, offer.getCompanyOffers);
+router.get("/myoffers", authJwt.verifyToken, authJwt.isCompany, offer.getCompanyOffers);
 //Get All candidacies of an offer
-router.get("/candidacies", authJwt.verifyToken, offer.getCandidacies);
+router.get("/candidacies", authJwt.verifyToken, authJwt.isCompany, offer.getCandidacies);
 //Update candidacy status with UUID validation
 router.patch("/candidacies/:offerId", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), offer.updateCandidacyStatus);
 //Search for Offers by Property & Key

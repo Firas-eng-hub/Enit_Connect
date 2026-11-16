@@ -436,7 +436,7 @@ Investigated and found **not** to be vulnerabilities. Recorded so the same groun
 - **`qs` / `body-parser` urlencoded.** `allowPrototypes: false` by default; `__proto__[x]=y` is dropped. Verified.
 - **`constructor` / `constructor.prototype` payloads.** Do not pass through Joi — only the `__proto__` form did.
 - **Joi advisories GHSA-gg4h-3hg2-grpc and GHSA-6w3j-5fw6-r9vr.** Not reachable: `.rename()` is used nowhere, and `customMessages` is static developer-defined data.
-- **Upload extension handling.** `helpers/uploadSanitize.js` uses a `Set` allowlist (immune to prototype pollution) and server-generated filenames via `path.basename`. The earlier RCE fix holds; `.pug`, `.js`, `.html` and `.svg` are all excluded.
+- **Upload extension handling.** `helpers/upload-factory.js` derives the stored extension only from a MIME allowlist (own-property lookup, immune to prototype pollution), generates random UUID filenames in a fixed directory, and verifies magic bytes after write. The earlier RCE fix holds; `.pug`, `.js`, `.html` and `.svg` can never be produced.
 - **Email template selection.** `config/nodemailer.config.js` uses hardcoded template names. Note that **pug 3.0.3 is present** via `email-templates` — the standard pollution-to-RCE gadget — which is why findings #8 and #9 must not regress.
 - **Refresh token flow.** `auth.controller.js` correctly checks expiry, deletes expired tokens and re-fetches the user. Tokens are 40 random bytes.
 - **File read paths.** Download and delete paths derive filenames from database rows through `path.basename`; no traversal on the read side. The archive *write* side was the exception (#13).

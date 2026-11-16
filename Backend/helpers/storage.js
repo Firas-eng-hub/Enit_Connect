@@ -1,5 +1,10 @@
-const { createUploadMiddleware } = require('./uploadSanitize');
+// Profile picture / company logo upload (images only).
+const { createUpload, IMAGE_TYPES } = require("./upload-factory");
 
-const storage = createUploadMiddleware('image', 'Invalid or unsupported image type.');
-
-module.exports = storage;
+module.exports = createUpload({
+  field: "image",
+  types: IMAGE_TYPES,
+  maxBytes: 3 * 1024 * 1024,
+  prefix: "image",
+  label: "Image",
+});

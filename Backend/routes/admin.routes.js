@@ -13,6 +13,15 @@ const newsdoc = require('../helpers/newsdoc');
 const adminDocumentUpload = require("../helpers/admin-document-upload");
 const partnerLogoUpload = require("../helpers/partner-logo-upload");
 
+// Public contact form: tight per-IP limit to stop inbox flooding
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many messages, please try again later.' },
+});
+
 // Rate limiter for admin authentication (stricter)
 const adminAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -25,13 +34,13 @@ const adminAuthLimiter = rateLimit({
 router.post("/", adminAuthLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
 router.post("/login", adminAuthLimiter, validation.sqlInjectionCheck, validation.validate(validation.schemas.login), controller.signin);
 //Get All Students
-router.get("/allstudents", authJwt.verifyToken, controller.getAllStudents);
+router.get("/allstudents", authJwt.verifyToken, authJwt.isAdmin, controller.getAllStudents);
 //Get All Companies
-router.get("/allcompanies", authJwt.verifyToken, controller.getAllCompanies);
+router.get("/allcompanies", authJwt.verifyToken, authJwt.isAdmin, controller.getAllCompanies);
 //Get Students by key
-router.get("/search/student", authJwt.verifyToken, controller.getStudentsByKey);
+router.get("/search/student", authJwt.verifyToken, authJwt.isAdmin, controller.getStudentsByKey);
 //Get Companies by key
-router.get("/search/company", authJwt.verifyToken, controller.getCompaniesByKey);
+router.get("/search/company", authJwt.verifyToken, authJwt.isAdmin, controller.getCompaniesByKey);
 //Browse users with pagination + search
 router.get("/users", authJwt.verifyToken, authJwt.isAdmin, controller.getUsersForBrowse);
 //Admin Notifications
@@ -50,7 +59,7 @@ router.post("/student/delete", authJwt.verifyToken, authJwt.isAdmin, controller.
 //Delete Companies from database
 router.post("/company/delete", authJwt.verifyToken, authJwt.isAdmin, controller.deleteCompanies);
 //Get Student informations by ID
-router.get("/student/:id", authJwt.verifyToken, controller.getStudentById);
+router.get("/student/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.getStudentById);
 //Add Students
 router.post("/student/add", authJwt.verifyToken, authJwt.isAdmin, controller.addStudents);
 //Add Companies
@@ -60,7 +69,7 @@ router.patch("/student/:id", authJwt.verifyToken, authJwt.isAdmin, validation.va
 //Delete Student from database with UUID validation
 router.delete("/student/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.deleteStudent);
 //Get Company informations by ID with UUID validation
-router.get("/company/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), controller.getCompanyById);
+router.get("/company/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), controller.getCompanyById);
 //Edit Company informations with validation
 router.patch("/company/:id", authJwt.verifyToken, authJwt.isAdmin, validation.validate(validation.schemas.uuidParam, 'params'), validation.sqlInjectionCheck, validation.validate(validation.schemas.updateCompany), controller.updateCompany);
 //Delete Company from database with UUID validation
@@ -120,7 +129,7 @@ router.post('/deldoc', authJwt.verifyToken, authJwt.isAdmin, controller.deleteDo
 //Search for document
 router.post('/searchdoc', authJwt.verifyToken, authJwt.isAdmin, controller.searchDocument);
 //Receive message
-router.post('/message', controller.saveMessage);
+router.post('/message', contactLimiter, validation.validate(validation.schemas.contactMessage), controller.saveMessage);
 //Get messages
 router.get('/message', authJwt.verifyToken, authJwt.isAdmin, controller.getMessage);
 //Mark message read/unread with UUID validation
@@ -133,11 +142,11 @@ router.patch('/message/bulk', authJwt.verifyToken, authJwt.isAdmin, controller.b
 router.patch('/message/read-all', authJwt.verifyToken, authJwt.isAdmin, controller.markAllMessagesRead);
 router.patch('/message/unread-all', authJwt.verifyToken, authJwt.isAdmin, controller.markAllMessagesUnread);
 //Get number of unread messages
-router.get('/nbmessage', authJwt.verifyToken, controller.getNbMessage);
+router.get('/nbmessage', authJwt.verifyToken, authJwt.isAdmin, controller.getNbMessage);
 //Delete message
 router.delete('/message/:id', authJwt.verifyToken, authJwt.isAdmin, controller.deleteMessage);
 //Delete news
-router.delete('/news/:id', authJwt.verifyToken, controller.deleteNews);
+router.delete('/news/:id', authJwt.verifyToken, authJwt.isAdmin, controller.deleteNews);
 //Add news
 router.post('/news', authJwt.verifyToken, authJwt.isAdmin, controller.addNews);
 //Update news
