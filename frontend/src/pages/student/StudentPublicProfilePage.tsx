@@ -113,10 +113,12 @@ export function StudentPublicProfilePage() {
 
         <div className="p-8 grid md:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <div className="flex items-center gap-3 text-gray-700">
-              <Mail className="w-5 h-5 text-primary-600" />
-              <span>{student.email}</span>
-            </div>
+            {student.email && (
+              <div className="flex items-center gap-3 text-gray-700">
+                <Mail className="w-5 h-5 text-primary-600" />
+                <span>{student.email}</span>
+              </div>
+            )}
             {student.phone && (
               <div className="flex items-center gap-3 text-gray-700">
                 <Phone className="w-5 h-5 text-primary-600" />

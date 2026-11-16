@@ -17,7 +17,13 @@ const {
   documentAccessRepository,
   documentRequestRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
+
+// A well-formed bcrypt hash of a discarded random value. Compared against when
+// no account matches, so an unknown email costs the same time as a known one
+// and cannot be distinguished by response latency.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$T5kVuZGqo8hrqAziZa3pcOwGlBpsxO4M63pWnEeiDkEggG2vtF.xi";
 
 const mapCompanyRow = (row) => ({
   name: row.name,
@@ -42,9 +48,10 @@ exports.getUserInfo = async (req, res) => {
   }
 
   try {
-    // Only a company the student applied to (or an admin) may see contact details.
-    const isOwnApplicant = await offerRepository.hasCandidacyForCompany(req.id, req.params.id);
-    if (!isOwnApplicant) {
+    // Contact details are only disclosed to the student themselves, a company
+    // the student applied to, or an admin.
+    const isSelf = String(req.id) === String(req.params.id);
+    if (!isSelf && !(await offerRepository.hasCandidacyForCompany(req.id, req.params.id))) {
       const admin = await adminRepository.findById(req.id);
       if (!admin) {
         return res.status(403).send({ message: "Forbidden." });
@@ -155,26 +162,27 @@ exports.signin = async (req, res) => {
     const email = (req.body.email || "").trim().toLowerCase();
     const company = await companyRepository.findByEmail(email);
 
-    if (!company) {
+    // Always run a bcrypt comparison, even when no account exists, so the
+    // response time does not reveal whether the email is registered.
+    let passwordIsValid = false;
+    try {
+      passwordIsValid = await bcrypt.compare(
+        req.body.password || "",
+        company ? company.password : DUMMY_PASSWORD_HASH
+      );
+    } catch (compareError) {
+      passwordIsValid = false;
+    }
+
+    if (!company || !passwordIsValid) {
       return res.status(401).send({ message: "Invalid email or password." });
     }
 
+    // Account status is only disclosed AFTER the password is proven. Checking
+    // it first turned this endpoint into an account-existence oracle.
     if (company.status !== "Active") {
       return res.status(401).send({
         message: "Pending Account. Please Verify Your Email!",
-      });
-    }
-
-    let passwordIsValid = false;
-    try {
-      passwordIsValid = bcrypt.compareSync(req.body.password, company.password);
-    } catch (compareError) {
-      return res.status(401).send({ message: "Invalid email or password." });
-    }
-
-    if (!passwordIsValid) {
-      return res.status(401).send({
-        message: "Invalid email or password.",
       });
     }
 
@@ -364,7 +372,7 @@ exports.getByKey = async (req, res) => {
     phone: "phone",
     website: "website",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
@@ -435,7 +443,7 @@ exports.getCompanyLocations = async (req, res) => {
     city: "city",
     name: "name",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }

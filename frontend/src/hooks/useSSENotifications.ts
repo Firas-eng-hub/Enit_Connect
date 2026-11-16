@@ -25,6 +25,18 @@ export function useSSENotifications({
     const retryCountRef = useRef(0);
     const [connected, setConnected] = useState(false);
 
+    // Callers pass `onNotification` as an inline arrow, so it has a new
+    // identity on every render. Holding it in a ref keeps it out of the
+    // `connect` dependency list: without this the effect below tore down and
+    // reopened the EventSource on EVERY render of the consuming component,
+    // which burns the API rate limit and churns server-side SSE connections.
+    const onNotificationRef = useRef(onNotification);
+    useEffect(() => {
+        onNotificationRef.current = onNotification;
+    }, [onNotification]);
+
+    const connectRef = useRef<() => void>(() => {});
+
     const connect = useCallback(() => {
         if (!enabled) return;
 
@@ -39,7 +51,7 @@ export function useSSENotifications({
         es.addEventListener('notification', (event) => {
             try {
                 const data = JSON.parse(event.data) as SSENotification;
-                onNotification?.(data);
+                onNotificationRef.current?.(data);
             } catch {
                 // Ignore malformed events
             }
@@ -54,11 +66,17 @@ export function useSSENotifications({
             const delay = Math.min(1000 * 2 ** retryCountRef.current, 30000);
             retryCountRef.current += 1;
 
-            reconnectTimeoutRef.current = setTimeout(connect, delay);
+            // Reconnect through a ref so the callback does not reference
+            // itself before declaration and always runs the latest version.
+            reconnectTimeoutRef.current = setTimeout(() => connectRef.current(), delay);
         };
 
         eventSourceRef.current = es;
-    }, [role, onNotification, enabled]);
+    }, [role, enabled]);
+
+    useEffect(() => {
+        connectRef.current = connect;
+    }, [connect]);
 
     useEffect(() => {
         connect();

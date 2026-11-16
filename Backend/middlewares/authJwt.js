@@ -33,11 +33,15 @@ exports.setAccessCookie = (res, accessToken, userType) => {
   res.cookie('userType', userType, cookieOptions);
 };
 
-// Helper function to clear auth cookies
+// Helper function to clear auth cookies.
+// The clearing options MUST mirror the attributes used when the cookies were
+// set (secure / sameSite / domain), otherwise the browser treats them as a
+// different cookie and logout silently leaves the session in place.
 exports.clearAuthCookies = (res) => {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/' });
-  res.clearCookie('userType', { path: '/' });
+  const { maxAge, ...clearOptions } = cookieOptions;
+  res.clearCookie('accessToken', clearOptions);
+  res.clearCookie('refreshToken', clearOptions);
+  res.clearCookie('userType', clearOptions);
 };
 
 // Verify token from cookie or Authorization header (for backward compatibility)

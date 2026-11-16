@@ -25,8 +25,14 @@ const {
   documentVersionRepository,
   documentAuditRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
 const crypto = require("crypto");
+
+// A well-formed bcrypt hash of a discarded random value. Compared against when
+// no account matches, so an unknown email costs the same time as a known one
+// and cannot be distinguished by response latency.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$T5kVuZGqo8hrqAziZa3pcOwGlBpsxO4M63pWnEeiDkEggG2vtF.xi";
 
 const mapStudentRow = (row) => ({
   firstname: row.firstname,
@@ -50,11 +56,25 @@ const mapStudentRow = (row) => ({
   _id: row.id,
 });
 
-// Projection for other users (directory/search): no street address or account status.
-const mapPublicStudentRow = (row) => {
-  const { address, status, ...rest } = mapStudentRow(row);
-  return rest;
-};
+// Directory projection: deliberately omits the direct-contact and
+// geolocation fields (email, phone, address, latitude, longitude) and the
+// account status that mapStudentRow exposes. Used for listings and for other
+// users' profiles, where no caller needs them.
+const mapStudentDirectoryRow = (row) => ({
+  firstname: row.firstname,
+  lastname: row.lastname,
+  country: row.country,
+  city: row.city,
+  type: row.type,
+  workAt: row.work_at,
+  class: row.class,
+  promotion: row.promotion,
+  linkedin: row.linkedin,
+  picture: row.picture,
+  aboutme: row.aboutme,
+  id: row.id,
+  _id: row.id,
+});
 
 const parseLimit = (value, fallback = 24, max = 100) => {
   const parsed = Number(value);
@@ -885,7 +905,7 @@ exports.batchDownloadDocuments = async (req, res) => {
         const filename = getFilenameFromLink(doc.link);
         if (!filename) return;
         const filePath = path.join(__dirname, "..", "uploads", filename);
-        archive.file(filePath, { name: doc.title || filename });
+        archive.file(filePath, { name: path.basename(doc.title || filename) });
       } catch (err) {
         console.error("Add file to archive failed:", err);
       }
@@ -1225,26 +1245,27 @@ exports.signin = async (req, res) => {
     const email = (req.body.email || "").trim().toLowerCase();
     const student = await studentRepository.findByEmail(email);
 
-    if (!student) {
+    // Always run a bcrypt comparison, even when no account exists, so the
+    // response time does not reveal whether the email is registered.
+    let passwordIsValid = false;
+    try {
+      passwordIsValid = await bcrypt.compare(
+        req.body.password || "",
+        student ? student.password : DUMMY_PASSWORD_HASH
+      );
+    } catch (compareError) {
+      passwordIsValid = false;
+    }
+
+    if (!student || !passwordIsValid) {
       return res.status(401).send({ message: "Invalid email or password." });
     }
 
+    // Account status is only disclosed AFTER the password is proven. Checking
+    // it first turned this endpoint into an account-existence oracle.
     if (student.status !== "Active") {
       return res.status(401).send({
         message: "Pending Account. Please Verify Your Email!",
-      });
-    }
-
-    let passwordIsValid = false;
-    try {
-      passwordIsValid = bcrypt.compareSync(req.body.password, student.password);
-    } catch (compareError) {
-      return res.status(401).send({ message: "Invalid email or password." });
-    }
-
-    if (!passwordIsValid) {
-      return res.status(401).send({
-        message: "Invalid email or password.",
       });
     }
 
@@ -1378,7 +1399,7 @@ exports.getByName = async (req, res) => {
     students.forEach((doc) => {
       const name = `${doc.firstname} ${doc.lastname}`;
       if (stringSimilarity.compareTwoStrings(name.toLowerCase(), req.query.q.toLowerCase()) > 0.45) {
-        response.push(mapPublicStudentRow(doc));
+        response.push(mapStudentDirectoryRow(doc));
       }
     });
     res.status(200).send(response);
@@ -1391,14 +1412,13 @@ exports.getStudentLocations = async (req, res) => {
   const allowed = {
     firstname: "firstname",
     lastname: "lastname",
-    email: "email",
     country: "country",
     city: "city",
     class: "\"class\"",
     promotion: "promotion",
     type: "type",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
@@ -1424,21 +1444,20 @@ exports.getByKey = async (req, res) => {
   const allowed = {
     firstname: "firstname",
     lastname: "lastname",
-    email: "email",
     country: "country",
     city: "city",
     class: "\"class\"",
     promotion: "promotion",
     type: "type",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
 
   try {
     const docs = await studentRepository.searchByKey(column, req.query.key);
-    const response = docs.map(mapPublicStudentRow);
+    const response = docs.map(mapStudentDirectoryRow);
     res.status(200).send(response);
   } catch (err) {
     serverError(res, err);
@@ -1458,7 +1477,7 @@ exports.getByFilters = async (req, res) => {
       promotion,
       className,
     });
-    res.status(200).send(docs.map(mapPublicStudentRow));
+    res.status(200).send(docs.map(mapStudentDirectoryRow));
   } catch (err) {
     serverError(res, err);
   }
@@ -1513,7 +1532,7 @@ exports.getStudentById = async (req, res) => {
       return res.status(404).send({ message: "User Not found." });
     }
     const isSelf = String(req.id) === String(student.id);
-    return res.status(200).send(isSelf ? mapStudentRow(student) : mapPublicStudentRow(student));
+    return res.status(200).send(isSelf ? mapStudentRow(student) : mapStudentDirectoryRow(student));
   } catch (err) {
     serverError(res, err);
   }

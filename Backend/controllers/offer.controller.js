@@ -6,7 +6,7 @@ const {
   notificationRepository,
   offerViewRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
 
 const allowedSearchFields = {
   title: "title",
@@ -105,7 +105,7 @@ exports.getAll = async (req, res) => {
 exports.getByKey = async (req, res) => {
   try {
     const { property, key } = req.query;
-    const column = allowedSearchFields[property];
+    const column = pickAllowed(allowedSearchFields, property);
     if (!column || !key) {
       return res.status(400).send({ message: "Invalid search parameters." });
     }

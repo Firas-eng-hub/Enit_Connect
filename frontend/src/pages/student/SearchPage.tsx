@@ -118,7 +118,6 @@ export function SearchPage() {
   const searchProperties = [
     { value: 'firstname', label: 'First Name' },
     { value: 'lastname', label: 'Last Name' },
-    { value: 'email', label: 'Email' },
     { value: 'city', label: 'City' },
     { value: 'country', label: 'Country' },
     { value: 'type', label: 'Type' },

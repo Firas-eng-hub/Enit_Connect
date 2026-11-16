@@ -18,6 +18,7 @@ module.exports = {
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.js',
     '<rootDir>/tests/data/**/*.test.js',
+    '<rootDir>/tests/security/**/*.test.js',
   ],
   testTimeout: 10000,
   verbose: true,

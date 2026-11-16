@@ -17,7 +17,7 @@ const {
   notificationRepository,
   refreshTokenRepository,
 } = require("../repositories");
-const { isUuid } = require("../utils/validation");
+const { isUuid, pickAllowed } = require("../utils/validation");
 
 const mapStudentRow = (row) => ({
   firstname: row.firstname,
@@ -561,7 +561,7 @@ exports.getStudentsByKey = async (req, res) => {
     promotion: "promotion",
     type: "type",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
@@ -583,7 +583,7 @@ exports.getCompaniesByKey = async (req, res) => {
     phone: "phone",
     website: "website",
   };
-  const column = allowed[req.query.property];
+  const column = pickAllowed(allowed, req.query.property);
   if (!column || !req.query.key) {
     return res.status(400).send({ message: "Invalid search parameters." });
   }

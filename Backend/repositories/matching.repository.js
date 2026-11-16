@@ -9,7 +9,7 @@ const listActiveOffersWithCompany = async () => {
      FROM offers o
      LEFT JOIN companies c ON c.id = o.company_id
      WHERE o.end_date IS NULL
-        OR o.end_date >= CURRENT_DATE
+        OR o.end_date::date >= CURRENT_DATE
      ORDER BY o.created_at DESC NULLS LAST`
     );
     return result.rows;
