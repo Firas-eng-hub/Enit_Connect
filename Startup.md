@@ -56,7 +56,7 @@ services:
     environment:
       POSTGRES_DB: enit_connect
       POSTGRES_USER: enit_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -134,12 +134,14 @@ volumes:
 ```env
 # Database
 # ⚠️ IMPORTANT: The password after "enit_user:" and DB_PASSWORD MUST be the same!
-# Replace "change-me" with your own password in BOTH lines.
-DATABASE_URL=postgresql://enit_user:change-me@db:5432/enit_connect
-DB_PASSWORD=change-me
+# Generate a strong password (openssl rand -hex 24) and use it in BOTH lines.
+DATABASE_URL=postgresql://enit_user:<DB_PASSWORD>@db:5432/enit_connect
+DB_PASSWORD=
 
 # Auth
-JWT_SECRET=REPLACE_WITH_A_STRONG_RANDOM_STRING
+# REQUIRED: >= 32 random chars, e.g. `openssl rand -base64 48`.
+# The backend refuses to start with a missing/short/placeholder secret.
+JWT_SECRET=
 PORT=3000
 NODE_ENV=production
 BASE_URL=http://localhost:3000

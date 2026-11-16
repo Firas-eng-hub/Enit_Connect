@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const {
     statsRepository,
 } = require("../repositories");
@@ -21,7 +22,7 @@ exports.getOverview = async (req, res) => {
             candidacies,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        serverError(res, err);
     }
 };
 
@@ -57,6 +58,6 @@ exports.getTrends = async (req, res) => {
             topCompanies,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        serverError(res, err);
     }
 };

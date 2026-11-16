@@ -6,7 +6,7 @@
 # ============================================
 # Stage 1: Build React Application
 # ============================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -28,9 +28,6 @@ ENV VITE_API_URL=$VITE_API_URL
 # Vite outputs to dist/ folder
 RUN npm run build
 
-# Debug: List build output
-RUN ls -la /app/dist/ || echo "dist folder not found"
-
 # ============================================
 # Stage 2: Production Nginx Server
 # ============================================
@@ -42,27 +39,8 @@ RUN apk add --no-cache curl
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Create nginx config for SPA routing
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Enable gzip compression \
-    gzip on; \
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript; \
-    \
-    # SPA routing - all routes serve index.html \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    \
-    # Cache static assets \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# SPA config with security headers / CSP
+COPY nginx-spa.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

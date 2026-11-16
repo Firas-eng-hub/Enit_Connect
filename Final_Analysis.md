@@ -1,3 +1,5 @@
+> **⚠️ OUTDATED (2026-11):** this document describes the legacy Angular 10 + MongoDB stack. The app now runs on React + PostgreSQL. See `README.md`, `Startup.md`, and `SECURITY_FIXES.md` for current information.
+
 # Technical Architecture Analysis: TIC-Connect
 
 ## 1. Executive Summary
@@ -171,7 +173,7 @@ The application uses a **production-ready Docker setup** with:
 ┌───────▼─────────┐            ┌─────────▼────────┐
 │  Backend API    │            │  MongoDB Atlas   │
 │  tic-backend    │───────────▶│  (Cloud DB)      │
-│  Node 18 Alpine │            │  clusterenit     │
+│  Node 18 Alpine │            │  <cluster>     │
 │  Port 3000      │            │  enit_connect DB │
 └─────────────────┘            └──────────────────┘
         │
@@ -335,8 +337,8 @@ JWT_SECRET=your-super-secret-jwt-key-change-me
 # MongoDB Atlas Configuration
 DB_USER=your-mongodb-atlas-username
 DB_PASS=your-mongodb-atlas-password
-DB_HOST=clusterenit.iqfou3e.mongodb.net
-DB_DOMAIN=clusterenit.iqfou3e.mongodb.net
+DB_HOST=<your-cluster>.mongodb.net
+DB_DOMAIN=<your-cluster>.mongodb.net
 DB_NAME=enit_connect
 
 # Gmail SMTP for Email Verification
@@ -1099,8 +1101,8 @@ JWT_SECRET=CHANGE-THIS-TO-RANDOM-256-BIT-STRING
 # MongoDB Atlas
 DB_USER=prod-db-user
 DB_PASS=secure-password-here
-DB_HOST=clusterenit.iqfou3e.mongodb.net
-DB_DOMAIN=clusterenit.iqfou3e.mongodb.net
+DB_HOST=<your-cluster>.mongodb.net
+DB_DOMAIN=<your-cluster>.mongodb.net
 DB_NAME=enit_connect
 
 # Gmail SMTP

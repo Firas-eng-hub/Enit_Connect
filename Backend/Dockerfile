@@ -3,8 +3,8 @@
 # Production-ready Node.js/Express API
 # ============================================
 
-# Use Node 18 Alpine for smaller image size
-FROM node:18-alpine AS base
+# Node 22 LTS (Node 18 is end-of-life)
+FROM node:22-alpine AS base
 
 # Install dumb-init for proper signal handling and curl for healthcheck
 RUN apk add --no-cache dumb-init curl
@@ -25,7 +25,7 @@ FROM base AS dependencies
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # ============================================
 # Production Stage
@@ -39,13 +39,15 @@ ENV PORT=3000
 # Copy node_modules from dependencies stage
 COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copy application source code
-COPY --chown=nodejs:nodejs . .
+# Copy application source code OWNED BY ROOT and read-only for the app user:
+# even with a file-write bug, the nodejs user cannot modify code, config, or
+# email templates (pentest M-01 RCE chain). Only /app/uploads is writable.
+COPY --chown=root:root . .
 
-# Create uploads directory with correct permissions
-RUN mkdir -p /app/uploads && \
+RUN chmod -R a-w /app && \
+    rm -rf /app/uploads && mkdir -p /app/uploads && \
     chown -R nodejs:nodejs /app/uploads && \
-    chmod -R 755 /app/uploads
+    chmod 750 /app/uploads
 
 # Switch to non-root user
 USER nodejs

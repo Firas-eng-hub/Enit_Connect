@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
+
+const VERIFY_OPTIONS = { algorithms: ["HS256"] };
 const { adminRepository, studentRepository, companyRepository } = require("../repositories");
 const { isUuid } = require("../utils/validation");
 
@@ -22,7 +24,13 @@ const refreshCookieOptions = {
 exports.setAuthCookies = (res, accessToken, refreshToken, userType) => {
   res.cookie('accessToken', accessToken, cookieOptions);
   res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-  res.cookie('userType', userType, { ...cookieOptions, httpOnly: false }); // Allow JS to read user type
+  res.cookie('userType', userType, cookieOptions); // HttpOnly: the client gets the role from /api/auth/check
+};
+
+// Refresh only the short-lived access token (refresh cookie left untouched)
+exports.setAccessCookie = (res, accessToken, userType) => {
+  res.cookie('accessToken', accessToken, cookieOptions);
+  res.cookie('userType', userType, cookieOptions);
 };
 
 // Helper function to clear auth cookies
@@ -46,7 +54,7 @@ exports.verifyToken = (req, res, next) => {
     return res.status(403).send({ message: "No token provided!" });
   }
 
-  jwt.verify(token, config.secret, (err, decoded) => {
+  jwt.verify(token, config.secret, VERIFY_OPTIONS, (err, decoded) => {
     if (err) {
       // Token expired or invalid
       return res.status(401).send({ message: "Unauthorized! Token invalid or expired." });
@@ -69,11 +77,12 @@ exports.isAdmin = (req, res, next) => {
       if (!admin) {
         res.status(401).send({ message: "Unauthorized!" });
       } else {
+        req.userRole = "admin";
         next();
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error" + err.message });
+      res.status(500).send({ message: "Internal server error." });
     });
 };
 
@@ -86,16 +95,18 @@ exports.isStudent = (req, res, next) => {
       if (!student) {
         res.status(401).send({ message: "Unauthorized!" });
       } else {
+        req.userRole = "student";
         next();
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error" + err.message });
+      res.status(500).send({ message: "Internal server error." });
     });
 };
 
 exports.isCompany = (req, res, next) => {
-  const companyId = req.query.id || req.id;
+  // Identity comes ONLY from the verified token, never from the query string.
+  const companyId = req.id;
   if (!isUuid(companyId)) {
     return res.status(401).send({ message: "Unauthorized!" });
   }
@@ -104,11 +115,12 @@ exports.isCompany = (req, res, next) => {
       if (!company) {
         res.status(401).send({ message: "Unauthorized!" });
       } else {
+        req.userRole = "company";
         next();
       }
     })
     .catch((err) => {
-      res.status(500).send({ message: "error " + err.message });
+      res.status(500).send({ message: "Internal server error." });
     });
 };
 
@@ -130,7 +142,7 @@ exports.verifyTokenOptional = (req, res, next) => {
   }
 
   // If token exists, verify it
-  jwt.verify(token, config.secret, (err, decoded) => {
+  jwt.verify(token, config.secret, VERIFY_OPTIONS, (err, decoded) => {
     if (err) {
       // Invalid token - proceed without authentication
       req.id = null;

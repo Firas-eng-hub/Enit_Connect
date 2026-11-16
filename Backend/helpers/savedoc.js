@@ -1,17 +1,9 @@
-const multer = require('multer');
-const storage1 = multer.diskStorage({
-  destination: function (req, file, cb) {
+// Document upload (PDF / Word / images).
+const { createUpload, DOCUMENT_TYPES } = require("./upload-factory");
 
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + uniqueSuffix + '.' + req.query.type)
-  }
-})
-
-const upload = multer({ storage: storage1 });
-
-const savedoc = upload.single('file');
-
-module.exports = savedoc;
+module.exports = createUpload({
+  field: "file",
+  types: DOCUMENT_TYPES,
+  maxBytes: 10 * 1024 * 1024,
+  prefix: "file",
+});

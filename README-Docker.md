@@ -76,12 +76,9 @@ nano .env
 
 Fill in your actual values:
 ```env
-JWT_SECRET=your-strong-secret-key
-DB_USER=your-mongodb-user
-DB_PASS=your-mongodb-password
-DB_HOST=clusterenit.iqfou3e.mongodb.net
-DB_DOMAIN=clusterenit.iqfou3e.mongodb.net
-DB_NAME=TIC-ENIT
+JWT_SECRET=<output of: openssl rand -base64 48>
+POSTGRES_PASSWORD=<output of: openssl rand -hex 24>
+DATABASE_URL=postgresql://enit_user:<POSTGRES_PASSWORD>@db:5432/enit_connect
 EMAIL_USER=your-gmail@gmail.com
 EMAIL_PASS=your-gmail-app-password
 ```

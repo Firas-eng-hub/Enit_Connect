@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const stringSimilarity = require("string-similarity");
 const { studentRepository, matchingRepository } = require("../repositories");
 const { isUuid } = require("../utils/validation");
@@ -111,6 +112,6 @@ exports.getRecommendations = async (req, res) => {
             total: scored.length,
         });
     } catch (err) {
-        res.status(500).send({ message: err.message || err });
+        serverError(res, err);
     }
 };

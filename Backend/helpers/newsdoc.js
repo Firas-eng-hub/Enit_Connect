@@ -1,17 +1,9 @@
-const multer = require('multer');
-let storage1 = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(req.query);
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + uniqueSuffix + '.' + req.query.type)
-  }
+// News attachment upload (PDF / Word / images). Admin-only route.
+const { createUpload, DOCUMENT_TYPES } = require("./upload-factory");
+
+module.exports = createUpload({
+  field: "file",
+  types: DOCUMENT_TYPES,
+  maxBytes: 10 * 1024 * 1024,
+  prefix: "news",
 });
-
-let upload = multer({storage: storage1});
-
-const newsdoc =upload.single('file');
-
-module.exports = newsdoc;

@@ -31,8 +31,28 @@ const deleteById = async (id) => {
   return result.rowCount > 0;
 };
 
+// Atomically mark a token as rotated. Returns the row only for the first caller.
+const markRotated = async (token) => {
+  const result = await db.query(
+    `UPDATE refresh_tokens
+        SET extra = COALESCE(extra, '{}'::jsonb) || jsonb_build_object('rotated_at', now())
+      WHERE token = $1 AND NOT (COALESCE(extra, '{}'::jsonb) ? 'rotated_at')
+      RETURNING *`,
+    [token]
+  );
+  return result.rows[0] || null;
+};
+
+// Revoke every refresh token of a user (used on token-reuse detection).
+const deleteByUser = async (userId) => {
+  const result = await db.query("DELETE FROM refresh_tokens WHERE user_id = $1", [userId]);
+  return result.rowCount;
+};
+
 module.exports = {
   createToken,
+  markRotated,
+  deleteByUser,
   findByToken,
   deleteByToken,
   deleteById,

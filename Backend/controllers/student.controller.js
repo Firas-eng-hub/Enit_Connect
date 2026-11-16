@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
@@ -49,6 +50,12 @@ const mapStudentRow = (row) => ({
   _id: row.id,
 });
 
+// Projection for other users (directory/search): no street address or account status.
+const mapPublicStudentRow = (row) => {
+  const { address, status, ...rest } = mapStudentRow(row);
+  return rest;
+};
+
 const parseLimit = (value, fallback = 24, max = 100) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
@@ -59,32 +66,6 @@ const parseOffset = (value, fallback = 0) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(Math.floor(parsed), 0);
-};
-
-exports.getPosts = async (req, res) => {
-  try {
-    const posts = await postRepository.listAll();
-    const response = posts.map(postRepository.mapPostRow);
-    res.status(200).send(response);
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
-exports.addPost = async (req, res) => {
-  try {
-    await postRepository.createPost({
-      title: req.body.title,
-      topic: req.body.topic,
-      date: req.body.date,
-      userName: req.body.userName,
-      body: req.body.body,
-      description: req.body.description,
-    });
-    res.status(201).send({ message: "Post was added successfully!" });
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
 };
 
 exports.apply = async (req, res) => {
@@ -159,7 +140,7 @@ exports.apply = async (req, res) => {
     res.status(200).send({ message: "Application submitted successfully!" });
   } catch (err) {
     console.error("Apply error:", err);
-    res.status(500).send({ message: err.message || "Error applying to offer" });
+    serverError(res, err, "Error applying to offer.");
   }
 };
 
@@ -582,8 +563,12 @@ exports.updateDocumentRequestStatus = async (req, res) => {
       return res.status(400).send({ message: "Invalid request id." });
     }
 
+    const allowedStatuses = ["open", "fulfilled", "declined"];
     const status = req.body.status || "fulfilled";
-    const request = await documentRequestRepository.updateStatus(req.params.id, status);
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).send({ message: "Invalid status." });
+    }
+    const request = await documentRequestRepository.updateStatus(req.params.id, status, req.id);
     if (!request) {
       return res.status(404).send({ message: "Request not found." });
     }
@@ -1118,58 +1103,6 @@ exports.restoreDocumentVersion = async (req, res) => {
   }
 };
 
-exports.searchDocument = async (req, res) => {
-  try {
-    const docs = await documentRepository.searchByTitle(req.body.title || "");
-    res.status(200).send(docs.map(documentRepository.mapDocumentRow));
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
-exports.deleteDocument = async (req, res) => {
-  if (req.body.type === "file") {
-    try {
-      fs.unlinkSync(`uploads/${req.body.link.split("/").pop()}`);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  try {
-    await documentRepository.deleteByTitleAndEmplacement(req.body.title, req.body.emplacement);
-    res.status(200).send({ message: `${req.body.type} deleted` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
-exports.createFile = async (req, res) => {
-  let filePath = `${process.env.BASE_URL}/uploads/`;
-  if (req.file && req.file.filename) {
-    filePath += req.file.filename;
-  }
-
-  try {
-    const creatorId = isUuid(req.query.idcreator) ? req.query.idcreator : null;
-    await documentRepository.createDocument({
-      creatorId,
-      creatorName: req.query.namecreator,
-      date: req.query.date,
-      title: req.query.title,
-      type: "file",
-      link: filePath,
-      extension: req.query.type,
-      emplacement: req.query.emplacement,
-      size: req.query.size,
-    });
-    res.status(201).send({ message: "File was uploaded successfully!" });
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
 exports.createFolder = async (req, res) => {
   try {
     const creatorId = isUuid(req.body.idcreator) ? req.body.idcreator : null;
@@ -1186,16 +1119,7 @@ exports.createFolder = async (req, res) => {
     });
     res.status(201).send({ message: "Folder was created successfully!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
-exports.getDocuments = async (req, res) => {
-  try {
-    const docs = await documentRepository.listByEmplacement(req.body.emp);
-    res.status(200).send(docs.map(documentRepository.mapDocumentRow));
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1214,7 +1138,7 @@ exports.updatePicture = async (req, res) => {
     res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1338,7 +1262,7 @@ exports.signin = async (req, res) => {
       userType: "student",
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -1392,7 +1316,7 @@ exports.verifyUser = async (req, res) => {
     await studentRepository.verifyStudent(student.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1444,16 +1368,6 @@ exports.getLocation = (req, res) => {
     });
 };
 
-exports.getAll = async (req, res) => {
-  try {
-    const students = await studentRepository.listAll();
-    const response = students.map(mapStudentRow);
-    res.status(200).send(response);
-  } catch (err) {
-    res.status(500).send({ message: err.message || err });
-  }
-};
-
 exports.getByName = async (req, res) => {
   try {
     if (!req.query.q) {
@@ -1464,12 +1378,12 @@ exports.getByName = async (req, res) => {
     students.forEach((doc) => {
       const name = `${doc.firstname} ${doc.lastname}`;
       if (stringSimilarity.compareTwoStrings(name.toLowerCase(), req.query.q.toLowerCase()) > 0.45) {
-        response.push(mapStudentRow(doc));
+        response.push(mapPublicStudentRow(doc));
       }
     });
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1502,7 +1416,7 @@ exports.getStudentLocations = async (req, res) => {
     }));
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1524,10 +1438,10 @@ exports.getByKey = async (req, res) => {
 
   try {
     const docs = await studentRepository.searchByKey(column, req.query.key);
-    const response = docs.map(mapStudentRow);
+    const response = docs.map(mapPublicStudentRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1544,9 +1458,9 @@ exports.getByFilters = async (req, res) => {
       promotion,
       className,
     });
-    res.status(200).send(docs.map(mapStudentRow));
+    res.status(200).send(docs.map(mapPublicStudentRow));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1598,9 +1512,10 @@ exports.getStudentById = async (req, res) => {
     if (!student) {
       return res.status(404).send({ message: "User Not found." });
     }
-    return res.status(200).send(mapStudentRow(student));
+    const isSelf = String(req.id) === String(student.id);
+    return res.status(200).send(isSelf ? mapStudentRow(student) : mapPublicStudentRow(student));
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -1651,7 +1566,7 @@ exports.updateStudent = async (req, res) => {
     return res.status(200).send({ message: "User updated" });
   } catch (err) {
     console.error("Failed to update student:", err);
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -1697,6 +1612,6 @@ exports.deleteStudent = async (req, res) => {
     res.status(200).send({ message: "User deleted" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };

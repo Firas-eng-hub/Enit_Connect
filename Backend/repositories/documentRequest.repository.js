@@ -42,13 +42,14 @@ const listByRequester = async ({ requesterId, requesterType }) => {
   return result.rows;
 };
 
-const updateStatus = async (id, status) => {
+// Only the request's target may change its status.
+const updateStatus = async (id, status, targetId) => {
   const result = await db.query(
     `UPDATE document_requests
      SET status = $1, updated_at = now()
-     WHERE id = $2
+     WHERE id = $2 AND target_id = $3
      RETURNING *`,
-    [status, id]
+    [status, id, targetId]
   );
   return result.rows[0] || null;
 };

@@ -5,7 +5,8 @@ npm-debug.log*
 # Environment files (use docker-compose env instead)
 .env
 .env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Git
 .git/

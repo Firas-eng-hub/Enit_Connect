@@ -1,10 +1,14 @@
+const bcrypt = require("bcrypt");
 const db = require("../db");
+
+// Admin passwords are always stored as bcrypt hashes.
 const createAdmin = async ({ email, password }) => {
+  const hash = password.startsWith("$2") ? password : await bcrypt.hash(password, 10);
   const result = await db.query(
     `INSERT INTO admins (email, password, created_at, extra)
      VALUES ($1, $2, now(), $3)
      RETURNING *`,
-    [email, password, JSON.stringify({})]
+    [email, hash, JSON.stringify({})]
   );
   return result.rows[0];
 };

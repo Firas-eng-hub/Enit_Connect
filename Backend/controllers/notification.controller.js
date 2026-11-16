@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const { notificationRepository } = require("../repositories");
 const sseManager = require("../helpers/sse.manager");
 
@@ -13,7 +14,7 @@ const fetchNotifications = async (recipientType, req, res) => {
       notifications.map(notificationRepository.mapNotificationRow)
     );
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -22,7 +23,7 @@ const fetchUnreadCount = async (recipientType, req, res) => {
     const count = await notificationRepository.countUnread(recipientType, req.id);
     res.status(200).send({ count });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -37,7 +38,7 @@ const markRead = async (recipientType, req, res) => {
       deleted: result.deleted,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -50,7 +51,7 @@ const markAllRead = async (recipientType, req, res) => {
       updatedCount: summary.updatedCount || 0,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -62,7 +63,7 @@ const deleteNotification = async (recipientType, req, res) => {
     }
     res.status(200).send({ message: "Notification deleted." });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 

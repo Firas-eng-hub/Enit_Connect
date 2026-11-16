@@ -14,7 +14,7 @@ services:
     environment:
       POSTGRES_DB: enit_connect
       POSTGRES_USER: enit_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong value}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -41,6 +41,14 @@ services:
     volumes:
       # Persist uploads across container restarts
       - ./Backend/uploads:/app/uploads
+    # Runtime hardening: code is immutable, only uploads (volume) and /tmp are writable
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       db:
         condition: service_healthy

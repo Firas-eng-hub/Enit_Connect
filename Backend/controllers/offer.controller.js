@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const {
   offerRepository,
   companyRepository,
@@ -15,7 +16,15 @@ const allowedSearchFields = {
   end: "end_date",
 };
 
-const buildOffersWithCandidacies = async (offers) => {
+// Candidacies carry applicant PII. Only the owning company sees all of them;
+// a student only sees their own; everyone else sees none.
+const visibleCandidacies = (offer, candidacies, requesterId) => {
+  if (requesterId && String(offer.company_id) === String(requesterId)) return candidacies;
+  if (!requesterId) return [];
+  return candidacies.filter((c) => String(c.studentId) === String(requesterId));
+};
+
+const buildOffersWithCandidacies = async (offers, requesterId) => {
   if (!offers.length) return [];
   const offerIds = offers.map((offer) => offer.id);
   const candidacyRows = await offerRepository.listCandidaciesByOfferIds(offerIds);
@@ -27,7 +36,10 @@ const buildOffersWithCandidacies = async (offers) => {
   });
 
   return offers.map((offer) =>
-    offerRepository.mapOfferRow(offer, candidacyMap.get(offer.id) || [])
+    offerRepository.mapOfferRow(
+      offer,
+      visibleCandidacies(offer, candidacyMap.get(offer.id) || [], requesterId)
+    )
   );
 };
 
@@ -76,17 +88,17 @@ exports.addOffer = async (req, res) => {
 
     res.status(201).send({ message: "Offer added successfully!" });
   } catch (error) {
-    res.status(500).send({ message: error.message || error });
+    serverError(res, error);
   }
 };
 
 exports.getAll = async (req, res) => {
   try {
     const offers = await offerRepository.listOffers();
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -98,24 +110,25 @@ exports.getByKey = async (req, res) => {
       return res.status(400).send({ message: "Invalid search parameters." });
     }
     const offers = await offerRepository.searchByKey(column, key);
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
 exports.getCompanyOffers = async (req, res) => {
   try {
-    const companyId = req.query.id || req.params.id;
+    // /myoffers -> the authenticated company; /company/:id/offers -> public listing
+    const companyId = req.params.id || req.id;
     if (!companyId || !isUuid(companyId)) {
       return res.status(400).send({ message: "Invalid company id." });
     }
     const offers = await offerRepository.listOffersByCompany(companyId);
-    const response = await buildOffersWithCandidacies(offers);
+    const response = await buildOffersWithCandidacies(offers, req.id);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -130,6 +143,9 @@ exports.getCandidacies = async (req, res) => {
     if (!offer) {
       return res.status(404).send({ message: "No Candidacies found." });
     }
+    if (String(offer.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
 
     const candidacies = await offerRepository.listCandidacies(offerId);
     const response = offerRepository.mapOfferRow(
@@ -138,7 +154,7 @@ exports.getCandidacies = async (req, res) => {
     );
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -195,7 +211,7 @@ exports.updateCandidacyStatus = async (req, res) => {
 
     return res.status(200).send({ message: "Candidacy updated." });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -217,11 +233,12 @@ exports.getOfferById = async (req, res) => {
     const candidacies = await offerRepository.listCandidacies(offer.id);
     const response = offerRepository.mapOfferRow(
       offer,
-      candidacies.map(offerRepository.mapCandidacyRow)
+      visibleCandidacies(offer, candidacies.map(offerRepository.mapCandidacyRow), req.id)
     );
     return res.status(200).send(response);
   } catch (err) {
-    return res.status(500).send({ message: "error" + err.message });
+    console.error("Get offer failed:", err);
+    return res.status(500).send({ message: "Internal server error." });
   }
 };
 
@@ -232,6 +249,13 @@ exports.updateOffer = async (req, res) => {
   }
 
   try {
+    const existing = await offerRepository.findById(offerId);
+    if (!existing) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    if (String(existing.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
     const updated = await offerRepository.updateOffer(offerId, {
       title: req.body.title,
       type: req.body.type,
@@ -246,7 +270,7 @@ exports.updateOffer = async (req, res) => {
     return res.status(200).send({ message: "Offer updated" });
   } catch (err) {
     console.error(err);
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -256,6 +280,13 @@ exports.deleteOffre = async (req, res) => {
     return res.status(400).send({ message: "Invalid offer id." });
   }
   try {
+    const existing = await offerRepository.findById(offerId);
+    if (!existing) {
+      return res.status(404).send({ message: "Offer not found." });
+    }
+    if (String(existing.company_id) !== String(req.id)) {
+      return res.status(403).send({ message: "Unauthorized offer access." });
+    }
     const deleted = await offerRepository.deleteOffer(offerId);
     if (!deleted) {
       return res.status(404).send({ message: "Offer not found." });
@@ -263,6 +294,6 @@ exports.deleteOffre = async (req, res) => {
     return res.status(200).send({ message: "Offer deleted" });
   } catch (error) {
     console.error(error);
-    return res.status(500).send({ message: error.message || error });
+    return serverError(res, error);
   }
 };

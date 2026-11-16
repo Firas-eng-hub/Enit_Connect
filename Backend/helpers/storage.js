@@ -1,16 +1,10 @@
-const multer = require('multer');
-const storage1 = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + uniqueSuffix + '.' + file.mimetype.split('/')[1])
-  }
-})
+// Profile picture / company logo upload (images only).
+const { createUpload, IMAGE_TYPES } = require("./upload-factory");
 
-const upload = multer({ storage: storage1 });
-
-const storage = upload.single('image');
-
-module.exports = storage;
+module.exports = createUpload({
+  field: "image",
+  types: IMAGE_TYPES,
+  maxBytes: 3 * 1024 * 1024,
+  prefix: "image",
+  label: "Image",
+});

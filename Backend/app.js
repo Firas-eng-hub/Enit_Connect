@@ -1,5 +1,4 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const dotenv = require('dotenv');
 const trimmer = require('express-trimmer');
@@ -27,15 +26,35 @@ const path = require('path');
 // ============================================
 // Trust Proxy (required when behind nginx/load balancer)
 // ============================================
-app.set('trust proxy', 1);
+// Only trust X-Forwarded-For from private-network proxies (nginx / platform LB),
+// so a client hitting the backend directly cannot spoof its IP to dodge rate limits.
+// Override with TRUST_PROXY (e.g. "1", "loopback", or a CIDR list) if your topology differs.
+const parseTrustProxy = (value) => {
+  if (value === undefined || value === "") return "loopback, linklocal, uniquelocal";
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
+};
+app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
 
 // ============================================
 // Security Middleware
 // ============================================
 
 // Set security HTTP headers
+// The API only returns JSON / files, so it gets the strictest possible CSP.
+// (The SPA's own CSP is set by nginx.)
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable for file uploads
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'none'"],
+      formAction: ["'none'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
@@ -44,8 +63,8 @@ app.use(helmet({
 app.use(hpp());
 
 // Body parser with size limits (prevent large payload attacks)
-app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 // Cookie parser for HTTP-only JWT cookies
 app.use(cookieParser());
@@ -70,12 +89,19 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Stricter rate limit for authentication endpoints
+// Stricter rate limit for login endpoints (failed attempts only)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 5 : 50, // Higher limit in development
-  message: 'Too many login attempts, please try again later.',
+  max: process.env.NODE_ENV === 'production' ? 10 : 50, // Higher limit in development
+  message: { message: 'Too many login attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: true,
+});
+app.use(['/api/student/login', '/api/company/login', '/api/admin/login', '/api/admin'], (req, res, next) => {
+  // '/api/admin' (exact, POST) is a legacy alias of the admin login route
+  if (req.method !== 'POST' || (req.baseUrl === '/api/admin' && req.path !== '/')) return next();
+  return authLimiter(req, res, next);
 });
 
 // Trim whitespace from request body
@@ -92,9 +118,18 @@ app.get("/health", (req, res) => {
 });
 
 // Serve uploaded files statically
+// Uploaded files are untrusted: never let the browser render them as active content.
+const INLINE_UPLOAD_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".pdf"]);
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
-  setHeaders: (res) => {
+  dotfiles: "deny",
+  index: false,
+  setHeaders: (res, filePath) => {
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    if (!INLINE_UPLOAD_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+      res.setHeader("Content-Disposition", "attachment");
+    }
   }
 }));
 

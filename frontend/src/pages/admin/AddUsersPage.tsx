@@ -10,14 +10,14 @@ const userSchema = z.object({
   firstname: z.string().min(1, 'First name is required'),
   lastname: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   type: z.string().min(1, 'Type is required'),
 });
 
 const companySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   website: z.string().min(1, 'Website is required'),
   address: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),

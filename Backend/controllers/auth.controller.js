@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
 const authJwt = require("../middlewares/authJwt");
@@ -90,7 +91,7 @@ exports.checkAuth = async (req, res) => {
       return res.status(200).json({ authenticated: false });
     }
 
-    jwt.verify(token, config.secret, async (err, decoded) => {
+    jwt.verify(token, config.secret, { algorithms: ["HS256"] }, async (err, decoded) => {
       if (err) {
         return res.status(200).json({ authenticated: false, message: "Token invalid or expired" });
       }
@@ -112,7 +113,8 @@ exports.checkAuth = async (req, res) => {
           user = await adminRepository.findById(decoded.id);
         }
       } catch (err) {
-        return res.status(500).json({ authenticated: false, message: err.message });
+        console.error(err);
+        return res.status(500).json({ authenticated: false, message: "Internal server error." });
       }
 
       if (!user) {
@@ -149,7 +151,7 @@ exports.getPreferences = async (req, res) => {
       notifications: getNotificationPreferences(current.user.extra),
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -191,9 +193,12 @@ exports.updatePreferences = async (req, res) => {
       notifications: getNotificationPreferences(updated.extra),
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
+
+// Grace window for concurrent refresh requests that race the rotation
+const REFRESH_REUSE_GRACE_MS = 30 * 1000;
 
 // Refresh access token using refresh token from cookie
 exports.refreshToken = async (req, res) => {
@@ -218,6 +223,15 @@ exports.refreshToken = async (req, res) => {
     // Check if token is expired
     if (new Date(refreshToken.expires_at) < new Date()) {
       await refreshTokenRepository.deleteById(refreshToken.id);
+      authJwt.clearAuthCookies(res);
+      return res.sendStatus(401);
+    }
+
+    // Reuse detection: a rotated token presented again after the grace window
+    // means it was likely stolen -> revoke every session of that user.
+    const rotatedAt = refreshToken.extra?.rotated_at ? new Date(refreshToken.extra.rotated_at) : null;
+    if (rotatedAt && Date.now() - rotatedAt.getTime() > REFRESH_REUSE_GRACE_MS) {
+      await refreshTokenRepository.deleteByUser(refreshToken.user_id);
       authJwt.clearAuthCookies(res);
       return res.sendStatus(401);
     }
@@ -249,8 +263,15 @@ exports.refreshToken = async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    // Set new access token in cookie
-    authJwt.setAuthCookies(res, newAccessToken, requestToken, userType);
+    // Rotate the refresh token. If another request already rotated it within the
+    // grace window (concurrent refreshes), only re-issue the access token.
+    const claimed = await refreshTokenRepository.markRotated(requestToken);
+    if (claimed) {
+      const newRefreshToken = await refreshTokenRepository.createToken(user.id, refreshToken.user_type);
+      authJwt.setAuthCookies(res, newAccessToken, newRefreshToken, userType);
+    } else {
+      authJwt.setAccessCookie(res, newAccessToken, userType);
+    }
 
     return res.status(200).json({
       message: "Token refreshed successfully",

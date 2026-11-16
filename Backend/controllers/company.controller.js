@@ -1,3 +1,4 @@
+const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
@@ -41,6 +42,15 @@ exports.getUserInfo = async (req, res) => {
   }
 
   try {
+    // Only a company the student applied to (or an admin) may see contact details.
+    const isOwnApplicant = await offerRepository.hasCandidacyForCompany(req.id, req.params.id);
+    if (!isOwnApplicant) {
+      const admin = await adminRepository.findById(req.id);
+      if (!admin) {
+        return res.status(403).send({ message: "Forbidden." });
+      }
+    }
+
     const student = await studentRepository.findById(req.params.id);
     if (!student) {
       return res.status(404).send({ message: "User Not found." });
@@ -64,7 +74,7 @@ exports.getUserInfo = async (req, res) => {
       longitude: student.longitude,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -182,7 +192,7 @@ exports.signin = async (req, res) => {
       userType: "company",
     });
   } catch (err) {
-    return res.status(500).send({ message: err.message || err });
+    return serverError(res, err);
   }
 };
 
@@ -236,7 +246,7 @@ exports.verifyCompany = async (req, res) => {
     await companyRepository.verifyCompany(company.id);
     res.status(200).send({ message: "Account Verified!" });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -364,7 +374,7 @@ exports.getByKey = async (req, res) => {
     const response = docs.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -383,7 +393,7 @@ exports.getByName = async (req, res) => {
     });
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -415,7 +425,7 @@ exports.getCompanyById = async (req, res) => {
       offers: response,
     });
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -440,13 +450,14 @@ exports.getCompanyLocations = async (req, res) => {
     }));
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
 exports.updateCompany = async (req, res) => {
   try {
-    const companyId = req.query.id || req.id;
+    // Always act on the authenticated company; never trust a client-supplied id.
+    const companyId = req.id;
     if (!isUuid(companyId)) {
       return res.status(400).send({ message: "Invalid company id." });
     }
@@ -468,7 +479,7 @@ exports.updateCompany = async (req, res) => {
     res.status(200).send({ message: "Company updated" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -492,7 +503,7 @@ exports.updateLogo = async (req, res) => {
     res.status(200).send({ message: "Company updated" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -511,7 +522,7 @@ exports.deleteCompany = async (req, res) => {
     res.status(200).send({ message: "Company deleted" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };
 
@@ -521,6 +532,6 @@ exports.getAllCompanies = async (req, res) => {
     const response = companies.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
-    res.status(500).send({ message: err.message || err });
+    serverError(res, err);
   }
 };

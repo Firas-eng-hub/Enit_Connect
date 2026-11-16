@@ -8,9 +8,9 @@ const { offer } = require("../controllers");
 //Get All Offers
 router.get("/", authJwt.verifyToken, offer.getAll);
 //Get All Offers of a company
-router.get("/myoffers", authJwt.verifyToken, offer.getCompanyOffers);
+router.get("/myoffers", authJwt.verifyToken, authJwt.isCompany, offer.getCompanyOffers);
 //Get All candidacies of an offer
-router.get("/candidacies", authJwt.verifyToken, offer.getCandidacies);
+router.get("/candidacies", authJwt.verifyToken, authJwt.isCompany, offer.getCandidacies);
 //Update candidacy status with UUID validation
 router.patch("/candidacies/:offerId", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), offer.updateCandidacyStatus);
 //Search for Offers by Property & Key
@@ -20,9 +20,9 @@ router.post("/", authJwt.verifyToken, authJwt.isCompany, validation.sqlInjection
 //Get Offer by ID with UUID validation
 router.get("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), offer.getOfferById);
 //Edit Offer of Company with validation
-router.patch("/", authJwt.verifyToken, validation.sqlInjectionCheck, validation.validate(validation.schemas.updateOffer), offer.updateOffer);
+router.patch("/", authJwt.verifyToken, authJwt.isCompany, validation.sqlInjectionCheck, validation.validate(validation.schemas.updateOffer), offer.updateOffer);
 //Delete Offer of Company with UUID validation
-router.delete("/", authJwt.verifyToken, offer.deleteOffre);
-router.delete("/:id", authJwt.verifyToken, validation.validate(validation.schemas.uuidParam, 'params'), offer.deleteOffre);
+router.delete("/", authJwt.verifyToken, authJwt.isCompany, offer.deleteOffre);
+router.delete("/:id", authJwt.verifyToken, authJwt.isCompany, validation.validate(validation.schemas.uuidParam, 'params'), offer.deleteOffre);
 
 module.exports = router;

@@ -101,6 +101,19 @@ const listCandidaciesByOfferIds = async (offerIds) => {
   return result.rows;
 };
 
+// True when `studentId` has applied to at least one offer owned by `companyId`.
+const hasCandidacyForCompany = async (companyId, studentId) => {
+  const result = await db.query(
+    `SELECT 1
+       FROM offer_candidacies c
+       JOIN offers o ON o.id = c.offer_id
+      WHERE o.company_id = $1 AND c.student_id = $2
+      LIMIT 1`,
+    [companyId, studentId]
+  );
+  return result.rows.length > 0;
+};
+
 const createCandidacy = async (data) => {
   const sourceKey = data.sourceKey || randomUUID();
   const result = await db.query(
@@ -236,6 +249,7 @@ module.exports = {
   listCandidacies,
   listCandidaciesByOfferIds,
   createCandidacy,
+  hasCandidacyForCompany,
   updateCandidacyStatus,
   mapCandidacyRow,
   mapOfferRow,
