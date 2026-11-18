@@ -6,6 +6,7 @@ const {
   notificationRepository,
   documentRepository,
 } = require("../repositories");
+const { parseLimit, parseOffset } = require("../utils/pagination");
 const { isUuid } = require("../utils/validation");
 const { notifyNewMessage } = require("../utils/mail-notifier");
 
@@ -109,17 +110,6 @@ const detectActor = async (req) => {
   return null;
 };
 
-const parseLimit = (value, fallback = 50, max = 100) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(Math.floor(parsed), 1), max);
-};
-
-const parseOffset = (value, fallback = 0) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.max(Math.floor(parsed), 0);
-};
 
 const dedupeRecipients = (recipients) => {
   const seen = new Set();

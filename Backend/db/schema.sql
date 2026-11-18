@@ -63,6 +63,40 @@ CREATE INDEX IF NOT EXISTS students_search_text_trgm_idx
     ) gin_trgm_ops
   );
 
+-- City-level map coordinates + scale indexes (see migration 017).
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS lat_city DOUBLE PRECISION GENERATED ALWAYS AS (
+    CASE WHEN latitude ~ '^\s*-?[0-9]{1,3}(\.[0-9]+)?\s*$' THEN
+      CASE WHEN abs(btrim(latitude)::numeric) <= 90
+        THEN round(btrim(latitude)::numeric, 1)::double precision END
+    END
+  ) STORED;
+
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS lng_city DOUBLE PRECISION GENERATED ALWAYS AS (
+    CASE WHEN longitude ~ '^\s*-?[0-9]{1,3}(\.[0-9]+)?\s*$' THEN
+      CASE WHEN abs(btrim(longitude)::numeric) <= 180
+        THEN round(btrim(longitude)::numeric, 1)::double precision END
+    END
+  ) STORED;
+
+-- Map cells: GROUP BY / bbox over active, located students only.
+CREATE INDEX IF NOT EXISTS students_map_cell_idx
+  ON students (lat_city, lng_city)
+  WHERE status = 'Active' AND lat_city IS NOT NULL AND lng_city IS NOT NULL;
+
+-- Map people list: keyset pagination by name.
+CREATE INDEX IF NOT EXISTS students_map_name_idx
+  ON students (lower(lastname), lower(firstname), id)
+  WHERE status = 'Active' AND lat_city IS NOT NULL AND lng_city IS NOT NULL;
+
+-- Fuzzy full-name search (pg_trgm % / similarity / ILIKE).
+CREATE INDEX IF NOT EXISTS students_fullname_trgm_idx
+  ON students USING GIN ((coalesce(firstname, '') || ' ' || coalesce(lastname, '')) gin_trgm_ops);
+
+-- Paged "newest first" listings.
+CREATE INDEX IF NOT EXISTS students_created_at_idx ON students (created_at DESC NULLS LAST);
+
 CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   status TEXT NOT NULL DEFAULT 'Active',
@@ -106,6 +140,8 @@ CREATE INDEX IF NOT EXISTS companies_search_text_trgm_idx
       COALESCE(address, '')
     ) gin_trgm_ops
   );
+CREATE INDEX IF NOT EXISTS companies_created_at_idx ON companies (created_at DESC NULLS LAST);
+
 
 CREATE TABLE IF NOT EXISTS offers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -494,11 +530,15 @@ CREATE TABLE IF NOT EXISTS notifications (
   extra JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX IF NOT EXISTS notifications_recipient_id_idx ON notifications (recipient_id);
-CREATE INDEX IF NOT EXISTS notifications_recipient_type_idx ON notifications (recipient_type);
+CREATE INDEX IF NOT EXISTS notifications_recipient_created_idx
+  ON notifications (recipient_type, recipient_id, created_at DESC NULLS LAST);
 
 CREATE OR REPLACE FUNCTION enforce_notification_limit()
 RETURNS trigger AS $$
 BEGIN
+  IF current_setting('app.bulk_notify', true) = 'on' THEN
+    RETURN NEW;
+  END IF;
   DELETE FROM notifications
   WHERE id IN (
     SELECT id FROM notifications

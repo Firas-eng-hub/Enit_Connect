@@ -1,8 +1,8 @@
 const { serverError } = require("../utils/http");
+const { broadcastInBackground } = require("../helpers/broadcast-notify");
 const {
   offerRepository,
   companyRepository,
-  studentRepository,
   notificationRepository,
   offerViewRepository,
 } = require("../repositories");
@@ -64,24 +64,21 @@ exports.addOffer = async (req, res) => {
     });
 
     try {
-      const students = await studentRepository.listIds();
-      if (students.length > 0) {
-        let companyName = "A company";
-        const company = await companyRepository.findById(req.id);
-        if (company?.name) {
-          companyName = company.name;
-        }
-
-        await notificationRepository.createMany(
-          students.map((studentId) => ({
-            recipientType: "student",
-            recipientId: studentId,
-            title: "New Offer Published",
-            message: `${companyName} published a new offer: "${offer.title}".`,
-            type: "info",
-          }))
-        );
+      let companyName = "A company";
+      const company = await companyRepository.findById(req.id);
+      if (company?.name) {
+        companyName = company.name;
       }
+      // One INSERT ... SELECT for every active student, off the request path.
+      broadcastInBackground(
+        ["student"],
+        {
+          title: "New Offer Published",
+          message: `${companyName} published a new offer: "${offer.title}".`,
+          type: "info",
+        },
+        "Offer created"
+      );
     } catch (notifyError) {
       console.warn("Offer created but notifications failed:", notifyError.message || notifyError);
     }

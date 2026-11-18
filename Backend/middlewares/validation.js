@@ -176,6 +176,22 @@ const mailRecipientsQuerySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(25),
 }).messages(customMessages);
 
+// Student network map. bbox = "south,west,north,east", cell = "lat,lng".
+const coordPair = /^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$/;
+const coordQuad = /^-?\d{1,3}(\.\d+)?(,-?\d{1,3}(\.\d+)?){3}$/;
+const studentMapQuerySchema = Joi.object({
+  property: Joi.string().valid('firstname', 'lastname', 'country', 'city', 'class', 'promotion', 'type').default('firstname'),
+  key: Joi.string().max(100).trim().allow('').default(''),
+  type: Joi.string().valid('Student', 'Alumni'),
+  promotion: Joi.string().max(50).trim().allow(''),
+  class: Joi.string().max(50).trim().allow(''),
+  employed: Joi.boolean(),
+  bbox: Joi.string().max(100).pattern(coordQuad),
+  cell: Joi.string().max(50).pattern(coordPair),
+  cursor: Joi.string().max(500).pattern(/^[A-Za-z0-9_-]+$/),
+  limit: Joi.number().integer().min(1).max(50).default(30),
+}).messages(customMessages);
+
 const mailLockSchema = Joi.object({
   userId: uuidSchema.required(),
   userType: Joi.string().valid('student', 'company', 'admin').required(),
@@ -562,6 +578,7 @@ module.exports = {
     mailMessageParams: mailMessageParamsSchema,
     mailFolderQuery: mailFolderQuerySchema,
     mailRecipientsQuery: mailRecipientsQuerySchema,
+    studentMapQuery: studentMapQuerySchema,
     mailCompose: mailComposeSchema,
     mailDraft: mailDraftSchema,
     mailPatch: mailPatchSchema,

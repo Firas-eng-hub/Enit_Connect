@@ -30,8 +30,11 @@ router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.vali
 
 //Get All Companies
 router.get("/companies", authJwt.verifyToken, authJwt.isStudent, controller.getCompaniesForBrowse);
-//Get Student's Locations
-router.get("/location", authJwt.verifyToken, authJwt.isStudent, studentMap.getStudentLocations);
+// Student network map (city-level, students only)
+const mapGuard = [authJwt.verifyToken, authJwt.isStudent, validation.validate(validation.schemas.studentMapQuery, "query")];
+router.get("/map/cells", ...mapGuard, studentMap.getCells);
+router.get("/map/people", ...mapGuard, studentMap.getPeople);
+router.get("/map/stats", ...mapGuard, studentMap.getStats);
 //Search for Students by Property & Key
 router.get("/search", authJwt.verifyToken, controller.getByKey);
 //Student Notifications

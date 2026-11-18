@@ -1,8 +1,8 @@
 const { serverError } = require("../utils/http");
+const { parseLimit, parseOffset } = require("../utils/pagination");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
-const stringSimilarity = require("string-similarity");
 const location = require("../config/geocoder.config");
 const config = require("../config/auth.config");
 const nodemailer = require("../config/nodemailer.config");
@@ -378,7 +378,11 @@ exports.getByKey = async (req, res) => {
   }
 
   try {
-    const docs = await companyRepository.searchByKey(column, req.query.key);
+    const docs = await companyRepository.searchByKey(column, req.query.key, {
+      limit: parseLimit(req.query.limit, 50, 100),
+      offset: parseOffset(req.query.offset),
+      activeOnly: true,
+    });
     const response = docs.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
@@ -387,19 +391,17 @@ exports.getByKey = async (req, res) => {
 };
 
 exports.getByName = async (req, res) => {
-  if (!req.query.q) {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (!q || q.length > 100) {
     return res.status(400).send({ message: "Search query is required." });
   }
 
   try {
-    const docs = await companyRepository.listAll();
-    const response = [];
-    docs.forEach((doc) => {
-      if (stringSimilarity.compareTwoStrings(doc.name.toLowerCase(), req.query.q.toLowerCase()) > 0.45) {
-        response.push(mapCompanyRow(doc));
-      }
+    const docs = await companyRepository.searchByName(q, {
+      limit: parseLimit(req.query.limit, 20, 50),
+      activeOnly: true,
     });
-    res.status(200).send(response);
+    res.status(200).send(docs.map(mapCompanyRow));
   } catch (err) {
     serverError(res, err);
   }
@@ -449,7 +451,11 @@ exports.getCompanyLocations = async (req, res) => {
   }
 
   try {
-    const docs = await companyRepository.searchByKey(column, req.query.key);
+    const docs = await companyRepository.searchByKey(column, req.query.key, {
+      limit: parseLimit(req.query.limit, 200, 500),
+      offset: parseOffset(req.query.offset),
+      activeOnly: true,
+    });
     const response = docs.map((doc) => ({
       lat: doc.latitude,
       lng: doc.longitude,
@@ -536,7 +542,11 @@ exports.deleteCompany = async (req, res) => {
 
 exports.getAllCompanies = async (req, res) => {
   try {
-    const companies = await companyRepository.listAll();
+    const companies = await companyRepository.listPage({
+      limit: parseLimit(req.query.limit, 200, 500),
+      offset: parseOffset(req.query.offset),
+      activeOnly: true,
+    });
     const response = companies.map(mapCompanyRow);
     res.status(200).send(response);
   } catch (err) {
