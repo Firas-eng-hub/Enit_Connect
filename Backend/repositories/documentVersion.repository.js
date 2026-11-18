@@ -34,8 +34,14 @@ const findById = async (id) => {
   return result.rows[0] || null;
 };
 
+const deleteByDocumentId = async (documentId) => {
+  const result = await db.query(`DELETE FROM document_versions WHERE document_id = $1`, [documentId]);
+  return result.rowCount || 0;
+};
+
 module.exports = {
   createVersion,
   listByDocumentId,
   findById,
+  deleteByDocumentId,
 };

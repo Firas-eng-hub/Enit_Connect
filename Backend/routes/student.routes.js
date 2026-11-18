@@ -64,6 +64,7 @@ router.delete('/documents/:id', authJwt.verifyToken, authJwt.isStudent, controll
 //Versioning
 router.post('/documents/:id/replace', authJwt.verifyToken, authJwt.isStudent, savedoc, controller.replaceDocumentFile);
 router.get('/documents/:id/versions', authJwt.verifyToken, authJwt.isStudent, controller.listDocumentVersions);
+router.get('/documents/:id/versions/:versionId/file', authJwt.verifyToken, authJwt.isStudent, controller.downloadDocumentVersion);
 router.post('/documents/:id/versions/:versionId/restore', authJwt.verifyToken, authJwt.isStudent, controller.restoreDocumentVersion);
 //Batch actions
 router.post('/documents/batch-delete', authJwt.verifyToken, authJwt.isStudent, controller.batchDeleteDocuments);

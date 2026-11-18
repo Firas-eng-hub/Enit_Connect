@@ -351,7 +351,7 @@ const updateDocumentFile = async (id, data) => {
          size = COALESCE($4, size),
          size_bytes = COALESCE($5, size_bytes),
          version = COALESCE($6, version),
-         thumbnail_url = COALESCE($7, thumbnail_url),
+         thumbnail_url = CASE WHEN $13::boolean THEN NULL ELSE COALESCE($7, thumbnail_url) END,
          scan_status = COALESCE($8, scan_status),
          scan_checked_at = COALESCE($9, scan_checked_at),
          scan_error = COALESCE($10, scan_error),
@@ -372,6 +372,7 @@ const updateDocumentFile = async (id, data) => {
       data.scanError || null,
       typeof data.quarantined === "boolean" ? data.quarantined : null,
       id,
+      data.clearThumbnail === true,
     ]
   );
   return result.rows[0] || null;

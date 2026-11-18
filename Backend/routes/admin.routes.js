@@ -104,6 +104,12 @@ router.patch(
   adminDocumentsController.revokeShareLink
 );
 router.get("/documents/:id/versions", authJwt.verifyToken, authJwt.isAdmin, adminDocumentsController.listDocumentVersions);
+router.get(
+  "/documents/:id/versions/:versionId/file",
+  authJwt.verifyToken,
+  authJwt.isAdmin,
+  adminDocumentsController.downloadDocumentVersion
+);
 router.post(
   "/documents/:id/versions/:versionId/restore",
   authJwt.verifyToken,

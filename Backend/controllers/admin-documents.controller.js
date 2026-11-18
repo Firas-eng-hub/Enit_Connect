@@ -9,6 +9,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const { isUuid } = require("../utils/validation");
 const { documentRepository, documentShareRepository, documentVersionRepository } = require("../repositories");
+const documentFiles = require("../helpers/document-files");
 
 const normalizeBaseUrl = (value) => String(value || "").replace(/\/+$/, "");
 const getFileBaseUrl = () =>
@@ -24,10 +25,6 @@ const parseTags = (value) => {
 };
 
 const getUploadsDir = () => path.join(__dirname, "..", "uploads");
-const getVersionedPath = (documentId, version, extension) => {
-  const ext = extension ? `.${extension}` : "";
-  return path.join(getUploadsDir(), "versions", `${documentId}-v${version}${ext}`);
-};
 
 const extractFilenameFromLink = (link) => {
   if (!link) return null;
@@ -58,6 +55,15 @@ const buildReplaceLink = (filename) => {
 };
 
 const isAdminDocRow = (row) => !row?.creator_type || row.creator_type === "admin";
+
+// Old versions are private files: delete them (and their rows) with the document.
+const removeDocumentVersions = async (documentId) => {
+  const versions = await documentVersionRepository.listByDocumentId(documentId);
+  documentFiles.removeVersionFiles(versions);
+  if (versions.length) {
+    await documentVersionRepository.deleteByDocumentId(documentId);
+  }
+};
 
 const getFolderFullPath = (folderRow) => {
   const parent = folderRow?.emplacement || "root";
@@ -454,13 +460,19 @@ exports.revokeShareLink = async (req, res) => {
       return res.status(400).send({ message: "Invalid share id." });
     }
 
-    const share = await documentShareRepository.revokeShare(req.params.shareId);
-    if (!share) {
+    // Check the share belongs to an admin document BEFORE revoking it.
+    const existingShare = await documentShareRepository.findById(req.params.shareId);
+    if (!existingShare) {
       return res.status(404).send({ message: "Share not found." });
     }
 
-    const [doc] = await documentRepository.listByIds([share.document_id]);
+    const [doc] = await documentRepository.listByIds([existingShare.document_id]);
     if (!doc || !isAdminDocRow(doc)) {
+      return res.status(404).send({ message: "Share not found." });
+    }
+
+    const share = await documentShareRepository.revokeShare(existingShare.id);
+    if (!share) {
       return res.status(404).send({ message: "Share not found." });
     }
 
@@ -500,25 +512,14 @@ exports.replaceDocumentFile = async (req, res) => {
       return res.status(400).send({ message: "Only files can be replaced." });
     }
 
-    const currentFilename = extractFilenameFromLink(existing.link);
-    const currentPath = currentFilename ? path.join(getUploadsDir(), currentFilename) : null;
-    if (!currentPath) {
-      return res.status(500).send({ message: "Current file path is unavailable." });
-    }
-
-    const versionsDir = path.join(getUploadsDir(), "versions");
-    fs.mkdirSync(versionsDir, { recursive: true });
-
-    // Persist the current file as a version snapshot (best-effort; restore depends on it).
-    if (fs.existsSync(currentPath)) {
-      const previousVersion = existing.version || 1;
-      const versionPath = getVersionedPath(existing.id, previousVersion, existing.extension);
-      fs.copyFileSync(currentPath, versionPath);
-      const baseUrl = getFileBaseUrl();
+    // The current file stays where it is and becomes the previous version; the new content keeps
+    // the fresh random name multer gave it. Old links therefore never serve the new content.
+    const currentPath = documentFiles.resolveUploadPath(existing.link);
+    if (currentPath && fs.existsSync(currentPath)) {
       await documentVersionRepository.createVersion({
         documentId: existing.id,
-        version: previousVersion,
-        link: `${baseUrl}/uploads/versions/${path.basename(versionPath)}`,
+        version: existing.version || 1,
+        link: existing.link,
         extension: existing.extension || null,
         mimeType: existing.mime_type || null,
         size: existing.size || null,
@@ -529,12 +530,9 @@ exports.replaceDocumentFile = async (req, res) => {
     const originalExt = path.extname(req.file.originalname || "").replace(".", "").toLowerCase();
     const extension = originalExt || path.extname(req.file.filename || "").replace(".", "").toLowerCase();
 
-    // Keep the link stable by replacing the contents of the existing filename.
-    fs.renameSync(req.file.path, currentPath);
-
     const nextVersion = Number(existing.version || 1) + 1;
     const doc = await documentRepository.updateDocumentFile(req.params.id, {
-      link: existing.link,
+      link: buildReplaceLink(req.file.filename),
       extension: extension || existing.extension || null,
       mimeType: req.file.mimetype || existing.mime_type || null,
       size: req.file.size ? String(req.file.size) : existing.size || null,
@@ -569,13 +567,36 @@ exports.listDocumentVersions = async (req, res) => {
         id: version.id,
         documentId: version.document_id,
         version: version.version,
-        link: version.link,
+        link: documentFiles.buildVersionDownloadLink("admin", doc.id, version.id),
         extension: version.extension,
         mimeType: version.mime_type,
         sizeBytes: version.size_bytes,
         createdAt: version.created_at,
       }))
     );
+  } catch (err) {
+    serverError(res, err);
+  }
+};
+
+// Admin download of an old version (version files are never served statically).
+exports.downloadDocumentVersion = async (req, res) => {
+  try {
+    if (!isUuid(req.id) || !isUuid(req.params.id) || !isUuid(req.params.versionId)) {
+      return res.status(400).send({ message: "Invalid request." });
+    }
+
+    const [doc] = await documentRepository.listByIds([req.params.id]);
+    if (!doc || !isAdminDocRow(doc) || doc.type !== "file") {
+      return res.status(404).send({ message: "Document not found." });
+    }
+
+    const version = await documentVersionRepository.findById(req.params.versionId);
+    if (!version || version.document_id !== doc.id) {
+      return res.status(404).send({ message: "Version not found." });
+    }
+
+    return documentFiles.sendVersionFile(res, { doc, version });
   } catch (err) {
     serverError(res, err);
   }
@@ -597,27 +618,19 @@ exports.restoreDocumentVersion = async (req, res) => {
       return res.status(404).send({ message: "Version not found." });
     }
 
-    const currentFilename = extractFilenameFromLink(doc.link);
-    const currentPath = currentFilename ? path.join(getUploadsDir(), currentFilename) : null;
-    const versionFilename = extractFilenameFromLink(version.link);
-    const versionPath = versionFilename ? path.join(getUploadsDir(), "versions", versionFilename) : null;
-
-    if (!currentPath || !versionPath || !fs.existsSync(versionPath)) {
+    const versionPath = documentFiles.resolveUploadPath(version.link);
+    if (!versionPath || !fs.existsSync(versionPath)) {
       return res.status(404).send({ message: "Version file missing." });
     }
 
-    // Backup current file as a version before restoring.
+    // Keep the current file as a version, then restore into a NEW file/URL (never in place).
     const currentVersion = doc.version || 1;
-    const versionsDir = path.join(getUploadsDir(), "versions");
-    fs.mkdirSync(versionsDir, { recursive: true });
-    if (fs.existsSync(currentPath)) {
-      const currentBackupPath = getVersionedPath(doc.id, currentVersion, doc.extension || version.extension);
-      const baseUrl = getFileBaseUrl();
-      fs.copyFileSync(currentPath, currentBackupPath);
+    const currentPath = documentFiles.resolveUploadPath(doc.link);
+    if (currentPath && fs.existsSync(currentPath)) {
       await documentVersionRepository.createVersion({
         documentId: doc.id,
         version: currentVersion,
-        link: `${baseUrl}/uploads/versions/${path.basename(currentBackupPath)}`,
+        link: doc.link,
         extension: doc.extension || null,
         mimeType: doc.mime_type || null,
         size: doc.size || null,
@@ -625,10 +638,10 @@ exports.restoreDocumentVersion = async (req, res) => {
       });
     }
 
-    fs.copyFileSync(versionPath, currentPath);
+    const restoredFilename = documentFiles.copyToNewUpload(versionPath);
 
     const updated = await documentRepository.updateDocumentFile(doc.id, {
-      link: doc.link,
+      link: buildReplaceLink(restoredFilename),
       extension: version.extension || doc.extension,
       mimeType: version.mime_type || doc.mime_type,
       size: version.size || doc.size,
@@ -666,6 +679,7 @@ exports.deleteDocument = async (req, res) => {
 
     if (existing.type === "file") {
       safeUnlink(extractFilenameFromLink(existing.link));
+      await removeDocumentVersions(existing.id);
     }
 
     const ok = await documentRepository.deleteById(req.params.id);
@@ -712,6 +726,7 @@ exports.bulkDelete = async (req, res) => {
 
         if (doc.type === "file") {
           safeUnlink(extractFilenameFromLink(doc.link));
+          await removeDocumentVersions(doc.id);
           const ok = await documentRepository.deleteById(doc.id);
           if (ok) successIds.push(doc.id);
           else failedIds.push(doc.id);
