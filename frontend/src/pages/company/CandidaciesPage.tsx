@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Calendar, GraduationCap } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -11,6 +12,7 @@ interface CandidacyWithStudent extends Candidacy {
 }
 
 export function CandidaciesPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [offer, setOffer] = useState<Offer | null>(null);
   const [candidacies, setCandidacies] = useState<CandidacyWithStudent[]>([]);
@@ -26,7 +28,7 @@ export function CandidaciesPage() {
 
   const fetchCandidacies = useCallback(async () => {
     if (!isValidOfferId) {
-      setError('Invalid offer id.');
+      setError(t('pagesMisc.invalidOffer'));
       setLoading(false);
       return;
     }
@@ -37,11 +39,11 @@ export function CandidaciesPage() {
       setCandidacies(response.data.candidacies || []);
     } catch (err) {
       console.error('Failed to fetch candidacies:', err);
-      setError('Failed to fetch candidacies.');
+      setError(t('pagesMisc.candidaciesFailed'));
     } finally {
       setLoading(false);
     }
-  }, [id, isValidOfferId]);
+  }, [id, isValidOfferId, t]);
 
   useEffect(() => {
     fetchCandidacies();
@@ -57,7 +59,7 @@ export function CandidaciesPage() {
       (candidacy as { id?: string }).id;
     if (!studentId) {
       setStudentDetails(null);
-      setStudentError('Student profile is unavailable for this application.');
+      setStudentError(t('pagesMisc.profileUnavailable'));
       return;
     }
     try {
@@ -65,7 +67,7 @@ export function CandidaciesPage() {
       setStudentDetails(response.data);
     } catch (err) {
       console.error('Failed to fetch student details:', err);
-      setStudentError('Failed to load student profile.');
+      setStudentError(t('pagesMisc.studentProfileFailed'));
     }
   };
 
@@ -107,25 +109,25 @@ export function CandidaciesPage() {
     <div>
       <Link to="/company/home" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Back to offers
+        {t('pagesMisc.backToOffers')}
       </Link>
 
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
+      <div className="mb-8 pb-5 border-b border-line">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-primary-100 text-sm uppercase tracking-[0.2em] font-semibold">Offer Candidacies</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mt-2">
-              {offer?.title || 'Applications'}
+            <p className="text-muted-foreground text-sm font-semibold">{t('pagesMisc.offerCandidacies')}</p>
+            <h1 className="text-3xl md:text-2xl font-semibold text-ink mt-2">
+              {offer?.title || t('pagesMisc.applications')}
             </h1>
-            <p className="text-primary-100 mt-2">
+            <p className="text-muted-foreground mt-2">
               {candidacies.length} application{candidacies.length !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="px-4 py-3 bg-white/15 rounded-xl border border-white/20 text-white text-sm font-semibold">
+            <div className="px-4 py-3 bg-canvas rounded-xl border border-line text-ink text-sm font-semibold">
               Total: {candidacies.length}
             </div>
-            <div className="px-4 py-3 bg-white/15 rounded-xl border border-white/20 text-white text-sm font-semibold">
+            <div className="px-4 py-3 bg-canvas rounded-xl border border-line text-ink text-sm font-semibold">
               Pending: {candidacies.filter((c) => c.status === 'pending').length}
             </div>
           </div>
@@ -135,17 +137,17 @@ export function CandidaciesPage() {
       {candidacies.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">No applications yet</h3>
-          <p className="text-gray-500">Applications will appear here when students apply</p>
+          <h3 className="text-lg font-medium text-gray-900">{t('pagesMisc.noApplications')}</h3>
+          <p className="text-gray-500">{t('pagesMisc.applicationsHint')}</p>
         </div>
       ) : (
         <div className="grid gap-6">
           {candidacies.map((candidacy, index) => (
             <div
               key={candidacy._id || `${candidacy.studentId || 'student'}-${index}`}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all overflow-hidden"
+              className="bg-white rounded-2xl border border-gray-200 transition-colors overflow-hidden"
             >
-              <div className="h-1 bg-gradient-to-r from-primary-500 via-indigo-500 to-sky-500" />
+              <div className="bg-ink h-1" />
               <div className="p-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex-1">
@@ -157,14 +159,14 @@ export function CandidaciesPage() {
                       <p className="font-semibold text-gray-900">
                         {candidacy.studentSnapshot?.firstname
                           ? `${candidacy.studentSnapshot.firstname} ${candidacy.studentSnapshot.lastname || ''}`.trim()
-                          : `Applicant #${index + 1}`}
+                          : t('pagesMisc.applicantN', { n: index + 1 })}
                       </p>
                       <p className="text-sm text-gray-500">
-                        Applied {candidacy.createdAt ? formatDate(candidacy.createdAt) : 'Recently'}
+                        {t('pagesMisc.appliedOn', { date: candidacy.createdAt ? formatDate(candidacy.createdAt) : t('pagesMisc.recently') })}
                       </p>
                     </div>
                       {candidacy.status && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                           candidacy.status === 'accepted'
                             ? 'bg-emerald-100 text-emerald-700'
                             : candidacy.status === 'rejected'
@@ -176,30 +178,30 @@ export function CandidaciesPage() {
                       )}
                     </div>
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Cover Letter</h4>
-                      <p className="text-gray-600 leading-relaxed line-clamp-3">{candidacy.body || 'No cover letter provided.'}</p>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('pagesMisc.coverLetter')}</h4>
+                      <p className="text-gray-600 leading-relaxed line-clamp-3">{candidacy.body || t('pagesMisc.noCoverLetter')}</p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={() => handleViewStudent(candidacy)}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold shadow-lg shadow-primary-500/30 hover:from-primary-700 hover:to-primary-800 transition-all"
+                      className="bg-ink inline-flex items-center justify-center gap-2 px-5 py-2 rounded-md text-white font-medium transition-colors hover:bg-primary-800 text-sm"
                     >
-                      View Profile
+                      {t('pagesMisc.viewProfile')}
                     </button>
                     <button
                       onClick={() => updateCandidacyStatus(candidacy, 'accepted')}
                       disabled={candidacy.status === 'accepted'}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-emerald-200 text-emerald-700 font-semibold bg-emerald-50 hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-emerald-200 text-emerald-700 font-semibold bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Accept
+                      {t('pagesMisc.accept')}
                     </button>
                     <button
                       onClick={() => updateCandidacyStatus(candidacy, 'rejected')}
                       disabled={candidacy.status === 'rejected'}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-rose-200 text-rose-700 font-semibold bg-rose-50 hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-rose-200 text-rose-700 font-semibold bg-rose-50 hover:bg-rose-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Reject
+                      {t('pagesMisc.reject')}
                     </button>
                   </div>
                 </div>
@@ -211,10 +213,10 @@ export function CandidaciesPage() {
 
       {/* Student Details Modal */}
       {selectedCandidacy && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Applicant Profile</h2>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="bg-ink px-4 py-2 text-white flex items-center justify-between text-sm">
+              <h2 className="text-xl font-semibold">{t('pagesMisc.applicantProfile')}</h2>
               <button
                 onClick={() => {
                   setSelectedCandidacy(null);
@@ -222,7 +224,7 @@ export function CandidaciesPage() {
                 }}
                 className="text-sm font-semibold text-white/80 hover:text-white"
               >
-                Close
+                {t('pagesMisc.close')}
               </button>
             </div>
             <div className="p-6 overflow-y-auto">
@@ -237,7 +239,7 @@ export function CandidaciesPage() {
                   {(studentDetails?.picture || selectedCandidacy.studentSnapshot?.picture) ? (
                     <img
                       src={studentDetails?.picture || selectedCandidacy.studentSnapshot?.picture}
-                      alt="Profile"
+                      alt={t('pagesMisc.profileAlt')}
                       className="w-16 h-16 rounded-full object-cover"
                     />
                   ) : (
@@ -249,9 +251,9 @@ export function CandidaciesPage() {
                     <h3 className="text-lg font-semibold text-gray-900">
                       {studentDetails
                         ? `${studentDetails.firstname} ${studentDetails.lastname}`
-                        : `${selectedCandidacy.studentSnapshot?.firstname || ''} ${selectedCandidacy.studentSnapshot?.lastname || ''}`.trim() || 'Student'}
+                        : `${selectedCandidacy.studentSnapshot?.firstname || ''} ${selectedCandidacy.studentSnapshot?.lastname || ''}`.trim() || t('pagesMisc.student')}
                     </h3>
-                    <p className="text-gray-500">{studentDetails?.type || selectedCandidacy.studentSnapshot?.type || 'Student'}</p>
+                    <p className="text-gray-500">{studentDetails?.type || selectedCandidacy.studentSnapshot?.type || t('pagesMisc.student')}</p>
                   </div>
                 </div>
 
@@ -275,7 +277,7 @@ export function CandidaciesPage() {
                 </div>
 
                 <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Cover Letter</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">{t('pagesMisc.coverLetter')}</h4>
                   <p className="text-gray-600">{selectedCandidacy.body}</p>
                 </div>
               </div>

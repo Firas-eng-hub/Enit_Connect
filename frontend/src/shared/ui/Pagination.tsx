@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { Button } from './Button';
@@ -53,6 +54,7 @@ export function Pagination({
   showPageNumbers = true,
   siblingsCount = 1,
 }: PaginationProps) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   const items = generatePaginationItems(currentPage, totalPages, siblingsCount);
@@ -60,7 +62,7 @@ export function Pagination({
   return (
     <nav
       role="navigation"
-      aria-label="Pagination"
+      aria-label={t('pagination.label')}
       className={cn('flex items-center justify-center gap-1', className)}
     >
       <Button
@@ -68,11 +70,11 @@ export function Pagination({
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        aria-label="Go to previous page"
+        aria-label={t('pagination.previousPage')}
         className="gap-1"
       >
-        <ChevronLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Previous</span>
+        <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" />
+        <span className="hidden sm:inline">{t('common.previous')}</span>
       </Button>
 
       {showPageNumbers && (
@@ -91,7 +93,7 @@ export function Pagination({
                 onClick={() => onPageChange(item)}
                 aria-current={currentPage === item ? 'page' : undefined}
                 className={cn(
-                  'h-9 min-w-9 px-3 rounded-lg text-sm font-medium transition-colors',
+                  'h-9 min-w-9 px-3 rounded-md text-sm font-medium',
                   currentPage === item
                     ? 'bg-primary-900 text-white'
                     : 'text-foreground hover:bg-neutral-100'
@@ -109,11 +111,11 @@ export function Pagination({
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="Go to next page"
+        aria-label={t('pagination.nextPage')}
         className="gap-1"
       >
-        <span className="hidden sm:inline">Next</span>
-        <ChevronRight className="h-4 w-4" />
+        <span className="hidden sm:inline">{t('common.next')}</span>
+        <ChevronRight className="h-4 w-4 rtl:-scale-x-100" />
       </Button>
     </nav>
   );
@@ -127,14 +129,13 @@ export interface PaginationInfoProps {
 }
 
 export function PaginationInfo({ currentPage, pageSize, totalItems, className }: PaginationInfoProps) {
+  const { t } = useTranslation();
   const start = (currentPage - 1) * pageSize + 1;
   const end = Math.min(currentPage * pageSize, totalItems);
 
   return (
     <p className={cn('text-sm text-muted-foreground', className)}>
-      Showing <span className="font-medium text-foreground">{start}</span> to{' '}
-      <span className="font-medium text-foreground">{end}</span> of{' '}
-      <span className="font-medium text-foreground">{totalItems}</span> results
+      {t('pagination.showing', { start, end, total: totalItems })}
     </p>
   );
 }

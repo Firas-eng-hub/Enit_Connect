@@ -20,7 +20,7 @@ export { Avatar, AvatarGroup, type AvatarProps } from './Avatar';
 
 // Loading & empty states
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonAvatar, SkeletonTable, SkeletonList } from './Skeleton';
-export { EmptyState, EmptyStateNoData, EmptyStateNoResults, EmptyStateError, EmptyStateNotFound } from './EmptyState';
+export { EmptyState } from './EmptyState';
 
 // Overlays
 export { Modal, type ModalProps } from './Modal';

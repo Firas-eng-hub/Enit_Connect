@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { forwardRef, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
@@ -17,28 +18,29 @@ export interface AlertProps {
 const variantConfig = {
   info: {
     icon: Info,
-    containerClass: 'bg-info-50 border-info-200 text-info-800',
-    iconClass: 'text-info-500',
+    containerClass: 'bg-primary-50 border-primary-200 text-primary-900',
+    iconClass: 'text-primary-700',
   },
   success: {
     icon: CheckCircle2,
     containerClass: 'bg-success-50 border-success-200 text-success-800',
-    iconClass: 'text-success-500',
+    iconClass: 'text-success-600',
   },
   warning: {
     icon: AlertTriangle,
     containerClass: 'bg-warning-50 border-warning-200 text-warning-800',
-    iconClass: 'text-warning-500',
+    iconClass: 'text-warning-600',
   },
   danger: {
     icon: AlertCircle,
     containerClass: 'bg-danger-50 border-danger-200 text-danger-800',
-    iconClass: 'text-danger-500',
+    iconClass: 'text-danger-600',
   },
 };
 
 export const Alert = forwardRef<HTMLDivElement, AlertProps>(
   ({ variant = 'info', title, children, onClose, className, action }, ref) => {
+    const { t } = useTranslation();
     const config = variantConfig[variant];
     const Icon = config.icon;
 
@@ -47,12 +49,12 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
         ref={ref}
         role="alert"
         className={cn(
-          'relative flex gap-3 p-4 rounded-lg border',
+          'relative flex gap-3 p-4 rounded-md border',
           config.containerClass,
           className
         )}
       >
-        <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', config.iconClass)} />
+        <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', config.iconClass)} aria-hidden="true" />
         <div className="flex-1 min-w-0">
           {title && <h5 className="font-semibold mb-1">{title}</h5>}
           <div className="text-sm">{children}</div>
@@ -69,7 +71,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
           <button
             onClick={onClose}
             className="flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors"
-            aria-label="Dismiss alert"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>

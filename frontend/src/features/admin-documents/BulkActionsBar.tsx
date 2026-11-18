@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, Trash2, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 
@@ -23,8 +24,9 @@ export function BulkActionsBar({
   onBulkMove,
   onClearSelection,
 }: Props) {
+  const { t } = useTranslation();
   const [targetPath, setTargetPath] = useState('root');
-  const moveOptions = useMemo(() => folderOptions.length ? folderOptions : [{ value: 'root', label: 'Root' }], [folderOptions]);
+  const moveOptions = useMemo(() => folderOptions.length ? folderOptions : [{ value: 'root', label: t('adminDocs.root') }], [folderOptions, t]);
 
   return (
     <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 flex flex-col gap-3">
@@ -33,7 +35,7 @@ export function BulkActionsBar({
           <span className="font-semibold">{selectedCount}</span> selected
         </p>
         <Button variant="outline" size="sm" onClick={onClearSelection} disabled={isBusy}>
-          Clear
+          {t('adminDocs.clear')}
         </Button>
       </div>
 
@@ -45,7 +47,7 @@ export function BulkActionsBar({
           disabled={isBusy || selectedCount === 0}
           leftIcon={<Download className="w-4 h-4" />}
         >
-          Download ZIP
+          {t('adminDocs.downloadZip')}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -70,7 +72,7 @@ export function BulkActionsBar({
             disabled={isBusy || selectedCount === 0}
             leftIcon={<ArrowRightLeft className="w-4 h-4" />}
           >
-            Move
+            {t('adminDocs.move')}
           </Button>
         </div>
 
@@ -81,7 +83,7 @@ export function BulkActionsBar({
           disabled={isBusy || selectedCount === 0}
           leftIcon={<Trash2 className="w-4 h-4" />}
         >
-          Delete
+          {t('adminDocs.delete')}
         </Button>
       </div>
     </div>

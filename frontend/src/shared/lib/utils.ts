@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18next from 'i18next';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -7,9 +8,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Locale for date formatting follows the active UI language (set on <html lang>
+// by app/i18n). Tunisian Arabic locale keeps Latin digits.
+function displayLocale(): string {
+  const lang = typeof document !== 'undefined' ? document.documentElement.lang : '';
+  if (lang === 'fr') return 'fr-FR';
+  if (lang === 'ar') return 'ar-TN';
+  return 'en-GB';
+}
+
 // Format date for display
 export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString('en-US', {
+  return new Date(date).toLocaleDateString(displayLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -18,7 +28,7 @@ export function formatDate(date: string | Date): string {
 
 // Format date with time
 export function formatDateTime(date: string | Date): string {
-  return new Date(date).toLocaleString('en-US', {
+  return new Date(date).toLocaleString(displayLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -61,7 +71,7 @@ export function validateFile(file: File, options: FileValidationOptions): string
   } = options;
 
   if (maxSizeMB && file.size > maxSizeMB * 1024 * 1024) {
-    return `${label} is too large. Max size is ${maxSizeMB}MB.`;
+    return i18next.t('errors.fileTooLarge', { max: maxSizeMB, kind: label });
   }
 
   if (allowedMimeTypes.length && !allowedMimeTypes.includes(file.type)) {
@@ -69,8 +79,7 @@ export function validateFile(file: File, options: FileValidationOptions): string
     if (ext && allowedExtensions.includes(ext)) {
       return null;
     }
-    const allowedLabel = allowedExtensions.length ? allowedExtensions.join(', ') : 'allowed types';
-    return `Unsupported ${label} type. Allowed: ${allowedLabel}.`;
+    return i18next.t('errors.fileType', { types: allowedExtensions.join(', ') || '—', kind: label });
   }
 
   return null;
@@ -82,10 +91,10 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
     const status = err.response?.status;
     const message = (err.response?.data as { message?: string } | undefined)?.message;
 
-    if (status === 413) return 'File too large. Please upload a smaller file.';
-    if (status === 415) return 'Unsupported file type. Please upload a valid file.';
-    if (status === 401 || status === 403) return 'Your session expired. Please sign in again.';
-    if (status && status >= 500) return 'Server error. Please try again shortly.';
+    if (status === 413) return i18next.t('errors.http413');
+    if (status === 415) return i18next.t('errors.http415');
+    if (status === 401 || status === 403) return i18next.t('errors.http401');
+    if (status && status >= 500) return i18next.t('errors.http500');
 
     return message || fallback;
   }

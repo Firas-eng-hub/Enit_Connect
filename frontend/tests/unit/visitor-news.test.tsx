@@ -45,7 +45,7 @@ describe('VisitorNewsPage', () => {
 
   it('should have content container', async () => {
     renderWithProviders(<NewsPage />);
-    const subtitle = await screen.findByText(/stay informed/i);
+    const subtitle = await screen.findByText(/announcements from ENIT/i);
     expect(subtitle).toBeTruthy();
   });
 });

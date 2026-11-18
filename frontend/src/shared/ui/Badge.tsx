@@ -10,12 +10,12 @@ export interface BadgeProps {
 }
 
 const variants = {
-  primary: 'bg-primary-100 text-primary-800 border-primary-200',
-  accent: 'bg-accent-100 text-accent-800 border-accent-200',
-  success: 'bg-success-50 text-success-700 border-success-200',
-  warning: 'bg-warning-50 text-warning-700 border-warning-200',
-  danger: 'bg-danger-50 text-danger-700 border-danger-200',
-  neutral: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+  primary: 'bg-primary-50 text-primary-800',
+  accent: 'bg-gold-50 text-gold-800',
+  success: 'bg-success-50 text-success-700',
+  warning: 'bg-warning-50 text-warning-700',
+  danger: 'bg-danger-50 text-danger-700',
+  neutral: 'bg-neutral-100 text-neutral-700',
 };
 
 const dotColors = {
@@ -29,15 +29,15 @@ const dotColors = {
 
 const sizes = {
   sm: 'px-2 py-0.5 text-xs',
-  md: 'px-2.5 py-0.5 text-xs',
-  lg: 'px-3 py-1 text-sm',
+  md: 'px-2 py-0.5 text-xs',
+  lg: 'px-2.5 py-0.5 text-sm',
 };
 
 export function Badge({ variant = 'neutral', size = 'md', children, className, dot }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-medium rounded-full border',
+        'inline-flex items-center gap-1.5 font-medium rounded whitespace-nowrap',
         variants[variant],
         sizes[size],
         className

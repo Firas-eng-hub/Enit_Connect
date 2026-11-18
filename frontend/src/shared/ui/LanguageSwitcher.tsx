@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/shared/lib/utils';
 
 const LANGUAGES = [
-    { code: 'en', label: 'English', flag: '🇬🇧' },
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'ar', label: 'العربية', flag: '🇹🇳' },
+    { code: 'en', label: 'English' },
+    { code: 'fr', label: 'Français' },
+    { code: 'ar', label: 'العربية' },
 ] as const;
 
 export type LangCode = typeof LANGUAGES[number]['code'];
@@ -12,9 +13,10 @@ interface LanguageSwitcherProps {
     /** If true, renders as a full select-style card row (for Settings pages).
      *  If false (default), renders as a compact inline dropdown. */
     variant?: 'settings' | 'compact';
+    className?: string;
 }
 
-export function LanguageSwitcher({ variant = 'compact' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ variant = 'compact', className }: LanguageSwitcherProps) {
     const { i18n, t } = useTranslation();
     const current = i18n.language as LangCode;
 
@@ -26,29 +28,29 @@ export function LanguageSwitcher({ variant = 'compact' }: LanguageSwitcherProps)
     if (variant === 'settings') {
         return (
             <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <p id="language-label" className="block text-sm font-medium text-ink mb-2">
                     {t('settings.language.language')}
-                </label>
-                <div className="grid grid-cols-3 gap-3">
+                </p>
+                <div role="radiogroup" aria-labelledby="language-label" className="inline-flex rounded-md border border-neutral-300 bg-surface p-0.5">
                     {LANGUAGES.map((lang) => (
                         <button
                             key={lang.code}
+                            type="button"
+                            role="radio"
+                            aria-checked={current === lang.code}
+                            lang={lang.code}
                             onClick={() => change(lang.code)}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 font-semibold text-sm transition-all ${current === lang.code
-                                    ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
-                                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:bg-gray-50'
+                            className={`px-4 py-1.5 rounded text-sm font-medium ${current === lang.code
+                                    ? 'bg-ink text-white'
+                                    : 'text-body hover:bg-canvas hover:text-ink'
                                 }`}
                         >
-                            <span className="text-2xl">{lang.flag}</span>
-                            <span>{lang.label}</span>
-                            {current === lang.code && (
-                                <span className="text-xs font-bold text-primary-600">{t('common.active')}</span>
-                            )}
+                            {lang.label}
                         </button>
                     ))}
                 </div>
                 {current === 'ar' && (
-                    <p className="mt-3 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {t('languageSwitcher.arabicRtlNote')}
                     </p>
                 )}
@@ -61,12 +63,12 @@ export function LanguageSwitcher({ variant = 'compact' }: LanguageSwitcherProps)
         <select
             value={current}
             onChange={(e) => change(e.target.value)}
-            className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
-            aria-label="Select language"
+            className={cn('h-8 text-sm border border-neutral-300 rounded-md ps-2 pe-7 bg-surface text-ink hover:border-neutral-400 cursor-pointer', className)}
+            aria-label={t('settings.language.language')}
         >
             {LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.label}
+                    {lang.label}
                 </option>
             ))}
         </select>

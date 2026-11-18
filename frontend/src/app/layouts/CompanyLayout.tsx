@@ -38,7 +38,7 @@ export function CompanyLayout() {
       />
       <main className="dashboard-main">
         <div className="dashboard-content">
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto max-w-[var(--content-max-width)]">
             <Outlet />
           </div>
         </div>

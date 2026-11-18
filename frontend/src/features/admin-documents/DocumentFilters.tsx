@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import type { AdminDocumentListParams } from '@/entities/document/types';
 import { Button } from '@/shared/ui/Button';
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function DocumentFilters({ value, onChange }: Props) {
+  const { t } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const set = (patch: Partial<AdminDocumentListParams>) => onChange({ ...value, ...patch });
 
@@ -41,7 +43,7 @@ export function DocumentFilters({ value, onChange }: Props) {
             value={value.q || ''}
             onChange={(e) => set({ q: e.target.value, page: 1 })}
             className="w-full rounded-xl border border-gray-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-            placeholder="Search documents..."
+            placeholder={t('adminDocs.searchPlaceholder')}
           />
         </div>
         
@@ -50,9 +52,9 @@ export function DocumentFilters({ value, onChange }: Props) {
           onChange={(e) => set({ type: (e.target.value || undefined) as AdminDocumentListParams['type'], page: 1 })}
           className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
         >
-          <option value="">All Types</option>
-          <option value="file">Files</option>
-          <option value="folder">Folders</option>
+          <option value="">{t('adminDocs.allTypes')}</option>
+          <option value="file">{t('adminDocs.files')}</option>
+          <option value="folder">{t('adminDocs.folders')}</option>
         </select>
 
         <select
@@ -67,10 +69,10 @@ export function DocumentFilters({ value, onChange }: Props) {
           }}
           className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
         >
-          <option value="createdAt:desc">Newest</option>
-          <option value="createdAt:asc">Oldest</option>
-          <option value="title:asc">A-Z</option>
-          <option value="title:desc">Z-A</option>
+          <option value="createdAt:desc">{t('adminDocs.newest')}</option>
+          <option value="createdAt:asc">{t('adminDocs.oldest')}</option>
+          <option value="title:asc">{t('adminDocs.az')}</option>
+          <option value="title:desc">{t('adminDocs.za')}</option>
         </select>
 
         <Button
@@ -79,7 +81,7 @@ export function DocumentFilters({ value, onChange }: Props) {
           onClick={() => setShowAdvanced(!showAdvanced)}
           leftIcon={showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         >
-          {showAdvanced ? 'Less' : 'More'}
+          {showAdvanced ? t('adminDocs.less') : t('adminDocs.more')}
         </Button>
 
         {hasActiveFilters && (
@@ -89,7 +91,7 @@ export function DocumentFilters({ value, onChange }: Props) {
             onClick={clear}
             leftIcon={<X className="w-4 h-4" />}
           >
-            Reset
+            {t('adminDocs.reset')}
           </Button>
         )}
       </div>
@@ -98,7 +100,7 @@ export function DocumentFilters({ value, onChange }: Props) {
       {showAdvanced && (
         <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-3">
           <label className="block">
-            <span className="text-xs font-medium text-gray-600">Category</span>
+            <span className="text-xs font-medium text-gray-600">{t('adminDocs.category')}</span>
             <input
               value={value.category || ''}
               onChange={(e) => set({ category: e.target.value, page: 1 })}
@@ -108,7 +110,7 @@ export function DocumentFilters({ value, onChange }: Props) {
           </label>
 
           <label className="block">
-            <span className="text-xs font-medium text-gray-600">Tags</span>
+            <span className="text-xs font-medium text-gray-600">{t('adminDocs.tags')}</span>
             <input
               value={tagsValue}
               onChange={(e) =>
@@ -126,7 +128,7 @@ export function DocumentFilters({ value, onChange }: Props) {
           </label>
 
           <label className="block">
-            <span className="text-xs font-medium text-gray-600">From Date</span>
+            <span className="text-xs font-medium text-gray-600">{t('adminDocs.fromDate')}</span>
             <input
               type="date"
               value={value.from || ''}
@@ -136,7 +138,7 @@ export function DocumentFilters({ value, onChange }: Props) {
           </label>
 
           <label className="block">
-            <span className="text-xs font-medium text-gray-600">To Date</span>
+            <span className="text-xs font-medium text-gray-600">{t('adminDocs.toDate')}</span>
             <input
               type="date"
               value={value.to || ''}

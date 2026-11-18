@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-    Users,
-    Building2,
-    Briefcase,
-    FileText,
-    TrendingUp,
-    Activity,
-} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { PageHeader } from '@/shared/ui/PageHeader';
 import {
     BarChart,
     Bar,
@@ -29,22 +23,23 @@ import type {
 } from '@/entities/stats/api';
 
 const COLORS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
-    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+    '#14304D', '#C99A3B', '#6A7686', '#8DA5C2',
+    '#3E6189', '#DFBA66', '#C3CAD3', '#26354A',
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-    pending: '#f59e0b',
-    accepted: '#10b981',
-    rejected: '#ef4444',
+    pending: '#BF7716',
+    accepted: '#1E7B4F',
+    rejected: '#B42318',
 };
 
 function formatMonth(dateStr: string) {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    return d.toLocaleDateString(document.documentElement.lang || 'en', { month: 'short', year: '2-digit' });
 }
 
 export function DashboardPage() {
+    const { t } = useTranslation();
     const [overview, setOverview] = useState<StatsOverview | null>(null);
     const [trends, setTrends] = useState<StatsTrends | null>(null);
     const [loading, setLoading] = useState(true);
@@ -63,18 +58,18 @@ export function DashboardPage() {
                 setTrends(trendsRes.data);
             } catch (err) {
                 console.error('Failed to fetch stats:', err);
-                setError('Failed to load dashboard data');
+                setError(t('dashboard.loadFailed'));
             } finally {
                 setLoading(false);
             }
         }
         fetchStats();
-    }, []);
+    }, [t]);
 
     if (loading) {
         return (
             <div className="space-y-6 animate-pulse">
-                <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-10" />
+                <div className="mb-6 pb-5 border-b border-line" />
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     {[...Array(5)].map((_, i) => (
                         <div key={i} className="h-28 bg-gray-200 rounded-2xl" />
@@ -94,11 +89,11 @@ export function DashboardPage() {
 
     const statCards = overview
         ? [
-            { label: 'Students', value: overview.students, icon: Users, color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/30' },
-            { label: 'Companies', value: overview.companies, icon: Building2, color: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-500/30' },
-            { label: 'Total Offers', value: overview.offers, icon: Briefcase, color: 'from-amber-500 to-amber-600', shadow: 'shadow-amber-500/30' },
-            { label: 'Active Offers', value: overview.activeOffers, icon: Activity, color: 'from-cyan-500 to-cyan-600', shadow: 'shadow-cyan-500/30' },
-            { label: 'Candidacies', value: overview.candidacies, icon: FileText, color: 'from-rose-500 to-rose-600', shadow: 'shadow-rose-500/30' },
+            { label: t('adminDashboard.students'), value: overview.students },
+            { label: t('adminDashboard.companies'), value: overview.companies },
+            { label: t('adminDashboard.totalOffers'), value: overview.offers },
+            { label: t('adminDashboard.activeOffers'), value: overview.activeOffers },
+            { label: t('adminDashboard.candidacies'), value: overview.candidacies },
         ]
         : [];
 
@@ -123,7 +118,7 @@ export function DashboardPage() {
         trends?.statusBreakdown.map((s) => ({
             name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
             value: s.count,
-            color: STATUS_COLORS[s.status] || '#6b7280',
+            color: STATUS_COLORS[s.status] || '#8D97A5',
         })) ?? [];
 
     const typeData =
@@ -135,80 +130,62 @@ export function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl">
-                <div className="flex items-center gap-3 mb-2">
-                    <TrendingUp className="w-8 h-8 text-white/80" />
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white">Platform Analytics</h1>
-                </div>
-                <p className="text-primary-100 text-lg">Real-time overview of ENIT-CONNECT activity</p>
-            </div>
+            <PageHeader title={t('adminDashboard.title')} description={t('adminDashboard.subtitle')} className="mb-0" />
 
-            {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                {statCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <div
-                            key={card.label}
-                            className={`relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-5 shadow-lg hover:shadow-xl transition-shadow`}
-                        >
-                            <div className={`absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br ${card.color} rounded-full opacity-10`} />
-                            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} ${card.shadow} shadow-lg mb-3`}>
-                                <Icon className="w-5 h-5 text-white" />
-                            </div>
-                            <p className="text-2xl font-bold text-gray-900">{card.value.toLocaleString()}</p>
-                            <p className="text-sm text-gray-500 font-medium">{card.label}</p>
-                        </div>
-                    );
-                })}
-            </div>
+            <dl className="grid grid-cols-2 lg:grid-cols-5 gap-px overflow-hidden rounded-lg border border-line bg-line">
+                {statCards.map((card) => (
+                    <div key={card.label} className="bg-surface px-5 py-4">
+                        <dt className="text-sm text-muted-foreground">{card.label}</dt>
+                        <dd className="mt-1 text-2xl font-semibold text-ink tabular-nums">{card.value.toLocaleString()}</dd>
+                    </div>
+                ))}
+            </dl>
 
             {/* Charts row 1 */}
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Registration & Offer trend */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Growth Trends (6 months)</h3>
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('adminDashboard.growth')}</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <LineChart data={combinedTrend}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#EDF0F3" />
                             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                             <YAxis tick={{ fontSize: 12 }} />
                             <Tooltip
-                                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                                contentStyle={{ borderRadius: '6px', border: '1px solid #DCE1E7' }}
                             />
                             <Legend />
                             <Line
                                 type="monotone"
                                 dataKey="students"
-                                stroke="#3b82f6"
+                                stroke="#14304D"
                                 strokeWidth={2}
-                                dot={{ fill: '#3b82f6', r: 4 }}
-                                name="New Students"
+                                dot={{ fill: '#14304D', r: 4 }}
+                                name={t('adminDashboard.newStudents')}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="companies"
-                                stroke="#10b981"
+                                stroke="#C99A3B"
                                 strokeWidth={2}
-                                dot={{ fill: '#10b981', r: 4 }}
-                                name="New Companies"
+                                dot={{ fill: '#C99A3B', r: 4 }}
+                                name={t('adminDashboard.newCompanies')}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="offers"
-                                stroke="#f59e0b"
+                                stroke="#6A7686"
                                 strokeWidth={2}
-                                dot={{ fill: '#f59e0b', r: 4 }}
-                                name="New Offers"
+                                dot={{ fill: '#6A7686', r: 4 }}
+                                name={t('adminDashboard.newOffers')}
                             />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Candidacy status pie */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Candidacy Status</h3>
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('adminDashboard.candidacyStatus')}</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <PieChart>
                             <Pie
@@ -219,7 +196,7 @@ export function DashboardPage() {
                                 outerRadius={100}
                                 paddingAngle={4}
                                 dataKey="value"
-                                label={(props: any) =>
+                                label={(props: { name?: string; percent?: number }) =>
                                     `${props.name || ''} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`
                                 }
                             >
@@ -236,17 +213,17 @@ export function DashboardPage() {
             {/* Charts row 2 */}
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Offer type distribution */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Offer Types</h3>
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('adminDashboard.offerTypes')}</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={typeData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#EDF0F3" />
                             <XAxis type="number" tick={{ fontSize: 12 }} />
                             <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} />
                             <Tooltip
-                                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                                contentStyle={{ borderRadius: '6px', border: '1px solid #DCE1E7' }}
                             />
-                            <Bar dataKey="value" radius={[0, 6, 6, 0]} name="Count">
+                            <Bar dataKey="value" radius={[0, 6, 6, 0]} name={t('dashboard.count')}>
                                 {typeData.map((entry, index) => (
                                     <Cell key={index} fill={entry.color} />
                                 ))}
@@ -256,10 +233,10 @@ export function DashboardPage() {
                 </div>
 
                 {/* Top companies table */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Top Companies by Offers</h3>
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('adminDashboard.topCompanies')}</h3>
                     {trends?.topCompanies.length === 0 ? (
-                        <p className="text-gray-500 text-sm">No companies with offers yet.</p>
+                        <p className="text-gray-500 text-sm">{t('adminDashboard.noCompanies')}</p>
                     ) : (
                         <div className="space-y-3">
                             {trends?.topCompanies.map((company, i) => (
@@ -267,7 +244,7 @@ export function DashboardPage() {
                                     key={company.name}
                                     className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
                                 >
-                                    <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-bold shadow-sm">
+                                    <span className="bg-primary-50 flex items-center justify-center w-8 h-8 rounded-lg text-sm font-semibold text-primary-700">
                                         {i + 1}
                                     </span>
                                     <span className="flex-1 font-medium text-gray-900 truncate">

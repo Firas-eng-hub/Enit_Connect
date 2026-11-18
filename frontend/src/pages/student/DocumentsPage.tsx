@@ -1,4 +1,6 @@
+import i18next from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import {
   Copy,
@@ -119,7 +121,7 @@ type FolderNode = {
 };
 
 const buildFolderTree = (folders: DocumentItem[]): FolderNode => {
-  const root: FolderNode = { name: 'Root', path: ROOT_EMPLACEMENT, children: [] };
+  const root: FolderNode = { name: i18next.t('documents.root'), path: ROOT_EMPLACEMENT, children: [] };
 
   folders.forEach((folder) => {
     // Build the full path for this folder
@@ -159,6 +161,7 @@ const flattenFolderTree = (node: FolderNode, depth = 0): Array<{ node: FolderNod
 };
 
 export function DocumentsPage() {
+  const { t } = useTranslation();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -206,13 +209,13 @@ export function DocumentsPage() {
   const folderOptions = useMemo(() => {
     const folders = documents.filter((doc) => doc.type === 'folder');
     return [
-      { value: ROOT_EMPLACEMENT, label: 'Root' },
+      { value: ROOT_EMPLACEMENT, label: t('documents.root') },
       ...folders.map((folder) => ({
         value: `${folder.emplacement || ROOT_EMPLACEMENT}/${folder.title}`,
         label: folder.title,
       })),
     ];
-  }, [documents]);
+  }, [documents, t]);
 
   const folderTree = useMemo(() => {
     const folders = documents.filter((doc) => doc.type === 'folder');
@@ -274,7 +277,7 @@ export function DocumentsPage() {
       setPageSize(payload.pageSize || targetPageSize);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
-      setError(getApiErrorMessage(err, 'Failed to fetch documents. Please try again.'));
+      setError(getApiErrorMessage(err, t('documents.fetchFailed')));
       setDocuments([]);
       setTotalDocuments(0);
     } finally {
@@ -330,7 +333,7 @@ export function DocumentsPage() {
       const response = await httpClient.get('/api/student/document-requests');
       setRequests(response.data || []);
     } catch (err) {
-      setRequestsError(getApiErrorMessage(err, 'Failed to load requests.'));
+      setRequestsError(getApiErrorMessage(err, t('documents.requestsFailed')));
     }
   };
 
@@ -341,7 +344,7 @@ export function DocumentsPage() {
         prev.map((request) => (request.id === requestId ? response.data : request))
       );
     } catch (err) {
-      setRequestsError(getApiErrorMessage(err, 'Failed to update request.'));
+      setRequestsError(getApiErrorMessage(err, t('documents.requestUpdateFailed')));
     }
   };
 
@@ -395,7 +398,7 @@ export function DocumentsPage() {
       setShareResult(response.data?.share || null);
       fetchDocuments();
     } catch (err) {
-      setShareError(getApiErrorMessage(err, 'Failed to share document.'));
+      setShareError(getApiErrorMessage(err, t('documents.shareFailed')));
     } finally {
       setIsSharing(false);
     }
@@ -415,13 +418,13 @@ export function DocumentsPage() {
         prev.map((item) => (getDocId(item) === getDocId(doc) ? response.data : item))
       );
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to update pin.'));
+      setError(getApiErrorMessage(err, t('documents.pinFailed')));
     }
   };
 
   const handleOpenDoc = async (doc: DocumentItem) => {
     if (doc.quarantined || doc.scanStatus === 'infected') {
-      setError('This document is still being scanned.');
+      setError(t('documents.stillScanning'));
       return;
     }
     if (!doc.link) return;
@@ -445,7 +448,7 @@ export function DocumentsPage() {
       const response = await httpClient.get(`/api/student/documents/${getDocId(doc)}/versions`);
       setVersions(response.data || []);
     } catch (err) {
-      setVersionsError(getApiErrorMessage(err, 'Failed to load versions.'));
+      setVersionsError(getApiErrorMessage(err, t('documents.versionsFailed')));
     } finally {
       setIsLoadingVersions(false);
     }
@@ -462,7 +465,7 @@ export function DocumentsPage() {
       );
       setVersionsDoc(null);
     } catch (err) {
-      setVersionsError(getApiErrorMessage(err, 'Failed to restore version.'));
+      setVersionsError(getApiErrorMessage(err, t('documents.restoreFailed')));
     }
   };
 
@@ -488,7 +491,7 @@ export function DocumentsPage() {
         prev.map((item) => (getDocId(item) === getDocId(doc) ? response.data : item))
       );
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to replace document.'));
+      setError(getApiErrorMessage(err, t('documents.replaceFailed')));
     }
   };
 
@@ -550,7 +553,7 @@ export function DocumentsPage() {
       setUploads((prev) =>
         prev.map((item) =>
           item.id === uploadId
-            ? { ...item, status: 'error', error: getApiErrorMessage(err, 'Upload failed.') }
+            ? { ...item, status: 'error', error: getApiErrorMessage(err, t('documents.uploadFailed')) }
             : item
         )
       );
@@ -602,24 +605,24 @@ export function DocumentsPage() {
   };
 
   const handleDelete = async (docId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
+    if (!confirm(t('documents.confirmDelete'))) return;
     try {
       await httpClient.delete(`/api/student/documents/${docId}`);
       setDocuments((prev) => prev.filter((doc) => getDocId(doc) !== docId));
       setSelectedIds((prev) => prev.filter((id) => id !== docId));
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to delete document.'));
+      setError(getApiErrorMessage(err, t('documents.deleteFailed')));
     }
   };
 
   const handleBatchDelete = async () => {
-    if (!selectedIds.length || !confirm('Delete selected documents?')) return;
+    if (!selectedIds.length || !confirm(t('documents.confirmDeleteSelected'))) return;
     try {
       await httpClient.post('/api/student/documents/batch-delete', { ids: selectedIds });
       setDocuments((prev) => prev.filter((doc) => !selectedIds.includes(getDocId(doc))));
       setSelectedIds([]);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to delete documents.'));
+      setError(getApiErrorMessage(err, t('documents.deleteManyFailed')));
     }
   };
 
@@ -640,7 +643,7 @@ export function DocumentsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to download documents.'));
+      setError(getApiErrorMessage(err, t('documents.downloadFailed')));
     }
   };
 
@@ -655,7 +658,7 @@ export function DocumentsPage() {
       setSelectedIds([]);
       fetchDocuments();
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to move documents.'));
+      setError(getApiErrorMessage(err, t('documents.moveFailed')));
     }
   };
 
@@ -680,13 +683,13 @@ export function DocumentsPage() {
       );
       setEditingId(null);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to update document.'));
+      setError(getApiErrorMessage(err, t('documents.updateFailed')));
     }
   };
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
-      setFolderError('Folder name is required.');
+      setFolderError(t('documents.folderRequired'));
       return;
     }
     setFolderError(null);
@@ -700,7 +703,7 @@ export function DocumentsPage() {
       setDocuments((prev) => [response.data, ...prev]);
       setFolderName('');
     } catch (err) {
-      setFolderError(getApiErrorMessage(err, 'Failed to create folder.'));
+      setFolderError(getApiErrorMessage(err, t('documents.folderFailed')));
     } finally {
       setIsCreatingFolder(false);
     }
@@ -754,33 +757,33 @@ export function DocumentsPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-8 shadow-xl">
+      <div className="mb-6 pb-5 border-b border-line">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-white">My Documents</h1>
-            <p className="text-primary-100 mt-2">Upload, organize, and share your important files securely.</p>
+            <h1 className="text-2xl font-semibold text-ink">{t('documents.title')}</h1>
+            <p className="text-muted-foreground mt-2">{t('documents.subtitle')}</p>
             <div className="flex items-center gap-6 mt-4">
-              <div className="flex items-center gap-2 text-primary-100">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <FileText className="w-5 h-5" />
-                <span className="font-semibold text-white">{totalDocuments}</span>
-                <span>Documents</span>
+                <span className="font-semibold text-ink">{totalDocuments}</span>
+                <span>{t('documents.documentsCount')}</span>
               </div>
-              <div className="flex items-center gap-2 text-primary-100">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Star className="w-5 h-5 text-amber-400" />
-                <span className="font-semibold text-white">{pinnedDocuments.length}</span>
-                <span>Pinned</span>
+                <span className="font-semibold text-ink">{pinnedDocuments.length}</span>
+                <span>{t('documents.pinned')}</span>
               </div>
-              <div className="flex items-center gap-2 text-primary-100">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="w-5 h-5 text-emerald-400" />
-                <span className="font-semibold text-white">{recentDocuments.length}</span>
-                <span>Recent</span>
+                <span className="font-semibold text-ink">{recentDocuments.length}</span>
+                <span>{t('documents.recent')}</span>
               </div>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <label className="px-6 py-3 bg-white text-primary-700 rounded-xl hover:bg-primary-50 transition-all font-semibold shadow-lg cursor-pointer flex items-center gap-2 justify-center">
-              <Upload className="w-5 h-5" />
-              Upload Files
+            <label className="px-4 py-2 bg-ink text-white rounded-md hover:bg-primary-800 transition-colors font-medium cursor-pointer flex items-center gap-2 justify-center text-sm">
+              <Upload className="w-4 h-4" />
+              {t('documents.uploadFiles')}
               <input
                 type="file"
                 onChange={handleFileInput}
@@ -806,14 +809,14 @@ export function DocumentsPage() {
 
       {/* Document Requests Banner - Only show if there are open requests */}
       {requests.filter(r => r.status === 'open').length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
+        <div className="bg-warning-50 border border-amber-200 rounded-2xl p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
-              <Send className="w-6 h-6 text-white" />
+            <div className="bg-primary-50 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-primary-700">
+              <Send className="w-6 h-6 text-primary-700" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-amber-900">You have {requests.filter(r => r.status === 'open').length} document request(s)</h3>
-              <p className="text-amber-700 text-sm mt-1">Companies are waiting for your documents. Review and respond below.</p>
+              <h3 className="text-lg font-semibold text-amber-900">You have {requests.filter(r => r.status === 'open').length} document request(s)</h3>
+              <p className="text-amber-700 text-sm mt-1">{t('documents.requestsWaiting')}</p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
@@ -828,10 +831,10 @@ export function DocumentsPage() {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleRequestStatus(request.id, 'fulfilled')}>
-                      Mark fulfilled
+                      {t('documents.markFulfilled')}
                     </Button>
                     <Button size="sm" variant="secondary" onClick={() => handleRequestStatus(request.id, 'declined')}>
-                      Decline
+                      {t('documents.decline')}
                     </Button>
                   </div>
                 </div>
@@ -845,16 +848,16 @@ export function DocumentsPage() {
       <div
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
-        className="rounded-2xl border-2 border-dashed border-primary-200 bg-gradient-to-br from-primary-50/50 via-white to-emerald-50/50 p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-all cursor-pointer"
+        className="bg-primary-50 rounded-2xl border-2 border-dashed border-primary-200 p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer"
       >
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-            <Upload className="w-7 h-7 text-white" />
+          <div className="bg-primary-50 w-14 h-14 rounded-2xl flex items-center justify-center text-primary-700">
+            <Upload className="w-7 h-7 text-primary-700" />
           </div>
           <div className="text-center sm:text-left">
-            <h3 className="text-lg font-bold text-gray-900">Drag & drop files here</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('documents.dropHere')}</h3>
             <p className="text-sm text-gray-500">
-              PDF, DOCX, DOC, PNG, JPG up to {DOCUMENT_MAX_MB}MB
+              {t('documents.uploadHint', { max: DOCUMENT_MAX_MB })}
             </p>
           </div>
         </div>
@@ -862,7 +865,7 @@ export function DocumentsPage() {
 
       {/* Upload Progress Queue */}
       {uploads.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -873,7 +876,7 @@ export function DocumentsPage() {
               onClick={() => setUploads((prev) => prev.filter((item) => item.status !== 'done'))}
               className="text-xs font-semibold text-gray-500 hover:text-gray-700"
             >
-              Clear completed
+              {t('documents.clearCompleted')}
             </button>
           </div>
           <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
@@ -888,7 +891,7 @@ export function DocumentsPage() {
                     <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                       <div
                         className={cn(
-                          'h-full rounded-full transition-all',
+                          'h-full rounded-full transition-colors',
                           upload.status === 'error' ? 'bg-red-400' : upload.status === 'done' ? 'bg-emerald-500' : 'bg-primary-500'
                         )}
                         style={{ width: `${upload.progress}%` }}
@@ -928,29 +931,29 @@ export function DocumentsPage() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Create Folder */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
               <FolderPlus className="w-4 h-4 text-primary-600" />
-              Create Folder
+              {t('documents.createFolder')}
             </div>
             <div className="space-y-2">
               <input
                 value={folderName}
                 onChange={(event) => setFolderName(event.target.value)}
-                placeholder="Folder name"
+                placeholder={t('documents.folderName')}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
               <Button className="w-full" size="sm" onClick={handleCreateFolder} disabled={isCreatingFolder}>
-                {isCreatingFolder ? 'Creating...' : 'Create'}
+                {isCreatingFolder ? t('documents.creating') : t('documents.create')}
               </Button>
             </div>
           </div>
 
           {/* Folder Tree */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
               <Folder className="w-4 h-4 text-amber-500" />
-              Folders
+              {t('documents.folders')}
             </div>
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {flattenedFolders.map(({ node, depth }, index) => (
@@ -974,13 +977,13 @@ export function DocumentsPage() {
           </div>
 
           {/* Pinned Documents */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
               <Star className="w-4 h-4 text-amber-500" />
-              Pinned
+              {t('documents.pinned')}
             </div>
             {pinnedDocuments.length === 0 ? (
-              <p className="text-xs text-gray-400">No pinned documents</p>
+              <p className="text-xs text-gray-400">{t('documents.noPinned')}</p>
             ) : (
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {pinnedDocuments.map((doc) => (
@@ -999,13 +1002,13 @@ export function DocumentsPage() {
           </div>
 
           {/* Recent Documents */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
               <Clock className="w-4 h-4 text-emerald-500" />
-              Recent
+              {t('documents.recent')}
             </div>
             {recentDocuments.length === 0 ? (
-              <p className="text-xs text-gray-400">No recent documents</p>
+              <p className="text-xs text-gray-400">{t('documents.noRecent')}</p>
             ) : (
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {recentDocuments.map((doc) => (
@@ -1039,7 +1042,7 @@ export function DocumentsPage() {
                     onClick={() => setFilters((prev) => ({ ...prev, emplacement: path || ROOT_EMPLACEMENT }))}
                     className="px-2 py-1 text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded-lg transition"
                   >
-                    {segment || 'root'}
+                    {!segment || segment === ROOT_EMPLACEMENT ? t('documents.root') : segment}
                   </button>
                   {index < arr.length - 1 && <ChevronRight className="w-3 h-3 text-gray-400" />}
                 </div>
@@ -1048,7 +1051,7 @@ export function DocumentsPage() {
           </div>
 
           {/* Search & Filters */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
             {/* Search Row */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
@@ -1056,16 +1059,16 @@ export function DocumentsPage() {
                 <input
                   value={filters.query}
                   onChange={(event) => setFilters((prev) => ({ ...prev, query: event.target.value }))}
-                  placeholder="Search documents..."
+                  placeholder={t('documents.searchPlaceholder')}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                 />
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <Button onClick={handleApplyFilters} disabled={isApplyingFilters}>
-                  {isApplyingFilters ? 'Searching...' : 'Search'}
+                  {isApplyingFilters ? t('documents.searching') : t('documents.search')}
                 </Button>
                 <Button variant="secondary" onClick={handleResetFilters}>
-                  Reset
+                  {t('documents.reset')}
                 </Button>
               </div>
             </div>
@@ -1074,21 +1077,21 @@ export function DocumentsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-gray-100">
               {/* Type Filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.type')}</label>
                 <select
                   value={filters.type}
                   onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="all">All Types</option>
-                  <option value="file">Files</option>
-                  <option value="folder">Folders</option>
+                  <option value="all">{t('documents.allTypes')}</option>
+                  <option value="file">{t('documents.files')}</option>
+                  <option value="folder">{t('documents.folders')}</option>
                 </select>
               </div>
 
               {/* Date From */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.fromDate')}</label>
                 <input
                   type="date"
                   value={filters.from}
@@ -1099,7 +1102,7 @@ export function DocumentsPage() {
 
               {/* Date To */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.toDate')}</label>
                 <input
                   type="date"
                   value={filters.to}
@@ -1110,7 +1113,7 @@ export function DocumentsPage() {
 
               {/* Min Size */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Min Size (KB)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.minSize')}</label>
                 <input
                   type="number"
                   value={filters.minSize}
@@ -1122,7 +1125,7 @@ export function DocumentsPage() {
 
               {/* Max Size */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Max Size (KB)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.maxSize')}</label>
                 <input
                   type="number"
                   value={filters.maxSize}
@@ -1134,12 +1137,12 @@ export function DocumentsPage() {
 
               {/* Tags Filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Tags</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('documents.tags')}</label>
                 <input
                   type="text"
                   value={filters.tags}
                   onChange={(event) => setFilters((prev) => ({ ...prev, tags: event.target.value }))}
-                  placeholder="cv, resume"
+                  placeholder={t('documents.tagsExample')}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -1152,17 +1155,17 @@ export function DocumentsPage() {
               <span className="text-sm font-semibold text-primary-700">{selectedIds.length} selected</span>
               <div className="flex items-center gap-2">
                 <Button size="sm" onClick={handleBatchDownload} leftIcon={<Download className="w-4 h-4" />}>
-                  Download
+                  {t('documents.download')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleBatchDelete} leftIcon={<Trash2 className="w-4 h-4" />}>
-                  Delete
+                  {t('documents.delete')}
                 </Button>
                 <select
                   defaultValue=""
                   onChange={(event) => handleMoveToFolder(event.target.value)}
                   className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
                 >
-                  <option value="" disabled>Move to...</option>
+                  <option value="" disabled>{t('documents.moveTo')}</option>
                   {folderOptions.map((folder) => (
                     <option key={folder.value} value={folder.value}>{folder.label}</option>
                   ))}
@@ -1176,41 +1179,41 @@ export function DocumentsPage() {
             <div className="flex items-center justify-center h-64 bg-white rounded-2xl border border-gray-200">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto" />
-                <p className="mt-4 text-sm text-gray-500">Loading documents...</p>
+                <p className="mt-4 text-sm text-gray-500">{t('documents.loading')}</p>
               </div>
             </div>
           ) : currentFolderDocuments.length === 0 ? (
-            <div className="bg-gradient-to-br from-emerald-50 via-white to-primary-50 rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-xl shadow-primary-500/30">
-                <FileText className="w-10 h-10 text-white" />
+            <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
+              <div className="bg-primary-50 w-10 h-10 mx-auto rounded-2xl flex items-center justify-center text-primary-700">
+                <FileText className="w-5 h-5 text-primary-700" />
               </div>
-              <h3 className="mt-6 text-2xl font-bold text-gray-900">
-                {filters.emplacement === ROOT_EMPLACEMENT ? 'No Documents Yet' : 'This Folder is Empty'}
+              <h3 className="mt-6 text-base font-semibold text-gray-900">
+                {filters.emplacement === ROOT_EMPLACEMENT ? t('documents.emptyTitle') : t('documents.folderEmpty')}
               </h3>
               <p className="mt-2 text-gray-600 max-w-sm mx-auto">
                 {filters.emplacement === ROOT_EMPLACEMENT 
-                  ? 'Upload your CV, certificates, and other documents to share with potential employers.'
-                  : `No documents in "${filters.emplacement.split('/').pop()}". Upload files or create subfolders.`}
+                  ? t('documents.emptyBody')
+                  : t('documents.folderEmptyBody', { name: filters.emplacement.split('/').pop() })}
               </p>
-              <label className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold cursor-pointer hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-500/30">
-                <Upload className="w-5 h-5" />
-                {filters.emplacement === ROOT_EMPLACEMENT ? 'Upload Your First Document' : 'Upload to This Folder'}
+              <label className="bg-ink mt-6 inline-flex items-center gap-2 px-4 py-2 text-white rounded-md font-medium cursor-pointer transition-colors hover:bg-primary-800 text-sm">
+                <Upload className="w-4 h-4" />
+                {filters.emplacement === ROOT_EMPLACEMENT ? t('documents.uploadFirst') : t('documents.uploadToFolder')}
                 <input type="file" onChange={handleFileInput} className="hidden" multiple />
               </label>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               {/* Table Header */}
-              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500">
                 <input
                   type="checkbox"
                   checked={paginatedDocuments.length > 0 && selectedIds.length === paginatedDocuments.length}
                   onChange={toggleSelectAll}
                   className="w-4 h-4 rounded border-gray-300"
                 />
-                <span>Document</span>
-                <span>Size</span>
-                <span className="text-right">Actions</span>
+                <span>{t('documents.document')}</span>
+                <span>{t('documents.size')}</span>
+                <span className="text-right">{t('documents.actions')}</span>
               </div>
 
               {/* Document Rows */}
@@ -1238,7 +1241,7 @@ export function DocumentsPage() {
                           'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
                           doc.type === 'folder' 
                             ? 'bg-amber-100' 
-                            : 'bg-gradient-to-br from-primary-100 to-primary-200'
+                            : 'bg-primary-50'
                         )}>
                           {doc.type === 'folder' ? (
                             <Folder className="w-5 h-5 text-amber-600" />
@@ -1254,19 +1257,19 @@ export function DocumentsPage() {
                               <input
                                 value={editValues.title}
                                 onChange={(e) => setEditValues((prev) => ({ ...prev, title: e.target.value }))}
-                                placeholder="Title"
+                                placeholder={t('documents.titleField')}
                                 className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
                               />
                               <input
                                 value={editValues.description}
                                 onChange={(e) => setEditValues((prev) => ({ ...prev, description: e.target.value }))}
-                                placeholder="Description (optional)"
+                                placeholder={t('documents.descriptionOptional')}
                                 className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
                               />
                               <input
                                 value={editValues.tags}
                                 onChange={(e) => setEditValues((prev) => ({ ...prev, tags: e.target.value }))}
-                                placeholder="Tags (comma separated)"
+                                placeholder={t('documents.tagsComma')}
                                 className="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm"
                               />
                             </div>
@@ -1280,11 +1283,11 @@ export function DocumentsPage() {
                           )}
                           <div className="flex items-center gap-2 mt-0.5">
                             {doc.extension && (
-                              <span className="text-xs text-gray-400 uppercase">{doc.extension}</span>
+                              <span className="text-xs text-gray-400">{doc.extension}</span>
                             )}
                             {doc.pinned && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
                             {isBlocked && (
-                              <span className="text-xs text-amber-600 font-medium">Scanning...</span>
+                              <span className="text-xs text-amber-600 font-medium">{t('documents.scanning')}</span>
                             )}
                             {doc.tags?.slice(0, 2).map((tag) => (
                               <span key={tag} className="text-xs bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded">
@@ -1305,8 +1308,8 @@ export function DocumentsPage() {
                       <div className="flex items-center gap-1">
                         {editingId === docId ? (
                           <>
-                            <Button size="sm" onClick={() => handleSaveEdit(doc)}>Save</Button>
-                            <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>Cancel</Button>
+                            <Button size="sm" onClick={() => handleSaveEdit(doc)}>{t('documents.save')}</Button>
+                            <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>{t('documents.cancel')}</Button>
                           </>
                         ) : (
                           <>
@@ -1319,7 +1322,7 @@ export function DocumentsPage() {
                                   'p-2 rounded-lg transition',
                                   isBlocked ? 'text-gray-300' : 'text-indigo-600 hover:bg-indigo-50'
                                 )}
-                                title="Preview"
+                                title={t('documents.preview')}
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
@@ -1332,7 +1335,7 @@ export function DocumentsPage() {
                                   'p-2 rounded-lg transition',
                                   isBlocked ? 'text-gray-300' : 'text-primary-600 hover:bg-primary-50'
                                 )}
-                                title="Download"
+                                title={t('documents.download')}
                               >
                                 <Download className="w-4 h-4" />
                               </button>
@@ -1343,7 +1346,7 @@ export function DocumentsPage() {
                                 'p-2 rounded-lg transition',
                                 doc.pinned ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'
                               )}
-                              title={doc.pinned ? 'Unpin' : 'Pin'}
+                              title={doc.pinned ? t('documents.unpin') : t('documents.pin')}
                             >
                               <Star className="w-4 h-4" />
                             </button>
@@ -1354,7 +1357,7 @@ export function DocumentsPage() {
                                 'p-2 rounded-lg transition',
                                 isBlocked ? 'text-gray-300' : 'text-emerald-600 hover:bg-emerald-50'
                               )}
-                              title="Share"
+                              title={t('documents.share')}
                             >
                               <Send className="w-4 h-4" />
                             </button>
@@ -1365,7 +1368,7 @@ export function DocumentsPage() {
                                   'p-2 rounded-lg transition cursor-pointer',
                                   isBlocked ? 'text-gray-300' : 'text-orange-500 hover:bg-orange-50'
                                 )}
-                                title="Replace file"
+                                title={t('documents.replaceFile')}
                               >
                                 <Replace className="w-4 h-4" />
                                 <input
@@ -1380,7 +1383,7 @@ export function DocumentsPage() {
                               <button
                                 onClick={() => handleOpenVersions(doc)}
                                 className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition"
-                                title="Versions"
+                                title={t('documents.versions')}
                               >
                                 <History className="w-4 h-4" />
                               </button>
@@ -1388,14 +1391,14 @@ export function DocumentsPage() {
                             <button
                               onClick={() => handleStartEdit(doc)}
                               className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition"
-                              title="Edit"
+                              title={t('documents.edit')}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(docId)}
                               className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition"
-                              title="Delete"
+                              title={t('documents.delete')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1430,7 +1433,7 @@ export function DocumentsPage() {
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page <= 1}
                   >
-                    Previous
+                    {t('documents.previous')}
                   </Button>
                   <span className="text-sm text-gray-600 px-2">
                     Page {page} of {totalPages}
@@ -1441,7 +1444,7 @@ export function DocumentsPage() {
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page >= totalPages}
                   >
-                    Next
+                    {t('documents.next')}
                   </Button>
                 </div>
               </div>
@@ -1453,8 +1456,8 @@ export function DocumentsPage() {
       <Dialog
         open={Boolean(shareDoc)}
         onClose={() => setShareDoc(null)}
-        title="Share document"
-        description="Share with specific users or create a secure share link."
+        title={t('documents.shareTitle')}
+        description={t('documents.shareDesc')}
         size="lg"
       >
         <div className="space-y-4">
@@ -1465,19 +1468,19 @@ export function DocumentsPage() {
           )}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="text-sm font-semibold text-gray-700">Visibility</label>
+              <label className="text-sm font-semibold text-gray-700">{t('documents.visibility')}</label>
               <select
                 value={shareForm.visibility}
                 onChange={(event) => setShareForm((prev) => ({ ...prev, visibility: event.target.value }))}
                 className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
               >
-                <option value="private">Private</option>
-                <option value="shared">Shared</option>
-                <option value="public">Public link</option>
+                <option value="private">{t('documents.private')}</option>
+                <option value="shared">{t('documents.shared')}</option>
+                <option value="public">{t('documents.publicLink')}</option>
               </select>
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700">Expires in (days)</label>
+              <label className="text-sm font-semibold text-gray-700">{t('documents.expiresDays')}</label>
               <input
                 type="number"
                 min="1"
@@ -1491,7 +1494,7 @@ export function DocumentsPage() {
           {shareForm.visibility === 'shared' && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-sm font-semibold text-gray-700">Student IDs</label>
+                <label className="text-sm font-semibold text-gray-700">{t('documents.studentIds')}</label>
                 <input
                   value={shareForm.studentRecipients}
                   onChange={(event) => setShareForm((prev) => ({ ...prev, studentRecipients: event.target.value }))}
@@ -1500,7 +1503,7 @@ export function DocumentsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700">Company IDs</label>
+                <label className="text-sm font-semibold text-gray-700">{t('documents.companyIds')}</label>
                 <input
                   value={shareForm.companyRecipients}
                   onChange={(event) => setShareForm((prev) => ({ ...prev, companyRecipients: event.target.value }))}
@@ -1514,7 +1517,7 @@ export function DocumentsPage() {
           {(shareForm.visibility === 'public' || shareForm.createLink) && (
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-sm font-semibold text-gray-700">Password (optional)</label>
+                <label className="text-sm font-semibold text-gray-700">{t('documents.passwordOptional')}</label>
                 <input
                   type="password"
                   value={shareForm.password}
@@ -1528,7 +1531,7 @@ export function DocumentsPage() {
                   checked={shareForm.createLink}
                   onChange={(event) => setShareForm((prev) => ({ ...prev, createLink: event.target.checked }))}
                 />
-                <span className="text-sm text-gray-600">Create share link</span>
+                <span className="text-sm text-gray-600">{t('documents.createLink')}</span>
               </div>
             </div>
           )}
@@ -1538,7 +1541,7 @@ export function DocumentsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
                   <LinkIcon className="h-4 w-4" />
-                  Share link ready
+                  {t('documents.linkReady')}
                 </div>
                 <button
                   type="button"
@@ -1546,7 +1549,7 @@ export function DocumentsPage() {
                   className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
                 >
                   <Copy className="h-4 w-4" />
-                  Copy
+                  {t('documents.copy')}
                 </button>
               </div>
               <p className="mt-2 break-all text-xs text-emerald-700">{shareResult.shareUrl}</p>
@@ -1556,10 +1559,10 @@ export function DocumentsPage() {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setShareDoc(null)}>
-            Close
+            {t('documents.close')}
           </Button>
           <Button onClick={handleShareSubmit} isLoading={isSharing}>
-            Share document
+            {t('documents.shareTitle')}
           </Button>
         </DialogFooter>
       </Dialog>
@@ -1567,8 +1570,8 @@ export function DocumentsPage() {
       <Dialog
         open={Boolean(versionsDoc)}
         onClose={() => setVersionsDoc(null)}
-        title="Document versions"
-        description="Restore a previous version of this document."
+        title={t('documents.versionsTitle')}
+        description={t('documents.versionsDesc')}
         size="md"
       >
         {versionsError && (
@@ -1577,9 +1580,9 @@ export function DocumentsPage() {
           </Alert>
         )}
         {isLoadingVersions ? (
-          <div className="py-6 text-center text-sm text-gray-500">Loading versions...</div>
+          <div className="py-6 text-center text-sm text-gray-500">{t('documents.loadingVersions')}</div>
         ) : versions.length === 0 ? (
-          <div className="py-6 text-center text-sm text-gray-500">No previous versions yet.</div>
+          <div className="py-6 text-center text-sm text-gray-500">{t('documents.noVersions')}</div>
         ) : (
           <div className="space-y-3">
             {versions.map((version) => (
@@ -1594,7 +1597,7 @@ export function DocumentsPage() {
                     </div>
                   </div>
                   <Button size="sm" onClick={() => handleRestoreVersion(version.id)}>
-                    Restore
+                    {t('documents.restore')}
                   </Button>
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
@@ -1607,7 +1610,7 @@ export function DocumentsPage() {
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => setVersionsDoc(null)}>
-            Close
+            {t('documents.close')}
           </Button>
         </DialogFooter>
       </Dialog>
@@ -1616,8 +1619,8 @@ export function DocumentsPage() {
       <Dialog
         open={Boolean(previewDoc)}
         onClose={() => setPreviewDoc(null)}
-        title={previewDoc?.title || 'Preview'}
-        description="Preview your document before downloading."
+        title={previewDoc?.title || t('documents.preview')}
+        description={t('documents.previewDesc')}
         size="xl"
       >
         <div className="relative w-full" style={{ minHeight: '60vh' }}>
@@ -1639,9 +1642,9 @@ export function DocumentsPage() {
                 <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
                   <div className="text-center">
                     <FileText className="w-16 h-16 text-gray-300 mx-auto" />
-                    <p className="mt-4 text-gray-500">Preview not available for this file type</p>
+                    <p className="mt-4 text-gray-500">{t('documents.noPreview')}</p>
                     <Button className="mt-4" onClick={() => handleOpenDoc(previewDoc)}>
-                      Download to view
+                      {t('documents.downloadToView')}
                     </Button>
                   </div>
                 </div>
@@ -1651,12 +1654,12 @@ export function DocumentsPage() {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setPreviewDoc(null)}>
-            Close
+            {t('documents.close')}
           </Button>
           {previewDoc?.link && (
             <Button onClick={() => handleOpenDoc(previewDoc)}>
               <Download className="w-4 h-4 mr-2" />
-              Download
+              {t('documents.download')}
             </Button>
           )}
         </DialogFooter>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ExternalLink,
   Folder,
@@ -45,6 +46,7 @@ const formatDate = (value?: string | null) => {
 };
 
 export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder }: Props) {
+  const { t } = useTranslation();
   const update = useUpdateAdminDocument();
   const replaceFile = useReplaceAdminDocumentFile();
   const del = useDeleteAdminDocument();
@@ -130,7 +132,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
   const onSaveEdit = async () => {
     if (!selected) return;
     setActionError(null);
-    if (!editTitle.trim()) return setActionError('Title is required.');
+    if (!editTitle.trim()) return setActionError(t('adminDocs.titleRequired'));
     try {
       await update.mutateAsync({
         id: selected.id,
@@ -144,19 +146,19 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
       });
       setEditOpen(false);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to update document.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.updateFailed')));
     }
   };
 
   const onReplaceFile = async () => {
     if (!selected) return;
     setActionError(null);
-    if (!replaceSelectedFile) return setActionError('Please choose a file to replace.');
+    if (!replaceSelectedFile) return setActionError(t('adminDocs.chooseReplace'));
     try {
       await replaceFile.mutateAsync({ id: selected.id, file: replaceSelectedFile });
       setReplaceOpen(false);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to replace file.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.replaceFailed')));
     }
   };
 
@@ -168,7 +170,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
       setDeleteOpen(false);
       setSelectedIds((prev) => prev.filter((id) => id !== selected.id));
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to delete document.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.deleteFailed')));
     }
   };
 
@@ -189,7 +191,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
       await bulkDelete.mutateAsync({ ids: selectedIds });
       setSelectedIds([]);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to delete selected documents.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.deleteSelectedFailed')));
     }
   };
 
@@ -200,7 +202,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
       await bulkMove.mutateAsync({ ids: selectedIds, targetPath });
       setSelectedIds([]);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to move selected documents.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.moveFailed')));
     }
   };
 
@@ -219,34 +221,34 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to download documents.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.downloadFailed')));
     }
   };
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        <p className="text-sm text-gray-500">Loading documents...</p>
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <p className="text-sm text-gray-500">{t('adminDocs.loading')}</p>
       </div>
     );
   }
 
   if (!documents.length) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+      <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
         <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center">
           <FileText className="w-7 h-7 text-gray-500" />
         </div>
-        <h3 className="mt-4 text-lg font-bold text-gray-900">No documents yet</h3>
-        <p className="mt-1 text-sm text-gray-500">Upload your first document to get started.</p>
+        <h3 className="mt-4 text-lg font-semibold text-gray-900">{t('adminDocs.emptyTitle')}</h3>
+        <p className="mt-1 text-sm text-gray-500">{t('adminDocs.emptyBody')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">Documents</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('adminDocs.documents')}</h2>
         <div className="flex items-center gap-4">
           <label className="inline-flex items-center gap-2 text-sm text-gray-600">
             <input
@@ -255,7 +257,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
               onChange={toggleSelectAll}
               className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-200"
             />
-            Select all
+            {t('adminDocs.selectAll')}
           </label>
           <p className="text-sm text-gray-500">{documents.length} item(s)</p>
         </div>
@@ -316,18 +318,18 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                       'font-semibold text-gray-900 truncate text-left',
                       isFolder ? 'hover:underline inline-flex items-center gap-1' : '',
                     ].join(' ')}
-                    title={isFolder ? 'Open folder' : undefined}
+                    title={isFolder ? t('adminDocs.openFolder') : undefined}
                   >
                     {doc.title}
                     {isFolder ? <ChevronRight className="w-4 h-4 text-gray-400" /> : null}
                   </button>
                   <p className="text-sm text-gray-500">
-                    {truncate(doc.description || '', 90) || 'No description'}
+                    {truncate(doc.description || '', 90) || t('adminDocs.noDescription')}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
                     <span className="inline-flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      {doc.creatorName || 'Admin'}
+                      {doc.creatorName || t('adminDocs.admin')}
                     </span>
                     {doc.category ? (
                       <span className="px-2 py-0.5 rounded-full bg-gray-50 border border-gray-200">
@@ -354,7 +356,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Open
+                    {t('adminDocs.open')}
                   </a>
                 ) : isFolder ? (
                   <button
@@ -363,10 +365,10 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
                   >
                     <Folder className="w-4 h-4" />
-                    Open folder
+                    {t('adminDocs.openFolder')}
                   </button>
                 ) : (
-                  <span className="text-xs text-gray-400 mt-2">No file link</span>
+                  <span className="text-xs text-gray-400 mt-2">{t('adminDocs.noFileLink')}</span>
                 )}
 
                 <div className="flex items-center gap-2">
@@ -376,9 +378,9 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     onClick={() => openEdit(doc)}
                     disabled={isBusy || isFolder}
                     leftIcon={<Pencil className="w-4 h-4" />}
-                    title={isFolder ? 'Rename folders from the folder panel.' : undefined}
+                    title={isFolder ? t('adminDocs.renameFromPanel') : undefined}
                   >
-                    Edit
+                    {t('adminDocs.edit')}
                   </Button>
                   <Button
                     variant="outline"
@@ -386,9 +388,9 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     onClick={() => openReplace(doc)}
                     disabled={isBusy || isFolder}
                     leftIcon={<RefreshCw className="w-4 h-4" />}
-                    title={isFolder ? 'Folders do not have a file to replace.' : undefined}
+                    title={isFolder ? t('adminDocs.noReplaceFolder') : undefined}
                   >
-                    Replace
+                    {t('adminDocs.replace')}
                   </Button>
                   <Button
                     variant="outline"
@@ -396,9 +398,9 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     onClick={() => openPreview(doc)}
                     disabled={isBusy || isFolder}
                     leftIcon={<Eye className="w-4 h-4" />}
-                    title={isFolder ? 'Preview is available for files only.' : undefined}
+                    title={isFolder ? t('adminDocs.previewFilesOnly') : undefined}
                   >
-                    Preview
+                    {t('adminDocs.preview')}
                   </Button>
                   <Button
                     variant="outline"
@@ -406,9 +408,9 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     onClick={() => openVersions(doc)}
                     disabled={isBusy || isFolder}
                     leftIcon={<History className="w-4 h-4" />}
-                    title={isFolder ? 'Version history is available for files only.' : undefined}
+                    title={isFolder ? t('adminDocs.versionsFilesOnly') : undefined}
                   >
-                    Versions
+                    {t('adminDocs.versions')}
                   </Button>
                   <Button
                     variant="outline"
@@ -416,9 +418,9 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     onClick={() => openShare(doc)}
                     disabled={isBusy || isFolder}
                     leftIcon={<Share2 className="w-4 h-4" />}
-                    title={isFolder ? 'Share links are available for files only.' : undefined}
+                    title={isFolder ? t('adminDocs.shareFilesOnly') : undefined}
                   >
-                    Share
+                    {t('adminDocs.share')}
                   </Button>
                   <Button
                     variant="danger"
@@ -427,7 +429,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
                     disabled={isBusy}
                     leftIcon={<Trash2 className="w-4 h-4" />}
                   >
-                    Delete
+                    {t('adminDocs.delete')}
                   </Button>
                 </div>
               </div>
@@ -442,8 +444,8 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           if (isBusy) return;
           setEditOpen(false);
         }}
-        title="Edit document"
-        description="Update the document details."
+        title={t('adminDocs.editTitle')}
+        description={t('adminDocs.editDesc')}
         size="lg"
       >
         {actionError ? (
@@ -454,7 +456,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="block md:col-span-2">
-            <span className="text-sm font-semibold text-gray-700">Title</span>
+            <span className="text-sm font-semibold text-gray-700">{t('adminDocs.titleField')}</span>
             <input
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
@@ -463,7 +465,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-gray-700">Category</span>
+            <span className="text-sm font-semibold text-gray-700">{t('adminDocs.category')}</span>
             <input
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
@@ -472,7 +474,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-gray-700">Tags</span>
+            <span className="text-sm font-semibold text-gray-700">{t('adminDocs.tags')}</span>
             <input
               value={editTags}
               onChange={(e) => setEditTags(e.target.value)}
@@ -482,7 +484,7 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           </label>
 
           <label className="block md:col-span-2">
-            <span className="text-sm font-semibold text-gray-700">Description</span>
+            <span className="text-sm font-semibold text-gray-700">{t('adminDocs.description')}</span>
             <textarea
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
@@ -494,10 +496,10 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setEditOpen(false)} disabled={isBusy}>
-            Cancel
+            {t('adminDocs.cancel')}
           </Button>
           <Button onClick={onSaveEdit} isLoading={update.isPending}>
-            Save changes
+            {t('adminDocs.saveChanges')}
           </Button>
         </DialogFooter>
       </Dialog>
@@ -508,8 +510,8 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           if (isBusy) return;
           setReplaceOpen(false);
         }}
-        title="Replace file"
-        description="Upload a new file to replace the current one."
+        title={t('adminDocs.replaceTitle')}
+        description={t('adminDocs.replaceDesc')}
         size="md"
       >
         {actionError ? (
@@ -527,17 +529,17 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           />
           {replaceSelectedFile ? (
             <p className="mt-2 text-xs text-gray-500">
-              Selected: <span className="font-semibold text-gray-700">{replaceSelectedFile.name}</span>
+              {t('adminDocs.selected')} <span className="font-semibold text-gray-700">{replaceSelectedFile.name}</span>
             </p>
           ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setReplaceOpen(false)} disabled={isBusy}>
-            Cancel
+            {t('adminDocs.cancel')}
           </Button>
           <Button onClick={onReplaceFile} isLoading={replaceFile.isPending}>
-            Replace
+            {t('adminDocs.replace')}
           </Button>
         </DialogFooter>
       </Dialog>
@@ -549,10 +551,10 @@ export function DocumentList({ documents, isLoading, folderOptions, onOpenFolder
           setDeleteOpen(false);
         }}
         onConfirm={onConfirmDelete}
-        title="Delete document?"
-        description="This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t('adminDocs.deleteTitle')}
+        description={t('adminDocs.cannotUndo')}
+        confirmLabel={t('adminDocs.delete')}
+        cancelLabel={t('adminDocs.cancel')}
         variant="danger"
         isLoading={del.isPending}
       />

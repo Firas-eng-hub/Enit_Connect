@@ -1,38 +1,35 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, CheckCircle, Mail, RefreshCw, ShieldCheck, User } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
-import enitLogo from '@/assets/img/ENIT.png';
-import bgImage from '@/assets/img/Acceuil.BG.jpg';
+import { Input } from '@/shared/ui/Input';
+import { AuthShell } from '@/widgets/auth-shell';
 
-const verifySchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code'),
-});
-
-const resendSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-});
-
-type VerifyFormData = z.infer<typeof verifySchema>;
-type ResendFormData = z.infer<typeof resendSchema>;
 type UserType = 'student' | 'company';
 
-export function VerifyPage() {
-  const [searchParams] = useSearchParams();
-  const initialType = useMemo(() => {
-    const type = searchParams.get('type');
-    return type === 'company' ? 'company' : 'student';
-  }, [searchParams]);
-  const initialEmail = useMemo(() => searchParams.get('email') || '', [searchParams]);
+function getErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const response = (err as { response?: { data?: { message?: string } } }).response;
+    const message = response?.data?.message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
 
-  const [selectedType, setSelectedType] = useState<UserType>(initialType);
+export function VerifyPage() {
+  const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const initialEmail = searchParams.get('email') || '';
+
+  const [selectedType, setSelectedType] = useState<UserType>(
+    searchParams.get('type') === 'company' ? 'company' : 'student'
+  );
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
   const [verifySuccess, setVerifySuccess] = useState(false);
@@ -40,36 +37,27 @@ export function VerifyPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
-  const verifyForm = useForm<VerifyFormData>({
-    resolver: zodResolver(verifySchema),
-    defaultValues: { email: initialEmail },
-  });
+  const { verifySchema, resendSchema } = useMemo(() => {
+    const email = z.string().trim().email(t('auth.invalidEmail'));
+    return {
+      verifySchema: z.object({ email, code: z.string().trim().regex(/^\d{6}$/, t('verifyPage.codeError')) }),
+      resendSchema: z.object({ email }),
+    };
+  }, [t]);
+  type VerifyFormData = z.infer<typeof verifySchema>;
+  type ResendFormData = z.infer<typeof resendSchema>;
 
-  const resendForm = useForm<ResendFormData>({
-    resolver: zodResolver(resendSchema),
-    defaultValues: { email: initialEmail },
-  });
-
-  const getErrorMessage = (err: unknown, fallback: string) => {
-    if (err && typeof err === 'object') {
-      const response = (err as { response?: { data?: { message?: string } } }).response;
-      const message = response?.data?.message;
-      if (typeof message === 'string' && message.trim()) return message;
-    }
-    if (err instanceof Error && err.message) return err.message;
-    return fallback;
-  };
+  const verifyForm = useForm<VerifyFormData>({ resolver: zodResolver(verifySchema), defaultValues: { email: initialEmail } });
+  const resendForm = useForm<ResendFormData>({ resolver: zodResolver(resendSchema), defaultValues: { email: initialEmail } });
 
   const onVerify = async (data: VerifyFormData) => {
     setIsVerifying(true);
     setVerifyError(null);
-    setVerifySuccess(false);
-
     try {
       await httpClient.post(`/api/${selectedType}/confirm`, { code: data.code, email: data.email });
       setVerifySuccess(true);
     } catch (err: unknown) {
-      setVerifyError(getErrorMessage(err, 'Verification failed. Please check the code and try again.'));
+      setVerifyError(getErrorMessage(err, t('verifyPage.failed')));
     } finally {
       setIsVerifying(false);
     }
@@ -79,217 +67,116 @@ export function VerifyPage() {
     setIsResending(true);
     setResendError(null);
     setResendMessage(null);
-
     try {
-      const response = await httpClient.post(`/api/${selectedType}/resend-confirmation`, data);
-      setResendMessage(response.data?.message || 'Check your inbox for a new code.');
+      await httpClient.post(`/api/${selectedType}/resend-confirmation`, data);
+      setResendMessage(t('verifyPage.resent'));
     } catch (err: unknown) {
-      setResendError(getErrorMessage(err, 'Unable to resend the code right now.'));
+      setResendError(getErrorMessage(err, t('verifyPage.resendFailed')));
     } finally {
       setIsResending(false);
     }
   };
 
-  const typeOptions = [
-    { type: 'student' as UserType, label: 'Student', icon: User, gradient: 'from-blue-500 to-indigo-600' },
-    { type: 'company' as UserType, label: 'Company', icon: Building2, gradient: 'from-emerald-500 to-teal-600' },
+  if (verifySuccess) {
+    return (
+      <AuthShell title={t('verifyPage.doneTitle')} description={t('verifyPage.doneBody')}>
+        <Link
+          to="/login"
+          className="inline-flex h-11 w-full items-center justify-center rounded-md border border-ink bg-ink px-5 font-medium text-white hover:bg-primary-800"
+        >
+          {t('auth.signIn')}
+        </Link>
+      </AuthShell>
+    );
+  }
+
+  const typeOptions: { type: UserType; label: string }[] = [
+    { type: 'student', label: t('auth.student') },
+    { type: 'company', label: t('auth.company') },
   ];
 
   return (
-    <div className="min-h-screen relative flex overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: `url(${bgImage})` }}
+    <AuthShell title={t('verifyPage.title')} description={t('verifyPage.subtitle')}>
+      <form onSubmit={verifyForm.handleSubmit(onVerify)} noValidate className="space-y-5">
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-ink">{t('auth.iAmA')}</legend>
+          <div className="grid grid-cols-2 rounded-md border border-neutral-300 p-0.5">
+            {typeOptions.map(({ type, label }) => (
+              <label
+                key={type}
+                className={cn(
+                  'cursor-pointer rounded px-2 py-1.5 text-center text-sm font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold/60',
+                  selectedType === type ? 'bg-ink text-white' : 'text-body hover:bg-canvas hover:text-ink'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="verifyType"
+                  value={type}
+                  checked={selectedType === type}
+                  onChange={() => setSelectedType(type)}
+                  className="sr-only"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {verifyError && <Alert variant="danger">{verifyError}</Alert>}
+
+        <Input
+          id="verify-email"
+          type="email"
+          autoComplete="email"
+          label={t('auth.emailAddress')}
+          error={verifyForm.formState.errors.email?.message}
+          {...verifyForm.register('email')}
+        />
+        <Input
+          id="verify-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          label={t('verifyPage.code')}
+          className="tracking-[0.3em] tabular-nums"
+          dir="ltr"
+          error={verifyForm.formState.errors.code?.message}
+          {...verifyForm.register('code')}
+        />
+        <Button type="submit" size="lg" className="w-full" isLoading={isVerifying}>
+          {t('verifyPage.submit')}
+        </Button>
+      </form>
+
+      <form
+        onSubmit={resendForm.handleSubmit(onResend)}
+        noValidate
+        className="mt-8 border-t border-line pt-6 space-y-4"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/95 via-primary-800/90 to-accent-900/95" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
-
-      <div className="w-full relative z-10 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-xl">
-          <div className="text-center mb-8">
-            <Link to="/visitor/news" className="inline-flex flex-col items-center gap-3">
-              <img src={enitLogo} alt="ENIT" className="w-14 h-14 object-contain drop-shadow-lg" />
-              <span className="text-xl font-bold text-white">ENIT-Connect</span>
-            </Link>
-          </div>
-
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/30 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-100 to-accent-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-
-            <div className="relative space-y-8">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-lg shadow-primary-500/30 mb-4">
-                  <ShieldCheck className="w-7 h-7" />
-                </div>
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Verify your account</h2>
-                <p className="text-gray-500 mt-2">
-                  Enter the 6-digit code we sent to your email.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Account type
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {typeOptions.map(({ type, label, icon: Icon, gradient }) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSelectedType(type)}
-                      className={cn(
-                        'relative flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-300 border-2',
-                        selectedType === type
-                          ? `bg-gradient-to-br ${gradient} text-white shadow-lg shadow-primary-500/25 scale-105 border-transparent`
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-100 hover:border-gray-200'
-                      )}
-                    >
-                      <Icon className={cn('w-6 h-6', selectedType === type && 'drop-shadow-md')} />
-                      <span className="text-xs font-bold uppercase tracking-wide">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <form onSubmit={verifyForm.handleSubmit(onVerify)} className="space-y-4">
-                {verifyError && (
-                  <Alert variant="danger" className="text-sm rounded-xl">
-                    {verifyError}
-                  </Alert>
-                )}
-                {verifySuccess && (
-                  <Alert variant="success" className="text-sm rounded-xl">
-                    Your account is verified. You can sign in now.
-                  </Alert>
-                )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    {...verifyForm.register('email')}
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@enit.utm.tn"
-                    readOnly={Boolean(initialEmail)}
-                    className={cn(
-                      'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
-                      'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
-                      'transition-all duration-200 font-medium',
-                      verifyForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100',
-                      initialEmail && 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                    )}
-                  />
-                  {verifyForm.formState.errors.email && (
-                    <p className="mt-2 text-sm text-red-600 font-medium">
-                      {verifyForm.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Verification Code
-                  </label>
-                  <input
-                    {...verifyForm.register('code')}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    placeholder="123456"
-                    className={cn(
-                      'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
-                      'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
-                      'transition-all duration-200 font-semibold tracking-[0.35em] text-center',
-                      verifyForm.formState.errors.code ? 'border-red-300 bg-red-50/50' : 'border-gray-100'
-                    )}
-                  />
-                  {verifyForm.formState.errors.code && (
-                    <p className="mt-2 text-sm text-red-600 font-medium">
-                      {verifyForm.formState.errors.code.message}
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30"
-                  size="lg"
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? 'Verifying...' : 'Verify Account'}
-                </Button>
-              </form>
-
-              <div className="border-t border-gray-200 pt-6">
-                <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 mb-4">
-                  <Mail className="w-4 h-4" />
-                  Didn&apos;t get the code?
-                </div>
-                <form onSubmit={resendForm.handleSubmit(onResend)} className="space-y-4">
-                  {resendError && (
-                    <Alert variant="danger" className="text-sm rounded-xl">
-                      {resendError}
-                    </Alert>
-                  )}
-                  {resendMessage && (
-                    <Alert variant="success" className="text-sm rounded-xl">
-                      {resendMessage}
-                    </Alert>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      {...resendForm.register('email')}
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@enit.utm.tn"
-                      readOnly={Boolean(initialEmail)}
-                      className={cn(
-                        'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
-                        'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
-                        'transition-all duration-200 font-medium',
-                        resendForm.formState.errors.email ? 'border-red-300 bg-red-50/50' : 'border-gray-100',
-                        initialEmail && 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                      )}
-                    />
-                    {resendForm.formState.errors.email && (
-                      <p className="mt-2 text-sm text-red-600 font-medium">
-                        {resendForm.formState.errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    variant="secondary"
-                    className="w-full py-4 rounded-xl font-bold"
-                    size="lg"
-                    disabled={isResending}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <RefreshCw className={cn('w-4 h-4', isResending && 'animate-spin')} />
-                      {isResending ? 'Sending...' : 'Resend Code'}
-                    </span>
-                  </Button>
-                </form>
-              </div>
-
-              <div className="text-center">
-                <Link to="/login" className="inline-flex items-center gap-2 text-sm text-primary-600 font-semibold hover:text-primary-700">
-                  <CheckCircle className="w-4 h-4" />
-                  Back to Sign In
-                </Link>
-              </div>
-            </div>
-          </div>
+        <div>
+          <h2 className="text-base">{t('verifyPage.resendTitle')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('verifyPage.resendBody')}</p>
         </div>
-      </div>
-    </div>
+        {resendMessage && <Alert variant="success">{resendMessage}</Alert>}
+        {resendError && <Alert variant="danger">{resendError}</Alert>}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="flex-1">
+            <Input
+              id="resend-email"
+              type="email"
+              autoComplete="email"
+              aria-label={t('auth.emailAddress')}
+              placeholder={t('auth.emailAddress')}
+              error={resendForm.formState.errors.email?.message}
+              {...resendForm.register('email')}
+            />
+          </div>
+          <Button type="submit" variant="secondary" className="h-10" isLoading={isResending}>
+            {t('verifyPage.resend')}
+          </Button>
+        </div>
+      </form>
+    </AuthShell>
   );
 }

@@ -1,357 +1,221 @@
-import { useEffect, useState } from 'react';
-import { Calendar, Newspaper, RefreshCw, Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import httpClient from '@/shared/api/httpClient';
 import type { News } from '@/entities/news/types';
+import { isNewsVisibleTo, newsDate, resolveNewsImage as resolveImageUrl } from '@/entities/news/lib';
+import { NewsArticleDialog } from '@/features/news/components/NewsCard';
 import { PartnerLogoMarquee } from '@/features/partners';
 import { formatDate } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
+import { Badge } from '@/shared/ui/Badge';
+import campusImage from '@/assets/img/Acceuil.BG.jpg';
 
-// Skeleton loader
-function NewsCardSkeleton() {
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function NewsDate({ item }: { item: News }) {
+  const { t } = useTranslation();
+  const value = newsDate(item);
+  return value ? (
+    <time dateTime={value} className="text-sm text-muted-foreground">
+      {formatDate(value)}
+    </time>
+  ) : (
+    <span className="text-sm text-muted-foreground">{t('common.noDate')}</span>
+  );
+}
+
+function NewBadge({ item, now }: { item: News; now: number }) {
+  const { t } = useTranslation();
+  const value = newsDate(item);
+  if (!value || new Date(value).getTime() < now - WEEK_MS) return null;
+  return <Badge variant="accent" size="sm">{t('visitor.news.new')}</Badge>;
+}
+
+function FeaturedArticle({ item, now, onRead }: { item: News; now: number; onRead: (item: News) => void }) {
+  const { t } = useTranslation();
+  const imageUrl = resolveImageUrl(item);
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
-      <div className="aspect-video bg-gray-200" />
-      <div className="p-6 space-y-3">
-        <div className="h-6 bg-gray-200 rounded-lg w-3/4" />
-        <div className="h-4 bg-gray-200 rounded w-full" />
-        <div className="h-4 bg-gray-200 rounded w-full" />
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
-        <div className="flex items-center gap-2 pt-4">
-          <div className="h-4 w-24 bg-gray-200 rounded" />
+    <article className="grid overflow-hidden rounded-lg border border-line bg-surface md:grid-cols-2">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-56 w-full object-cover md:h-full md:max-h-80"
+        />
+      )}
+      <div className={imageUrl ? 'p-6 lg:p-8' : 'p-6 lg:p-8 md:col-span-2'}>
+        <div className="flex items-center gap-3">
+          <NewsDate item={item} />
+          <NewBadge item={item} now={now} />
         </div>
+        <h3 className="mt-2 text-xl md:text-2xl">{item.title}</h3>
+        <p className="mt-3 text-body line-clamp-4 max-w-prose">{item.content}</p>
+        <Button variant="secondary" className="mt-5" onClick={() => onRead(item)}>
+          {t('visitor.news.readArticle')}
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+function ArticleCard({ item, now, onRead }: { item: News; now: number; onRead: (item: News) => void }) {
+  const imageUrl = resolveImageUrl(item);
+  return (
+    <article className="group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface hover:border-neutral-400">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="aspect-[16/9] w-full object-cover"
+        />
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-center gap-3">
+          <NewsDate item={item} />
+          <NewBadge item={item} now={now} />
+        </div>
+        <h3 className="mt-2 text-base">
+          {/* Stretched button: the whole card is clickable, one focus stop. */}
+          <button
+            type="button"
+            onClick={() => onRead(item)}
+            className="text-start group-hover:underline underline-offset-2 after:absolute after:inset-0 after:content-['']"
+          >
+            {item.title}
+          </button>
+        </h3>
+        <p className="mt-2 text-sm text-body line-clamp-3">{item.content}</p>
+      </div>
+    </article>
+  );
+}
+
+function NewsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div className="h-64 rounded-lg border border-line bg-surface" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-56 rounded-lg border border-line bg-surface p-5 space-y-3">
+            <div className="h-3 w-24 rounded bg-neutral-100" />
+            <div className="h-4 w-3/4 rounded bg-neutral-100" />
+            <div className="h-3 w-full rounded bg-neutral-100" />
+            <div className="h-3 w-2/3 rounded bg-neutral-100" />
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// News card component
-function NewsCard({
-  news,
-  featured = false,
-  onRead,
-}: {
-  news: News;
-  featured?: boolean;
-  onRead: (item: News) => void;
-}) {
-  const imageSource = news.picture || news.image || '';
-  
-  // Build image URL - handle both full URLs and relative paths
-  let imageUrl: string | null = null;
-  if (imageSource) {
-    if (imageSource.startsWith('http')) {
-      // Extract just the path from full URL
-      try {
-        const url = new URL(imageSource);
-        imageUrl = url.pathname;
-      } catch {
-        imageUrl = imageSource;
-      }
-    } else {
-      // Use relative path as-is (Vite proxy handles /uploads)
-      imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
-    }
-  }
-  
-  console.log('NewsPage NewsCard debug:', { picture: news.picture, image: news.image, imageSource, imageUrl });
-
-  const dateValue = news.date || news.createdAt;
-  const isRecent = dateValue &&
-    // eslint-disable-next-line react-hooks/purity
-    new Date(dateValue) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  if (featured) {
-    return (
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
-        <div className="grid lg:grid-cols-2 gap-0">
-          {/* Image */}
-          <div className="aspect-video lg:aspect-auto lg:h-full relative overflow-hidden">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={news.title}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700">
-                <Newspaper className="w-20 h-20 text-white/30" />
-              </div>
-            )}
-            {isRecent && (
-              <div className="absolute top-4 left-4">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-500 text-white text-xs font-bold shadow-lg">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  New
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* Content */}
-          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-sm text-primary-600 font-medium mb-4">
-              <Clock className="w-4 h-4" />
-              {dateValue ? formatDate(dateValue) : 'No date'}
-            </div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 group-hover:text-primary-900 transition-colors">
-              {news.title}
-            </h2>
-            <p className="text-gray-600 text-lg leading-relaxed mb-6 line-clamp-3">
-              {news.content}
-            </p>
-            <Button className="self-start group/btn" onClick={() => onRead(news)}>
-              Read Full Article
-              <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+function Hero() {
+  const { t } = useTranslation();
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      {/* Image */}
-      <div className="aspect-video relative overflow-hidden">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={news.title}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200">
-            <Newspaper className="w-12 h-12 text-primary-400" />
+    <section className="border-b border-line bg-surface">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+        <div>
+          <span className="gold-rule" aria-hidden="true" />
+          <p className="mt-5 text-sm font-medium text-muted-foreground">{t('visitor.school')}</p>
+          <h1 className="mt-2 text-3xl md:text-4xl max-w-[22ch]">{t('visitor.hero.title')}</h1>
+          <p className="mt-4 text-lg text-body max-w-prose">{t('visitor.hero.body')}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              to="/register"
+              className="inline-flex h-11 items-center rounded-md border border-ink bg-ink px-5 font-medium text-white hover:bg-primary-800"
+            >
+              {t('visitor.hero.student')}
+            </Link>
+            <Link
+              to="/register?type=company"
+              className="inline-flex h-11 items-center rounded-md border border-neutral-300 bg-surface px-5 font-medium text-ink hover:border-neutral-400 hover:bg-canvas"
+            >
+              {t('visitor.hero.company')}
+            </Link>
           </div>
-        )}
-        {isRecent && (
-          <div className="absolute top-3 left-3">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-500 text-white text-xs font-bold shadow-md">
-              <Sparkles className="w-3 h-3" />
-              New
-            </span>
-          </div>
-        )}
-        {/* Gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </div>
-      
-      {/* Content */}
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-3">
-          <Calendar className="w-3.5 h-3.5" />
-          {dateValue ? formatDate(dateValue) : 'No date'}
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-700 transition-colors">
-          {news.title}
-        </h3>
-        <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-          {news.content}
-        </p>
-        <button
-          type="button"
-          onClick={() => onRead(news)}
-          className="text-primary-600 text-sm font-semibold inline-flex items-center gap-1 group/btn hover:text-primary-700"
-        >
-          Read more
-          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-        </button>
+        <img
+          src={campusImage}
+          alt={t('visitor.hero.photoAlt')}
+          className="hidden sm:block w-full aspect-[16/10] rounded-lg object-cover"
+          fetchPriority="high"
+        />
       </div>
-    </div>
+    </section>
   );
 }
 
 export function NewsPage() {
+  const { t } = useTranslation();
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedNews, setSelectedNews] = useState<News | null>(null);
+  const [hasError, setHasError] = useState(false);
+  const [selected, setSelected] = useState<News | null>(null);
+  const [now] = useState(() => Date.now());
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setHasError(false);
     try {
-      const response = await httpClient.get('/api/admin/news');
-      const visibleNews = response.data.filter((item: News) => {
-        const statusValue = typeof item.status === 'string'
-          ? item.status.toLowerCase().trim()
-          : 'published';
-        const audienceValue = Array.isArray(item.audience)
-          ? item.audience.map((value: string) => value.toLowerCase().trim())
-          : typeof item.audience === 'string'
-            ? item.audience.split(',').map((value: string) => value.toLowerCase().trim()).filter(Boolean)
-            : ['student', 'company', 'visitor'];
-        const audienceList = audienceValue.length > 0 ? audienceValue : ['student', 'company', 'visitor'];
-        return statusValue !== 'draft' && audienceList.includes('visitor');
-      });
-      setNews(visibleNews);
-    } catch (err) {
-      setError('Failed to load news. Please try again.');
-      console.error(err);
+      const response = await httpClient.get<News[]>('/api/admin/news');
+      const items = Array.isArray(response.data) ? response.data : [];
+      setNews(items.filter((item) => isNewsVisibleTo(item, 'visitor')));
+    } catch {
+      setHasError(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNews();
-  }, []);
+  }, [fetchNews]);
 
   return (
-    <div>
+    <>
+      <Hero />
       <PartnerLogoMarquee />
 
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-50 text-primary-700 text-sm font-medium mb-3">
-            <Newspaper className="w-4 h-4" />
-            Latest Updates
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">News & Announcements</h2>
-          <p className="text-gray-500 mt-2">Stay informed about the latest opportunities and events</p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={fetchNews}
-          leftIcon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </div>
+      <section aria-labelledby="news-heading" className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header className="mb-6">
+          <h2 id="news-heading">{t('visitor.news.title')}</h2>
+          <p className="mt-1 text-muted-foreground">{t('visitor.news.subtitle')}</p>
+        </header>
 
-      {/* Error State */}
-      {error && (
-        <Alert 
-          variant="danger" 
-          title="Error loading news"
-          className="mb-8 rounded-xl"
-          action={{
-            label: 'Try again',
-            onClick: fetchNews
-          }}
-        >
-          {error}
-        </Alert>
-      )}
+        {loading && <NewsSkeleton />}
 
-      {/* Loading State */}
-      {loading && (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <NewsCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
+        {!loading && hasError && (
+          <Alert variant="danger" action={{ label: t('visitor.news.retry'), onClick: fetchNews }}>
+            {t('visitor.news.error')}
+          </Alert>
+        )}
 
-      {/* Empty State */}
-      {!loading && !error && news.length === 0 && (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-16 text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gray-100 mb-6">
-            <Newspaper className="w-10 h-10 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No news yet</h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            There are no news articles to display. Check back later for updates from ENIT Connect.
+        {!loading && !hasError && news.length === 0 && (
+          <p className="rounded-lg border border-line bg-surface px-6 py-10 text-center text-muted-foreground">
+            {t('visitor.news.empty')}
           </p>
-        </div>
-      )}
+        )}
 
-      {/* News Grid */}
-      {!loading && !error && news.length > 0 && (
-        <div className="space-y-10">
-          {/* Featured Article (first one) */}
-          {news.length > 0 && (
-            <NewsCard news={news[0]} featured onRead={setSelectedNews} />
-          )}
-
-          {/* Regular Grid */}
-          {news.length > 1 && (
-            <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">More Articles</h3>
-                <span className="text-sm text-gray-500">{news.length - 1} more articles</span>
-              </div>
-              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {!loading && !hasError && news.length > 0 && (
+          <div className="space-y-6">
+            <FeaturedArticle item={news[0]} now={now} onRead={setSelected} />
+            {news.length > 1 && (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {news.slice(1).map((item) => (
-                  <NewsCard key={item._id} news={item} onRead={setSelectedNews} />
+                  <ArticleCard key={item._id} item={item} now={now} onRead={setSelected} />
                 ))}
               </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {selectedNews && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedNews(null)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
-              <h3 className="text-lg font-bold text-white">Full Article</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedNews(null)}
-                className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-            <div className="p-6 space-y-5 overflow-y-auto">
-              {(() => {
-                const imageSource = selectedNews.picture || selectedNews.image || '';
-                
-                // Build image URL - same logic as NewsCard
-                let imageUrl: string | null = null;
-                if (imageSource) {
-                  if (imageSource.startsWith('http')) {
-                    try {
-                      const url = new URL(imageSource);
-                      imageUrl = url.pathname;
-                    } catch {
-                      imageUrl = imageSource;
-                    }
-                  } else {
-                    imageUrl = imageSource.startsWith('/') ? imageSource : `/${imageSource}`;
-                  }
-                }
-                
-                return imageUrl ? (
-                  <div className="rounded-2xl overflow-hidden">
-                    <img
-                      src={imageUrl}
-                      alt={selectedNews.title}
-                      className="w-full max-h-96 object-cover"
-                    />
-                  </div>
-                ) : null;
-              })()}
-              <div>
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedNews.title}</h4>
-                <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Calendar className="w-4 h-4" />
-                  {selectedNews.date || selectedNews.createdAt
-                    ? formatDate((selectedNews.date || selectedNews.createdAt)!)
-                    : 'No date'}
-                </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {selectedNews.content}
-              </p>
-            </div>
+            )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </section>
+
+      <NewsArticleDialog news={selected} onClose={() => setSelected(null)} />
+    </>
   );
 }

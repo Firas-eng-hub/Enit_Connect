@@ -31,7 +31,7 @@ export function Avatar({ src, alt, fallback, size = 'md', className }: AvatarPro
     return (
       <img
         src={src}
-        alt={alt || 'Avatar'}
+        alt={alt || fallback || ''}
         className={cn(
           'inline-block rounded-full object-cover ring-2 ring-surface',
           sizes[size],
@@ -45,12 +45,12 @@ export function Avatar({ src, alt, fallback, size = 'md', className }: AvatarPro
     <div
       className={cn(
         'inline-flex items-center justify-center rounded-full',
-        'bg-gradient-to-br from-primary-400 to-primary-600 text-white font-medium',
+        'bg-primary-100 text-primary-800 font-medium',
         sizes[size],
         className
       )}
       role="img"
-      aria-label={alt || fallback || 'Avatar'}
+      aria-label={alt || fallback || undefined}
     >
       {initials}
     </div>

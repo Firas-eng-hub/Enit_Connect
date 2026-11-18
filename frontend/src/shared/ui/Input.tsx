@@ -17,14 +17,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor={inputId} className="block text-sm font-medium text-ink mb-1.5">
             {label}
-            {props.required && <span className="text-danger-500 ml-1">*</span>}
+            {props.required && <span className="text-danger-600 ms-0.5" aria-hidden="true">*</span>}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+            <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-neutral-500">
               {leftIcon}
             </div>
           )}
@@ -32,16 +32,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full h-10 px-3 py-2 rounded-lg text-foreground',
-              'bg-surface border transition-colors duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
+              'w-full h-10 px-3 py-2 rounded-md text-ink bg-surface border',
+              'placeholder:text-neutral-500',
+              'focus:outline-none focus-visible:outline-none focus:border-ink focus:ring-2 focus:ring-gold/40 focus-visible:shadow-none',
               'disabled:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-500',
-              error 
-                ? 'border-danger-500 focus:ring-danger-500/20 focus:border-danger-500' 
-                : 'border-neutral-300 hover:border-neutral-400',
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10',
+              error
+                ? 'border-danger-600 focus:border-danger-600 focus:ring-danger-600/20'
+                : 'border-neutral-400 hover:border-neutral-500',
+              leftIcon && 'ps-10',
+              (rightIcon || error) && 'pe-10',
               className
             )}
             aria-invalid={error ? 'true' : 'false'}
@@ -49,13 +48,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-neutral-400">
+            <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none text-neutral-500">
               {rightIcon}
             </div>
           )}
           {error && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <AlertCircle className="h-5 w-5 text-danger-500" />
+            <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none">
+              <AlertCircle className="h-4 w-4 text-danger-600" aria-hidden="true" />
             </div>
           )}
         </div>

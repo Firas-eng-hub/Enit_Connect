@@ -1,113 +1,117 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Briefcase, Users, Trash2, Calendar, Eye } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
-import { getApiErrorMessage } from '@/shared/lib/utils';
+import { formatDate, getApiErrorMessage } from '@/shared/lib/utils';
 import type { Offer } from '@/entities/offer/types';
 import type { News } from '@/entities/news/types';
-import { NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/components/NewsCard';
-import { formatDate, cn } from '@/shared/lib/utils';
-import { config } from '@/app/config/env';
+import { isNewsVisibleTo } from '@/entities/news/lib';
+import { NewsArticleDialog, NewsCard, NewsCardSkeleton, NewsEmpty } from '@/features/news/components/NewsCard';
+import { useOfferTypeLabel } from '@/features/offers/components';
+import { PageHeader } from '@/shared/ui/PageHeader';
+import { Button } from '@/shared/ui/Button';
+import { Badge } from '@/shared/ui/Badge';
+import { Alert } from '@/shared/ui/Alert';
+import { Input } from '@/shared/ui/Input';
+import { Textarea } from '@/shared/ui/Textarea';
+import { Dialog, DialogFooter, ConfirmDialog } from '@/shared/ui/Dialog';
 
-const offerSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters'),
-  content: z.string().min(10, 'Description must be at least 10 characters'),
-  type: z.enum(['PFA', 'PFE', 'Intership', 'Job'] as const),
-  start: z.string().min(1, 'Start date is required'),
-  end: z.string().optional(),
-}).refine((data) => !data.end || data.end > data.start, {
-  message: 'End date must be after start date',
-  path: ['end'],
-});
-
-type OfferFormData = z.infer<typeof offerSchema>;
+const OFFER_TYPES = ['PFA', 'PFE', 'Intership', 'Job'] as const;
 
 export function HomePage() {
   const { t } = useTranslation();
+  const typeLabel = useOfferTypeLabel();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Offer | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [news, setNews] = useState<News[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-  const [newsError, setNewsError] = useState<string | null>(null);
+  const [newsError, setNewsError] = useState(false);
   const [selectedNews, setSelectedNews] = useState<News | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<OfferFormData>({
+  const offerSchema = useMemo(
+    () =>
+      z
+        .object({
+          title: z.string().trim().min(5, t('companyHome.v.title')),
+          content: z.string().trim().min(10, t('companyHome.v.content')),
+          type: z.enum(OFFER_TYPES),
+          start: z.string().min(1, t('companyHome.v.start')),
+          end: z.string().optional(),
+        })
+        .refine((data) => !data.end || data.end > data.start, {
+          message: t('companyHome.v.end'),
+          path: ['end'],
+        }),
+    [t]
+  );
+  type OfferFormData = z.infer<typeof offerSchema>;
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
     defaultValues: { type: 'PFA' },
   });
 
-  useEffect(() => {
-    fetchOffers();
-    fetchNews();
-  }, []);
-
-  const fetchOffers = async () => {
+  const fetchOffers = useCallback(async () => {
     try {
       const companyId = localStorage.getItem('company_id');
       if (!companyId) {
         setOffers([]);
         return;
       }
-      const response = await httpClient.get('/api/offers/myoffers', {
-        params: { id: companyId },
-      });
-      const normalized = response.data
-        .map((o: Offer & { id?: string }) => ({
-          ...o,
-          _id: o._id || o.id || '',
-        }))
-        .filter((o: Offer) => o._id);
-      setOffers(normalized);
-    } catch (err) {
-      console.error('Failed to fetch offers:', err);
+      const response = await httpClient.get('/api/offers/myoffers', { params: { id: companyId } });
+      const raw = Array.isArray(response.data) ? response.data : [];
+      setOffers(
+        raw
+          .map((o: Offer & { id?: string }) => ({ ...o, _id: o._id || o.id || '' }))
+          .filter((o: Offer) => o._id)
+      );
+    } catch {
+      setOffers([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     setNewsLoading(true);
-    setNewsError(null);
+    setNewsError(false);
     try {
       const response = await httpClient.get('/api/admin/news');
-      const visibleNews = response.data.filter((item: News) => {
-        const statusValue = typeof item.status === 'string'
-          ? item.status.toLowerCase().trim()
-          : 'published';
-        const audienceValue = Array.isArray(item.audience)
-          ? item.audience.map((value: string) => value.toLowerCase().trim())
-          : typeof item.audience === 'string'
-            ? item.audience.split(',').map((value: string) => value.toLowerCase().trim()).filter(Boolean)
-            : ['student', 'company', 'visitor'];
-        const audienceList = audienceValue.length > 0 ? audienceValue : ['student', 'company', 'visitor'];
-        return statusValue !== 'draft' && audienceList.includes('company');
-      });
-      setNews(visibleNews);
-    } catch (err) {
-      console.error('Failed to fetch news:', err);
-      setNewsError('Failed to load news');
+      const items: News[] = Array.isArray(response.data) ? response.data : [];
+      setNews(items.filter((item) => isNewsVisibleTo(item, 'company')));
+    } catch {
+      setNewsError(true);
     } finally {
       setNewsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchOffers();
+    fetchNews();
+  }, [fetchOffers, fetchNews]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setFormError(null);
   };
 
   const onSubmit = async (data: OfferFormData) => {
     setSubmitting(true);
+    setFormError(null);
     try {
       const companyId = localStorage.getItem('company_id');
       const normalizedEnd = data.end && data.end.trim() ? data.end : undefined;
-      const offerData = {
+      await httpClient.post('/api/offers', {
         ...data,
         start: data.start || '',
         end: normalizedEnd,
@@ -115,443 +119,189 @@ export function HomePage() {
         end_date: normalizedEnd,
         companyid: companyId,
         createdat: new Date().toISOString(),
-      };
-      await httpClient.post('/api/offers', offerData);
+      });
       reset();
-      setShowForm(false);
+      closeForm();
       fetchOffers();
     } catch (err) {
-      console.error('Failed to create offer:', err);
-      alert(getApiErrorMessage(err, 'Failed to create offer. Please try again.'));
+      setFormError(getApiErrorMessage(err, t('companyHome.createFailed')));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (offerId: string) => {
-    if (!confirm(t('home.confirmDeleteOffer'))) return;
-
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await httpClient.delete('/api/offers', { params: { id: offerId } });
-      setOffers(offers.filter((o) => o._id !== offerId));
-    } catch (err) {
-      console.error('Failed to delete offer:', err);
+      await httpClient.delete('/api/offers', { params: { id: pendingDelete._id } });
+      setOffers((current) => current.filter((o) => o._id !== pendingDelete._id));
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const typeColors: Record<string, string> = {
-    PFA: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400',
-    PFE: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 border border-purple-400',
-    Intership: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400',
-    Job: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30 border border-amber-400',
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-      </div>
-    );
-  }
-
-  const totalOffers = offers.length;
   const totalApplicants = offers.reduce((sum, offer) => sum + (offer.candidacies?.length || 0), 0);
 
   return (
-    <div>
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-3xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-emerald-300/20 rounded-full blur-3xl" />
-        <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">{t('home.companyTitle')}</h1>
-            <p className="text-primary-100 text-lg">{t('home.companySubtitle')}</p>
-          </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold shadow-lg hover:bg-primary-50 transition-all"
-          >
-            <Plus className="w-5 h-5" />
+    <div className="space-y-10">
+      <PageHeader
+        title={t('home.companyTitle')}
+        description={t('home.companySubtitle')}
+        className="mb-0"
+        actions={
+          <Button onClick={() => setShowForm(true)} leftIcon={<Plus className="h-4 w-4" />}>
             {t('home.createOffer')}
-          </button>
+          </Button>
+        }
+      />
+
+      {/* Real counts only */}
+      <dl className="grid grid-cols-2 divide-x divide-line rounded-lg border border-line bg-surface rtl:divide-x-reverse">
+        <div className="px-5 py-4">
+          <dt className="text-sm text-muted-foreground">{t('home.activeOffers')}</dt>
+          <dd className="mt-1 text-2xl font-semibold text-ink tabular-nums">{loading ? '–' : offers.length}</dd>
         </div>
-        <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-8">
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">{t('home.activeOffers')}</div>
-            <div className="text-3xl font-bold text-gray-900">{totalOffers}</div>
-          </div>
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">{t('home.totalApplicants')}</div>
-            <div className="text-3xl font-bold text-gray-900">{totalApplicants}</div>
-          </div>
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-white/30 shadow-lg">
-            <div className="text-sm text-gray-500 mb-2">{t('home.newsForCompanies')}</div>
-            <div className="text-3xl font-bold text-gray-900">{news.length}</div>
-          </div>
+        <div className="px-5 py-4">
+          <dt className="text-sm text-muted-foreground">{t('home.totalApplicants')}</dt>
+          <dd className="mt-1 text-2xl font-semibold text-ink tabular-nums">{loading ? '–' : totalApplicants}</dd>
         </div>
-      </div>
+      </dl>
 
-      <section className="mb-12">
-        <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-sky-50 p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold uppercase tracking-wide mb-3">
-                {t('home.companyFeed')}
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">{t('home.latestNews')}</h2>
-              <p className="text-gray-600">{t('home.updatesForCompanies')}</p>
-            </div>
-            <button
-              onClick={fetchNews}
-              className="px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition-colors"
-            >
-              {t('common.refresh')}
-            </button>
-          </div>
-
-          <div className="mt-6">
-            {newsError && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4">{newsError}</div>}
-            {newsLoading ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <NewsCardSkeleton count={3} />
-              </div>
-            ) : news.length === 0 ? (
-              <NewsEmpty />
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {news.map((item, index) => {
-                  const newsKey = item._id || (item as { id?: string }).id || `${item.title}-${index}`;
-                  return <NewsCard key={newsKey} news={item} onRead={setSelectedNews} />;
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {selectedNews && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedNews(null)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
-              <h3 className="text-lg font-bold text-white">{t('home.fullArticle')}</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedNews(null)}
-                className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white"
-              >
-                {t('common.close')}
-              </button>
-            </div>
-            <div className="p-6 space-y-5 overflow-y-auto">
-              {(() => {
-                const imageSource = selectedNews.picture || selectedNews.image;
-                const imageUrl = imageSource
-                  ? imageSource.startsWith('http')
-                    ? imageSource
-                    : `${config.apiUrl}/${imageSource}`
-                  : null;
-                return imageUrl ? (
-                  <div className="rounded-2xl overflow-hidden">
-                    <img
-                      src={imageUrl}
-                      alt={selectedNews.title}
-                      className="w-full max-h-96 object-cover"
-                    />
-                  </div>
-                ) : null;
-              })()}
-              <div>
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedNews.title}</h4>
-                <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-                  <Calendar className="w-4 h-4" />
-                  {selectedNews.date || selectedNews.createdAt
-                    ? formatDate((selectedNews.date || selectedNews.createdAt)!)
-                    : t('common.noDate')}
-                </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {selectedNews.content}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Offer Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl my-8" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-white">{t('home.createNewOffer')}</h2>
-              <p className="text-primary-100 mt-1">{t('home.fillOfferDetails')}</p>
-            </div>
-
-            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
-              <form onSubmit={handleSubmit(onSubmit)} className="p-8">
-                {/* Basic Information Section */}
-                <div className="space-y-6 mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-primary-600 rounded-full"></div>
-                    {t('home.basicInformation')}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.positionTitle')} *</label>
-                      <input 
-                        {...register('title')} 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" 
-                        placeholder="e.g., Full Stack Developer Intern" 
-                      />
-                      {errors.title && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.title.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.offerType')} *</label>
-                      <select {...register('type')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white">
-                        <option value="PFA">PFA - Projet de Fin d'Année</option>
-                        <option value="PFE">PFE - Projet de Fin d'Études</option>
-                        <option value="Intership">Internship</option>
-                        <option value="Job">Full-time Job</option>
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.description')} *</label>
-                      <textarea 
-                        {...register('content')} 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none" 
-                        rows={5}
-                        placeholder="Describe the role, responsibilities, required skills, and what makes this opportunity exciting..."
-                      />
-                      {errors.content && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.content.message}</p>}
-                    </div>
-                  </div>
-                </div>
-
-              {/* Timeline Section */}
-              <div className="space-y-6 mb-8 pb-8 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-primary-600 rounded-full"></div>
-                  {t('home.timeline')}
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.startDate')} *</label>
-                    <input 
-                      {...register('start')} 
-                      type="date" 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" 
-                    />
-                    {errors.start && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.start.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.endDate')}</label>
-                    <input 
-                      {...register('end')} 
-                      type="date" 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" 
-                    />
-                    {errors.end && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.end.message}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <button 
-                  type="button" 
-                  onClick={() => setShowForm(false)} 
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={submitting} 
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                      {t('common.creating')}
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5" />
-                      {t('home.createOffer')}
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <section className="mb-12">
-        <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 shadow-sm mb-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wide mb-3">
-                {t('home.hiringPipeline')}
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">{t('home.yourOffers')}</h2>
-              <p className="text-gray-600">{t('home.offersSubtitleCompany')}</p>
-            </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-lg hover:bg-emerald-200 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              {t('home.newOffer')}
-            </button>
-          </div>
+      <section aria-labelledby="your-offers">
+        <div className="mb-4">
+          <h2 id="your-offers" className="text-lg">{t('home.yourOffers')}</h2>
+          <p className="text-sm text-muted-foreground">{t('home.offersSubtitleCompany')}</p>
         </div>
 
-        {offers.length === 0 ? (
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-purple-50 rounded-3xl border-2 border-dashed border-primary-300 p-16 shadow-xl">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-purple-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-emerald-100 to-blue-100 rounded-full blur-3xl opacity-30 -ml-32 -mb-32"></div>
-            
-            <div className="relative text-center">
-              {/* Icon */}
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
-                <Briefcase className="w-12 h-12 text-white" />
-              </div>
-              
-              {/* Title */}
-              <h3 className="text-3xl font-bold text-gray-900 mb-3">{t('home.noOffersCompany')}</h3>
-              
-              {/* Description */}
-              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                {t('home.noOffersCompanyDesc')}
-              </p>
-              
-              {/* Features grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 max-w-4xl mx-auto">
-                <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-200">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="font-bold text-gray-900 mb-2">{t('home.reachStudents')}</h4>
-                  <p className="text-sm text-gray-600">{t('home.reachStudentsDesc')}</p>
-                </div>
-                
-                <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-200">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                    <Briefcase className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="font-bold text-gray-900 mb-2">{t('home.manageOffers')}</h4>
-                  <p className="text-sm text-gray-600">{t('home.manageOffersDesc')}</p>
-                </div>
-                
-                <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-200">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="font-bold text-gray-900 mb-2">{t('home.trackApplications')}</h4>
-                  <p className="text-sm text-gray-600">{t('home.trackApplicationsDesc')}</p>
-                </div>
-              </div>
-              
-              {/* CTA Button */}
-              <button 
-                onClick={() => setShowForm(true)} 
-                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold text-lg shadow-2xl shadow-primary-500/40 hover:shadow-3xl hover:shadow-primary-500/50 hover:scale-105 transform"
-              >
-                <Plus className="w-6 h-6" />
-                {t('home.createFirstOffer')}
-              </button>
-            </div>
+        {loading ? (
+          <div className="h-40 rounded-lg border border-line bg-surface" aria-hidden="true" />
+        ) : offers.length === 0 ? (
+          <div className="rounded-lg border border-line bg-surface px-6 py-10 text-center">
+            <h3 className="text-base">{t('home.noOffersCompany')}</h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{t('home.noOffersCompanyDesc')}</p>
+            <Button className="mt-5" onClick={() => setShowForm(true)} leftIcon={<Plus className="h-4 w-4" />}>
+              {t('home.createFirstOffer')}
+            </Button>
           </div>
         ) : (
-          <div className="grid gap-6">
-            {offers.map((offer, index) => {
-              const offerKey = offer._id || (offer as { id?: string }).id || `${offer.companyid}-${offer.title}-${index}`;
-              return (
-              <div key={offerKey} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                {/* Colored top bar based on type */}
-                <div className={cn(
-                  'h-1.5',
-                  offer.type === 'PFA' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                  offer.type === 'PFE' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
-                  offer.type === 'Intership' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                  'bg-gradient-to-r from-amber-500 to-amber-600'
-                )} />
-                
-                <div className="p-8">
-                  <div className="flex items-start gap-8">
-                    {/* Left side - Offer info */}
-                    <div className="flex-1 min-w-0">
-                      {/* Type badge and title */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <span className={cn('px-4 py-1.5 rounded-lg text-sm font-bold tracking-wide', typeColors[offer.type])}>
-                          {offer.type}
-                        </span>
-                        <h3 className="text-2xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{offer.title}</h3>
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('home.positionTitle')}</th>
+                  <th scope="col">{t('home.offerType')}</th>
+                  <th scope="col">{t('companyHome.dates')}</th>
+                  <th scope="col" className="text-end">{t('companyHome.applicants')}</th>
+                  <th scope="col"><span className="sr-only">{t('companyHome.actions')}</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {offers.map((offer) => (
+                  <tr key={offer._id}>
+                    <td className="font-medium text-ink">{offer.title}</td>
+                    <td><Badge variant="primary" size="sm">{typeLabel(offer.type)}</Badge></td>
+                    <td className="whitespace-nowrap text-muted-foreground">
+                      {offer.start ? formatDate(offer.start) : '–'}
+                      {offer.end ? ` – ${formatDate(offer.end)}` : ''}
+                    </td>
+                    <td className="text-end tabular-nums">{offer.candidacies?.length || 0}</td>
+                    <td>
+                      <div className="flex justify-end gap-1 whitespace-nowrap">
+                        <Link
+                          to={`/company/candidacies/${offer._id}`}
+                          className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-ink hover:bg-canvas"
+                        >
+                          {t('home.viewApplications')}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setPendingDelete(offer)}
+                          className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-danger-600 hover:bg-danger-50"
+                        >
+                          {t('common.delete')}
+                        </button>
                       </div>
-                      
-                      {/* Description */}
-                      <p className="text-gray-600 leading-relaxed mb-6 text-base line-clamp-3">{offer.content}</p>
-                      
-                      {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-6">
-                        {(offer.start || offer.end) && (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <Calendar className="w-5 h-5 text-gray-500" />
-                            <span className="font-semibold text-gray-700 text-sm">
-                              {offer.start && formatDate(offer.start)}
-                              {offer.start && offer.end && ' → '}
-                              {offer.end && formatDate(offer.end)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border border-emerald-200">
-                          <Users className="w-5 h-5 text-emerald-600" />
-                          <span className="font-bold text-emerald-700 text-lg">
-                            {offer.candidacies?.length || 0}
-                          </span>
-                          <span className="text-emerald-600 font-medium text-sm">{t('home.applicants_other', { count: offer.candidacies?.length || 0 }).split(' ').slice(1).join(' ')}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right side - Actions */}
-                    <div className="flex flex-col gap-3 shrink-0">
-                    <Link
-                      to={`/company/candidacies/${offer._id || (offer as { id?: string }).id}`}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold text-sm shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 transform"
-                    >
-                        <Eye className="w-5 h-5" />
-                        {t('home.viewApplications')}
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(offer._id)}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:border-red-400 hover:text-red-600 transition-all font-semibold text-sm hover:scale-105 transform"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                        {t('common.delete')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              );
-            })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
+
+      <section aria-labelledby="company-news">
+        <div className="mb-4">
+          <h2 id="company-news" className="text-lg">{t('home.latestNews')}</h2>
+          <p className="text-sm text-muted-foreground">{t('home.updatesForCompanies')}</p>
+        </div>
+        {newsError && (
+          <Alert variant="danger" action={{ label: t('visitor.news.retry'), onClick: fetchNews }}>
+            {t('visitor.news.error')}
+          </Alert>
+        )}
+        {newsLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <NewsCardSkeleton count={3} />
+          </div>
+        ) : !newsError && news.length === 0 ? (
+          <NewsEmpty />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {news.map((item, index) => (
+              <NewsCard key={item._id || `${item.title}-${index}`} news={item} onRead={setSelectedNews} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <Dialog
+        open={showForm}
+        onClose={closeForm}
+        title={t('home.createNewOffer')}
+        description={t('home.fillOfferDetails')}
+        size="xl"
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          {formError && <Alert variant="danger">{formError}</Alert>}
+          <Input id="offer-title" label={t('home.positionTitle')} error={errors.title?.message} {...register('title')} />
+          <div>
+            <label htmlFor="offer-type" className="mb-1.5 block text-sm font-medium text-ink">{t('home.offerType')}</label>
+            <select
+              id="offer-type"
+              className="h-10 w-full rounded-md border border-neutral-400 bg-surface px-3 text-ink focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40"
+              {...register('type')}
+            >
+              {OFFER_TYPES.map((type) => (
+                <option key={type} value={type}>{typeLabel(type)}</option>
+              ))}
+            </select>
+          </div>
+          <Textarea id="offer-content" label={t('home.description')} rows={6} error={errors.content?.message} {...register('content')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input id="offer-start" type="date" label={t('home.startDate')} error={errors.start?.message} {...register('start')} />
+            <Input id="offer-end" type="date" label={t('home.endDate')} error={errors.end?.message} {...register('end')} />
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={closeForm}>{t('common.cancel')}</Button>
+            <Button type="submit" isLoading={submitting}>{t('home.createOffer')}</Button>
+          </DialogFooter>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        isLoading={deleting}
+        title={t('home.confirmDeleteOffer')}
+        description={pendingDelete?.title}
+        confirmLabel={t('companyHome.deleteOffer')}
+      />
+
+      <NewsArticleDialog news={selectedNews} onClose={() => setSelectedNews(null)} />
     </div>
   );
 }

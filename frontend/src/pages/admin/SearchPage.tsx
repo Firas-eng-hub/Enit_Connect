@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Search as SearchIcon, User, Building2, RefreshCw, Users, LayoutGrid, Table2 } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
@@ -29,6 +30,7 @@ const getDisplayName = (result: SearchResult) =>
     : (result as Company).name;
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [filter, setFilter] = useState<UserFilter>('all');
@@ -98,12 +100,12 @@ export function SearchPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Browse Users</h1>
-        <p className="text-primary-100 text-lg">Fast browsing with server pagination and cached pages</p>
+      <div className="mb-8 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('search.browseUsers')}</h1>
+        <p className="text-muted-foreground text-lg">{t('search.browseUsersSub')}</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-4 sm:p-5 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 mb-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
             <div className="relative flex-1">
@@ -112,8 +114,8 @@ export function SearchPage() {
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, email, class, website..."
-                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                placeholder={t('search.usersPlaceholder')}
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
 
@@ -124,13 +126,13 @@ export function SearchPage() {
               className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-60"
             >
               <RefreshCw className={`w-4 h-4 ${(isLoading || isRefetching) ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('search.refresh')}
             </button>
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs uppercase tracking-wide text-gray-500 font-semibold">User Type</span>
+              <span className="text-xs text-gray-500 font-semibold">{t('search.userType')}</span>
               {(['all', 'students', 'companies'] as const).map((option) => (
                 <button
                   key={option}
@@ -138,40 +140,40 @@ export function SearchPage() {
                   onClick={() => setFilter(option)}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                     filter === option
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30'
+                      ? 'bg-ink text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {option === 'all' ? 'All' : option === 'students' ? 'Students' : 'Companies'}
+                  {option === 'all' ? t('search.all') : option === 'students' ? t('search.students') : t('search.companies')}
                 </button>
               ))}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs uppercase tracking-wide text-gray-500 font-semibold">View</span>
+              <span className="text-xs text-gray-500 font-semibold">{t('search.view')}</span>
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
                 className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                   viewMode === 'cards'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30'
+                    ? 'bg-ink text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                Cards
+                {t('search.cards')}
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
                 className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                   viewMode === 'table'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30'
+                    ? 'bg-ink text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <Table2 className="w-4 h-4" />
-                Table
+                {t('search.table')}
               </button>
             </div>
           </div>
@@ -196,13 +198,13 @@ export function SearchPage() {
         </div>
       ) : isError ? (
         <div className="bg-red-50 text-red-700 border border-red-200 rounded-xl p-4">
-          Failed to load users. Please try again.
+          {t('search.usersFailed')}
         </div>
       ) : results.length === 0 ? (
         <div className="text-center py-14 bg-white rounded-xl border border-gray-200">
           <SearchIcon className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900">No matching users</h3>
-          <p className="text-gray-500">Try another search.</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t('search.noUsers')}</h3>
+          <p className="text-gray-500">{t('search.tryAnother')}</p>
         </div>
       ) : (
         <div>
@@ -247,18 +249,18 @@ export function SearchPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[920px] text-sm border-separate border-spacing-0">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="sticky left-0 z-20 text-left font-semibold text-gray-700 px-4 py-3 bg-gray-50 border-r border-gray-200">
-                        Name
+                        {t('search.name')}
                       </th>
-                      <th className="text-left font-semibold text-gray-700 px-4 py-3">Type</th>
-                      <th className="text-left font-semibold text-gray-700 px-4 py-3">Status</th>
-                      <th className="text-left font-semibold text-gray-700 px-4 py-3">Email</th>
-                      <th className="text-left font-semibold text-gray-700 px-4 py-3">Extra</th>
+                      <th className="text-left font-semibold text-gray-700 px-4 py-3">{t('search.type')}</th>
+                      <th className="text-left font-semibold text-gray-700 px-4 py-3">{t('search.status')}</th>
+                      <th className="text-left font-semibold text-gray-700 px-4 py-3">{t('search.email')}</th>
+                      <th className="text-left font-semibold text-gray-700 px-4 py-3">{t('search.extra')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -297,8 +299,8 @@ export function SearchPage() {
                         <td className="px-4 py-3 text-gray-600">{result.email}</td>
                         <td className="px-4 py-3 text-gray-600">
                           {result.resultType === 'student'
-                            ? `${(result as Student).class || 'No class'}${(result as Student).promotion ? ` • ${(result as Student).promotion}` : ''}`
-                            : (result as Company).website || 'No website'}
+                            ? `${(result as Student).class || t('search.noClass')}${(result as Student).promotion ? ` • ${(result as Student).promotion}` : ''}`
+                            : (result as Company).website || t('search.noWebsite')}
                         </td>
                       </tr>
                     ))}
@@ -310,13 +312,13 @@ export function SearchPage() {
 
           <div ref={loadMoreRef} className="h-6" />
           {isFetchingNextPage && (
-            <div className="text-center text-sm text-gray-500 py-2">Loading more users...</div>
+            <div className="text-center text-sm text-gray-500 py-2">{t('search.loadingMore')}</div>
           )}
           {!isFetchingNextPage && hasNextPage && (
-            <div className="text-center text-sm text-gray-500 py-2">Scroll down to load more users...</div>
+            <div className="text-center text-sm text-gray-500 py-2">{t('search.scrollMore')}</div>
           )}
           {!hasNextPage && (
-            <div className="text-center text-sm text-gray-500 py-2">All results loaded.</div>
+            <div className="text-center text-sm text-gray-500 py-2">{t('search.allLoaded')}</div>
           )}
         </div>
       )}

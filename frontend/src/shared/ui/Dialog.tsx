@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { Button } from './Button';
 
@@ -23,6 +24,7 @@ const sizes = {
 };
 
 export function Dialog({ open, onClose, title, description, children, size = 'md', className }: DialogProps) {
+  const { t } = useTranslation();
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -34,14 +36,17 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
       }
     }
 
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     if (open) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      contentRef.current?.focus();
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
+      if (open) previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -58,7 +63,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4 bg-neutral-950/50 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'dialog-title' : undefined}
@@ -66,18 +71,20 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
     >
       <div
         ref={contentRef}
+        tabIndex={-1}
         className={cn(
-          'w-full bg-surface rounded-xl shadow-elevated animate-scale-in',
+          'focus:outline-none focus-visible:outline-none focus-visible:shadow-overlay',
+          'w-full bg-surface rounded-lg border border-line shadow-overlay',
           sizes[size],
           className
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between px-6 pt-6 pb-4">
+          <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4">
             <div>
               {title && (
-                <h2 id="dialog-title" className="text-lg font-semibold text-foreground">
+                <h2 id="dialog-title" className="text-lg font-semibold text-ink">
                   {title}
                 </h2>
               )}
@@ -88,11 +95,12 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
               )}
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
-              aria-label="Close dialog"
+              className="p-1 rounded-md text-neutral-500 hover:text-ink hover:bg-neutral-100"
+              aria-label={t('common.close')}
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -114,7 +122,7 @@ export interface DialogFooterProps {
 
 export function DialogFooter({ children, className }: DialogFooterProps) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 px-6 py-4 mt-4 border-t border-border', className)}>
+    <div className={cn('-mx-6 flex items-center justify-end gap-2 px-6 py-4 mt-5 border-t border-line', className)}>
       {children}
     </div>
   );
@@ -139,23 +147,24 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   isLoading,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onClose={onClose} title={title} description={description} size="sm">
       <DialogFooter>
-        <Button variant="outline" onClick={onClose} disabled={isLoading}>
-          {cancelLabel}
+        <Button variant="secondary" onClick={onClose} disabled={isLoading}>
+          {cancelLabel ?? t('common.cancel')}
         </Button>
         <Button
-          variant={variant === 'danger' ? 'danger' : variant === 'warning' ? 'accent' : 'primary'}
+          variant={variant === 'danger' ? 'danger' : 'primary'}
           onClick={onConfirm}
           isLoading={isLoading}
         >
-          {confirmLabel}
+          {confirmLabel ?? t('common.yes')}
         </Button>
       </DialogFooter>
     </Dialog>

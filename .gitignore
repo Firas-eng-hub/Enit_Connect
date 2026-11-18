@@ -29,3 +29,7 @@ AGENTS.md
 
 # Claude Code
 .claude/
+
+# Local-only security notes (do not publish: public repo)
+Pen-test-Report/
+progress.md

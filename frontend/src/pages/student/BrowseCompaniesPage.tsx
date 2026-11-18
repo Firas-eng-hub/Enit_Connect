@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Building2, Mail, Search, Send } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { config } from '@/app/config/env';
@@ -74,6 +75,7 @@ const isLikelyCv = (doc: StudentDocument) => {
 };
 
 export function BrowseCompaniesPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [companies, setCompanies] = useState<CompanyCard[]>([]);
@@ -140,7 +142,7 @@ export function BrowseCompaniesPage() {
       }
     } catch (err) {
       if (!append) {
-        setError(getApiErrorMessage(err, 'Failed to load companies.'));
+        setError(getApiErrorMessage(err, t('pagesMisc.companiesFailed')));
         setCompanies([]);
       }
       setHasMoreCompanies(false);
@@ -210,7 +212,7 @@ export function BrowseCompaniesPage() {
 
   const openCompose = async (company: CompanyCard) => {
     setSelectedCompany(company);
-    setSubject(`Application inquiry - ${company.name}`);
+    setSubject(t('pagesMisc.inquirySubject', { name: company.name }));
     setBody('');
     setComposeError(null);
     setComposeSuccess(null);
@@ -229,7 +231,7 @@ export function BrowseCompaniesPage() {
   const toggleDocumentSelection = (documentId: string) => {
     const isSelected = selectedDocumentIds.includes(documentId);
     if (!isSelected && selectedDocumentIds.length >= MAX_ATTACHMENTS) {
-      setComposeError(`You can attach up to ${MAX_ATTACHMENTS} documents.`);
+      setComposeError(t('pagesMisc.attachLimit', { max: MAX_ATTACHMENTS }));
       return;
     }
 
@@ -255,12 +257,12 @@ export function BrowseCompaniesPage() {
         attachments: selectedDocumentIds.map((documentId) => ({ documentId })),
       });
 
-      setComposeSuccess('Message sent successfully.');
+      setComposeSuccess(t('pagesMisc.mailSent'));
       setTimeout(() => {
         closeCompose();
       }, 900);
     } catch (err) {
-      setComposeError(getApiErrorMessage(err, 'Failed to send message.'));
+      setComposeError(getApiErrorMessage(err, t('pagesMisc.mailFailed')));
     } finally {
       setSending(false);
     }
@@ -268,9 +270,9 @@ export function BrowseCompaniesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 shadow-xl">
-        <h1 className="text-4xl font-bold text-white mb-2">Browse Companies</h1>
-        <p className="text-primary-100 text-lg">Find companies and contact them directly with your CV.</p>
+      <div className="mb-6 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('pagesMisc.browseCompanies')}</h1>
+        <p className="text-muted-foreground text-lg">{t('pagesMisc.browseCompaniesSub')}</p>
       </div>
 
       {error && (
@@ -279,14 +281,14 @@ export function BrowseCompaniesPage() {
         </Alert>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4">
         <div className="relative">
           <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search companies by name or email"
+            placeholder={t('pagesMisc.companiesPh')}
             className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
@@ -299,14 +301,14 @@ export function BrowseCompaniesPage() {
       ) : companies.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <Building2 className="w-10 h-10 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900">No companies found</h3>
-          <p className="text-gray-500">Try another search keyword.</p>
+          <h3 className="text-xl font-semibold text-gray-900">{t('pagesMisc.noCompanies')}</h3>
+          <p className="text-gray-500">{t('pagesMisc.tryAnother')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {companies.map((company) => (
-              <article key={company.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <article key={company.id} className="bg-white border border-gray-200 rounded-2xl p-5">
                 <div className="flex items-center gap-3 mb-4">
                   {resolveLogoUrl(company.logo) ? (
                     <img
@@ -331,7 +333,7 @@ export function BrowseCompaniesPage() {
                   leftIcon={<Mail className="w-4 h-4" />}
                   onClick={() => openCompose(company)}
                 >
-                  Send Mail
+                  {t('pagesMisc.sendMail')}
                 </Button>
               </article>
             ))}
@@ -343,7 +345,7 @@ export function BrowseCompaniesPage() {
                 isLoading={loadingMore}
                 onClick={() => fetchCompanies(companies.length, true)}
               >
-                Load More Companies
+                {t('pagesMisc.loadMore')}
               </Button>
             </div>
           )}
@@ -353,7 +355,7 @@ export function BrowseCompaniesPage() {
       <Dialog
         open={Boolean(selectedCompany)}
         onClose={closeCompose}
-        title={selectedCompany ? `Send Mail to ${selectedCompany.name}` : 'Send Mail'}
+        title={selectedCompany ? t('pagesMisc.sendMailTo', { name: selectedCompany.name }) : t('pagesMisc.sendMail')}
         description={selectedCompany?.email}
         size="lg"
       >
@@ -370,21 +372,21 @@ export function BrowseCompaniesPage() {
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('pagesMisc.subject')}</label>
             <input
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
-              placeholder="Subject"
+              placeholder={t('pagesMisc.subject')}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('pagesMisc.message')}</label>
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
-              placeholder="Write your message..."
+              placeholder={t('pagesMisc.writeMessage')}
               rows={6}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
             />
@@ -392,18 +394,18 @@ export function BrowseCompaniesPage() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Attach Documents (optional)
+              {t('pagesMisc.attachOptional')}
             </label>
             <p className="text-xs text-gray-500 mb-2">
               Selected {selectedDocumentIds.length}/{MAX_ATTACHMENTS}
             </p>
             {documentsLoading ? (
               <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-sm text-gray-500">
-                Loading documents...
+                {t('pagesMisc.loadingDocs')}
               </div>
             ) : sortedDocuments.length === 0 ? (
               <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-500">
-                No documents found.
+                {t('pagesMisc.noDocs')}
               </div>
             ) : (
               <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white divide-y divide-gray-100">
@@ -438,7 +440,7 @@ export function BrowseCompaniesPage() {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={closeCompose} disabled={sending}>
-            Cancel
+            {t('pagesMisc.cancel')}
           </Button>
           <Button
             onClick={sendMail}
@@ -446,7 +448,7 @@ export function BrowseCompaniesPage() {
             disabled={!subject.trim() || !body.trim()}
             leftIcon={<Send className="w-4 h-4" />}
           >
-            Send Message
+            {t('pagesMisc.sendMessage')}
           </Button>
         </DialogFooter>
       </Dialog>

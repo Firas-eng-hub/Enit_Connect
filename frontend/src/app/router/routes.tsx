@@ -2,6 +2,7 @@
 import { lazy, Suspense, Component, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Guards
 import {
@@ -14,34 +15,38 @@ import {
 // Layouts
 import { VisitorLayout, StudentLayout, CompanyLayout, AdminLayout } from '@/app/layouts';
 
-// Loading fallback with improved design
-const LoadingFallback = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-    <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
-    <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
-  </div>
-);
+// Loading fallback
+const LoadingFallback = () => {
+  const { t } = useTranslation();
+  return (
+    <div role="status" className="flex flex-col items-center justify-center min-h-[50vh]">
+      <Loader2 className="w-6 h-6 text-neutral-400 animate-spin" aria-hidden="true" />
+      <span className="sr-only">{t('common.loading')}</span>
+    </div>
+  );
+};
 
-// Error fallback
-const ErrorFallback = ({ error }: { error: Error }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
-    <div className="text-center max-w-md">
-      <h1 className="text-2xl font-bold text-red-600 mb-3">Error Loading Page</h1>
-      <p className="text-muted-foreground mb-4">{error.message}</p>
+// Error fallback: never show raw error text to users.
+const ErrorFallback = ({ error }: { error: Error }) => {
+  const { t } = useTranslation();
+  if (import.meta.env.DEV) console.error(error);
+  return (
+    <div role="alert" className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
+      <h1 className="text-xl font-semibold text-ink">{t('errors.pageTitle')}</h1>
+      <p className="mt-2 max-w-md text-muted-foreground">{t('errors.pageBody')}</p>
       <button
+        type="button"
         onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+        className="mt-5 h-9 px-4 rounded-md border border-ink bg-ink text-sm font-medium text-white hover:bg-primary-800"
       >
-        Reload Page
+        {t('errors.reload')}
       </button>
     </div>
-  </div>
-);
+  );
+};
 
 // Lazy load pages
 const NewsPage = lazy(() => import('@/pages/visitor/NewsPage').then(m => ({ default: m.NewsPage })));
-const StatisticsPage = lazy(() => import('@/pages/visitor/StatisticsPage').then(m => ({ default: m.StatisticsPage })));
-const MembersPage = lazy(() => import('@/pages/visitor/MembersPage').then(m => ({ default: m.MembersPage })));
 const AboutPage = lazy(() => import('@/pages/visitor/AboutPage').then(m => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('@/pages/visitor/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/visitor/RegisterPage').then(m => ({ default: m.RegisterPage })));
@@ -133,9 +138,10 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/visitor/news" replace /> },
       { path: 'news', element: withSuspense(NewsPage) },
-      { path: 'statistics', element: withSuspense(StatisticsPage) },
-      { path: 'how-it-works', element: withSuspense(MembersPage) },
-      { path: 'members', element: <Navigate to="/visitor/how-it-works" replace /> },
+      // Removed pages redirect to the news home.
+      { path: 'statistics', element: <Navigate to="/visitor/news" replace /> },
+      { path: 'how-it-works', element: <Navigate to="/visitor/news" replace /> },
+      { path: 'members', element: <Navigate to="/visitor/news" replace /> },
       { path: 'about', element: withSuspense(AboutPage) },
     ],
   },

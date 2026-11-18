@@ -1,4 +1,6 @@
+import i18next from 'i18next';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import type { AdminDocument } from '@/entities/document/types';
 import { useCreateAdminFolder, useDeleteAdminFolder, useRenameAdminFolder } from '@/entities/document/hooks';
@@ -25,7 +27,7 @@ const getFolderPath = (folder: AdminDocument) => {
 };
 
 const buildTree = (folders: AdminDocument[]) => {
-  const root: FolderNode = { id: 'root', title: 'Root', path: 'root', children: [] };
+  const root: FolderNode = { id: 'root', title: i18next.t('adminDocs.root'), path: 'root', children: [] };
   const nodes = new Map<string, FolderNode>();
   nodes.set('root', root);
 
@@ -56,6 +58,7 @@ const flattenTree = (node: FolderNode, depth = 0): Array<{ node: FolderNode; dep
 };
 
 export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
+  const { t } = useTranslation();
   const create = useCreateAdminFolder();
   const rename = useRenameAdminFolder();
   const del = useDeleteAdminFolder();
@@ -82,12 +85,12 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
   const onCreate = async () => {
     setActionError(null);
     const title = newName.trim();
-    if (!title) return setActionError('Folder name is required.');
+    if (!title) return setActionError(t('adminDocs.folderRequired'));
     try {
       await create.mutateAsync({ title, parentPath: currentPath || 'root' });
       setNewName('');
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to create folder.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.createFolderFailed')));
     }
   };
 
@@ -112,12 +115,12 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
     if (!activeFolder) return;
     setActionError(null);
     const title = renameValue.trim();
-    if (!title) return setActionError('Folder name is required.');
+    if (!title) return setActionError(t('adminDocs.folderRequired'));
     try {
       await rename.mutateAsync({ id: activeFolder.id, payload: { title, updatedAt: activeFolder.updatedAt || null } });
       setRenameOpen(false);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to rename folder.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.renameFailed')));
     }
   };
 
@@ -129,17 +132,17 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
       if (currentPath === getFolderPath(activeFolder)) onSelectPath('root');
       setDeleteOpen(false);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to delete folder.'));
+      setActionError(getApiErrorMessage(err, t('adminDocs.deleteFolderFailed')));
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+    <div className="bg-white rounded-2xl border border-gray-200 p-4">
       {/* Header with Rename/Delete actions */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <Folder className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-bold text-gray-900">Folders</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('adminDocs.folders')}</h3>
         </div>
 
         {currentPath !== 'root' && folderByPath.has(currentPath) && (
@@ -148,7 +151,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
               onClick={openRename}
               disabled={isBusy}
               className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
-              title="Rename folder"
+              title={t('adminDocs.renameFolder')}
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -156,7 +159,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
               onClick={openDelete}
               disabled={isBusy}
               className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
-              title="Delete folder"
+              title={t('adminDocs.deleteFolder')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -175,7 +178,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="New folder name..."
+          placeholder={t('adminDocs.newFolder')}
           className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
           onKeyDown={(e) => e.key === 'Enter' && onCreate()}
         />
@@ -183,7 +186,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
           onClick={onCreate}
           disabled={isBusy || !newName.trim()}
           className="p-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50"
-          title="Add folder"
+          title={t('adminDocs.addFolder')}
         >
           <FolderPlus className="w-4 h-4" />
         </button>
@@ -217,8 +220,8 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
           if (isBusy) return;
           setRenameOpen(false);
         }}
-        title="Rename folder"
-        description="Update the folder name. Child items keep their structure."
+        title={t('adminDocs.renameFolder')}
+        description={t('adminDocs.renameDesc')}
         size="md"
       >
         {actionError ? (
@@ -228,7 +231,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
         ) : null}
 
         <label className="mt-4 block">
-          <span className="text-sm font-semibold text-gray-700">Folder name</span>
+          <span className="text-sm font-semibold text-gray-700">{t('adminDocs.folderName')}</span>
           <input
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
@@ -238,10 +241,10 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setRenameOpen(false)} disabled={isBusy}>
-            Cancel
+            {t('adminDocs.cancel')}
           </Button>
           <Button onClick={onConfirmRename} isLoading={rename.isPending}>
-            Save
+            {t('adminDocs.save')}
           </Button>
         </DialogFooter>
       </Dialog>
@@ -253,10 +256,10 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
           setDeleteOpen(false);
         }}
         onConfirm={onConfirmDelete}
-        title="Delete folder?"
-        description="Folder deletion is blocked unless the folder is empty."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t('adminDocs.deleteFolderTitle')}
+        description={t('adminDocs.deleteFolderDesc')}
+        confirmLabel={t('adminDocs.delete')}
+        cancelLabel={t('adminDocs.cancel')}
         variant="danger"
         isLoading={del.isPending}
       />

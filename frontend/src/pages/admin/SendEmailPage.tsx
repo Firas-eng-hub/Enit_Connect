@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, Send, CheckCircle } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 
-const emailSchema = z.object({
-  to: z.string().email('Please enter a valid email'),
-  subject: z.string().min(1, 'Subject is required'),
-  body: z.string().min(1, 'Message body is required'),
+const buildEmailSchema = (t: TFunction) =>
+  z.object({
+  to: z.string().email(t('pagesMisc.v.email')),
+  subject: z.string().min(1, t('pagesMisc.v.subject')),
+  body: z.string().min(1, t('pagesMisc.v.body')),
 });
 
-type EmailFormData = z.infer<typeof emailSchema>;
+type EmailFormData = z.infer<ReturnType<typeof buildEmailSchema>>;
 
 export function SendEmailPage() {
+  const { t } = useTranslation();
+  const emailSchema = useMemo(() => buildEmailSchema(t), [t]);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +51,7 @@ export function SendEmailPage() {
       reset();
       setTimeout(() => setSuccess(false), 5000);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to send email'));
+      setError(getErrorMessage(err, t('pagesMisc.emailFailed')));
     } finally {
       setSending(false);
     }
@@ -54,22 +59,22 @@ export function SendEmailPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Send Email</h1>
-        <p className="text-primary-100 text-lg">Communicate with users via email</p>
+      <div className="mb-8 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('pagesMisc.sendEmail')}</h1>
+        <p className="text-muted-foreground text-lg">{t('pagesMisc.sendEmailSub')}</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 max-w-3xl mx-auto">
+      <div className="bg-white rounded-2xl border border-gray-200 max-w-3xl mx-auto">
         <div className="p-8">
           {success && (
-            <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-emerald-100 border-2 border-emerald-200 text-emerald-700 p-4 rounded-xl mb-6 shadow-md">
+            <div className="bg-success-50 flex items-center gap-3 border border-emerald-200 text-emerald-700 p-4 rounded-xl mb-6">
               <CheckCircle className="w-6 h-6" />
-              <span className="font-semibold">Email sent successfully!</span>
+              <span className="font-semibold">{t('pagesMisc.emailSent')}</span>
             </div>
           )}
 
           {error && (
-            <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 text-red-700 p-4 rounded-xl mb-6 shadow-md font-medium">
+            <div className="bg-danger-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 font-medium">
               {error}
             </div>
           )}
@@ -82,7 +87,7 @@ export function SendEmailPage() {
               <input
                 {...register('to')}
                 type="email"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 placeholder="recipient@example.com"
               />
               {errors.to && (
@@ -96,8 +101,8 @@ export function SendEmailPage() {
               </label>
               <input
                 {...register('subject')}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                placeholder="Email subject"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                placeholder={t('pagesMisc.emailSubjectPh')}
               />
               {errors.subject && (
                 <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.subject.message}</p>
@@ -106,12 +111,12 @@ export function SendEmailPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Message
+                {t('pagesMisc.message')}
               </label>
               <textarea
                 {...register('body')}
                 className="input h-48 resize-none"
-                placeholder="Write your message here..."
+                placeholder={t('pagesMisc.writeHere')}
               />
               {errors.body && (
                 <p className="mt-1 text-sm text-red-600">{errors.body.message}</p>
@@ -124,7 +129,7 @@ export function SendEmailPage() {
               ) : (
                 <>
                   <Send className="w-4 h-4 mr-2" />
-                  Send Email
+                  {t('pagesMisc.sendEmail')}
                 </>
               )}
             </button>

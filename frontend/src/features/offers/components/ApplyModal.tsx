@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Offer } from '@/entities/offer/types';
-import { Modal } from '@/shared/ui/Modal';
+import { Dialog } from '@/shared/ui/Dialog';
+import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Textarea } from '@/shared/ui/Textarea';
 
@@ -13,74 +14,72 @@ interface ApplyModalProps {
 }
 
 export function ApplyModal({ offer, isOpen, onClose, onSubmit }: ApplyModalProps) {
+  const { t } = useTranslation();
   const [coverLetter, setCoverLetter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const handleClose = () => {
+    setCoverLetter('');
+    setSuccess(false);
+    setFailed(false);
+    onClose();
+  };
 
   const handleSubmit = async () => {
     if (!offer || !coverLetter.trim()) return;
-
     setIsLoading(true);
+    setFailed(false);
     try {
       await onSubmit(offer._id, coverLetter);
       setSuccess(true);
       setCoverLetter('');
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 2000);
-    } catch (error) {
-      console.error('Failed to apply:', error);
+    } catch {
+      setFailed(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setCoverLetter('');
-    setSuccess(false);
-    onClose();
-  };
-
   if (!offer) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={`Apply to: ${offer.title}`} size="lg">
+    <Dialog
+      open={isOpen}
+      onClose={handleClose}
+      title={success ? t('home.applicationSent') : t('home.applyTo', { title: offer.title })}
+      description={success ? undefined : t('home.coverLetterSubtitle')}
+      size="xl"
+    >
       {success ? (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Send className="w-8 h-8 text-green-600" />
+        <div className="pb-6">
+          <p className="text-body">{t('home.applicationSentDesc')}</p>
+          <div className="mt-5 flex justify-end">
+            <Button onClick={handleClose}>{t('common.close')}</Button>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Application Sent!</h3>
-          <p className="text-gray-500">Your application has been submitted successfully.</p>
         </div>
       ) : (
-        <>
-          <p className="text-gray-500 mb-4">Write a cover letter for your application</p>
-
+        <div className="pb-6 space-y-4">
+          {failed && <Alert variant="danger">{t('offers.applyFailed')}</Alert>}
           <Textarea
+            id="apply-cover-letter"
+            label={t('offers.coverLetter')}
             value={coverLetter}
             onChange={(e) => setCoverLetter(e.target.value)}
-            placeholder="Tell the company why you're a great fit for this position..."
+            placeholder={t('home.coverLetterPlaceholder')}
             rows={8}
-            className="mb-4"
           />
-
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={handleClose} className="flex-1">
-              Cancel
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={handleClose}>
+              {t('common.cancel')}
             </Button>
-            <Button
-              onClick={handleSubmit}
-              isLoading={isLoading}
-              disabled={!coverLetter.trim()}
-              className="flex-1"
-            >
-              Submit Application
+            <Button onClick={handleSubmit} isLoading={isLoading} disabled={!coverLetter.trim()}>
+              {t('home.submitApplication')}
             </Button>
           </div>
-        </>
+        </div>
       )}
-    </Modal>
+    </Dialog>
   );
 }

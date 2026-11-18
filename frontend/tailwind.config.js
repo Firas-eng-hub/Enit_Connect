@@ -1,222 +1,231 @@
 /** @type {import('tailwindcss').Config} */
+
+// ENIT Connect design tokens.
+// Brand: navy "ink" and gold marker sampled from the ENIT logo.
+// Semantic tokens (ink, body, muted, line, canvas, surface, gold) are backed by
+// CSS variables in src/index.css so they stay the single source of truth.
+
+const v = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
+// Cool neutral scale shared by gray / neutral / slate / zinc / stone.
+const neutral = {
+  50: '#F5F7F9',
+  100: '#EDF0F3',
+  200: '#DCE1E7',
+  300: '#C3CAD3',
+  400: '#8D97A5',
+  500: '#6A7686',
+  600: '#4F5B6B',
+  700: '#3D4B5C',
+  800: '#26354A',
+  900: '#182638',
+  950: '#0F1A28',
+};
+
+// Navy scale anchored on the logo navy (900).
+const primary = {
+  50: '#EEF2F7',
+  100: '#DAE3EE',
+  200: '#B7C7DA',
+  300: '#8DA5C2',
+  400: '#5F7FA3',
+  500: '#3E6189',
+  600: '#2A4C73',
+  700: '#1F3F63',
+  800: '#193655',
+  900: '#14304D',
+  950: '#0D2136',
+};
+
+const gold = {
+  50: '#FBF6EA',
+  100: '#F5E9C9',
+  200: '#EBD397',
+  300: '#DFBA66',
+  400: '#D4A84B',
+  500: '#C99A3B',
+  600: '#A87E2A',
+  700: '#876421',
+  800: '#6A4F1D',
+  900: '#57411B',
+  950: '#30230D',
+};
+
+const success = {
+  50: '#EEF8F2',
+  100: '#D5EEDF',
+  200: '#ABDCBF',
+  300: '#78C39A',
+  400: '#46A673',
+  500: '#2A8C5B',
+  600: '#1E7B4F',
+  700: '#196541',
+  800: '#165136',
+  900: '#12422D',
+  950: '#0A2619',
+};
+
+const warning = {
+  50: '#FDF6EC',
+  100: '#FAE8C9',
+  200: '#F3CF8F',
+  300: '#E9B15A',
+  400: '#D99331',
+  500: '#BF7716',
+  600: '#9A5B06',
+  700: '#7C4908',
+  800: '#653B0C',
+  900: '#53310E',
+  950: '#2F1A05',
+};
+
+const danger = {
+  50: '#FDF2F1',
+  100: '#FBE1DE',
+  200: '#F6C3BD',
+  300: '#EE9990',
+  400: '#E26759',
+  500: '#D0402F',
+  600: '#B42318',
+  700: '#941D16',
+  800: '#7A1B17',
+  900: '#651B18',
+  950: '#370A08',
+};
+
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      // Brand colors extracted from ENIT logo
-      // Navy: #1a3a5c (sampled from logo diamond)
-      // Gold: #d4a84b (sampled from logo text/accent)
       colors: {
-        // Primary brand colors
-        brand: {
-          navy: {
-            50: '#f0f4f8',
-            100: '#d9e2ec',
-            200: '#bcccdc',
-            300: '#9fb3c8',
-            400: '#829ab1',
-            500: '#627d98',
-            600: '#486581',
-            700: '#334e68',
-            800: '#243b53',
-            900: '#1a3a5c', // Primary navy from logo
-            950: '#102a43',
-          },
-          gold: {
-            50: '#fdf9f0',
-            100: '#faf0d4',
-            200: '#f5e1a8',
-            300: '#efd07c',
-            400: '#e8be50',
-            500: '#d4a84b', // Primary gold from logo
-            600: '#b8922a',
-            700: '#9a7b23',
-            800: '#7c641e',
-            900: '#5e4d1a',
-            950: '#3f3412',
-          },
-        },
-        // Semantic color tokens for consistent UI
-        primary: {
-          DEFAULT: '#1a3a5c',
-          50: '#f0f4f8',
-          100: '#d9e2ec',
-          200: '#bcccdc',
-          300: '#9fb3c8',
-          400: '#829ab1',
-          500: '#627d98',
-          600: '#486581',
-          700: '#334e68',
-          800: '#243b53',
-          900: '#1a3a5c',
-          950: '#102a43',
-          foreground: '#ffffff',
-        },
-        accent: {
-          DEFAULT: '#d4a84b',
-          50: '#fdf9f0',
-          100: '#faf0d4',
-          200: '#f5e1a8',
-          300: '#efd07c',
-          400: '#e8be50',
-          500: '#d4a84b',
-          600: '#b8922a',
-          700: '#9a7b23',
-          800: '#7c641e',
-          900: '#5e4d1a',
-          950: '#3f3412',
-          foreground: '#102a43',
-        },
-        // Neutral scale (gray)
-        neutral: {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
-          950: '#030712',
-        },
-        // Semantic UI colors
-        background: '#f9fafb',
-        foreground: '#111827',
+        // Semantic tokens
+        ink: v('ink'),
+        body: v('body'),
+        line: v('line'),
+        canvas: v('canvas'),
         surface: {
-          DEFAULT: '#ffffff',
-          elevated: '#ffffff',
-          muted: '#f3f4f6',
+          DEFAULT: v('surface'),
+          elevated: v('surface'),
+          muted: v('canvas'),
         },
+        gold: { DEFAULT: v('gold'), ...gold },
+        background: v('canvas'),
+        foreground: v('ink'),
         muted: {
-          DEFAULT: '#f3f4f6',
-          foreground: '#6b7280',
+          DEFAULT: neutral[100],
+          foreground: v('muted'),
         },
         border: {
-          DEFAULT: '#e5e7eb',
-          muted: '#f3f4f6',
+          DEFAULT: v('line'),
+          muted: neutral[100],
         },
-        // Status colors
-        success: {
-          DEFAULT: '#059669',
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          foreground: '#ffffff',
-        },
-        warning: {
-          DEFAULT: '#d97706',
-          50: '#fffbeb',
-          100: '#fef3c7',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          foreground: '#ffffff',
-        },
-        danger: {
-          DEFAULT: '#dc2626',
-          50: '#fef2f2',
-          100: '#fee2e2',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          foreground: '#ffffff',
-        },
-        info: {
-          DEFAULT: '#0284c7',
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          foreground: '#ffffff',
-        },
+
+        // Scales
+        primary: { DEFAULT: primary[900], foreground: '#ffffff', ...primary },
+        accent: { DEFAULT: gold[500], foreground: primary[950], ...gold },
+        brand: { navy: primary, gold },
+        neutral,
+        success: { DEFAULT: success[600], foreground: '#ffffff', ...success },
+        warning: { DEFAULT: warning[600], foreground: '#ffffff', ...warning },
+        danger: { DEFAULT: danger[600], foreground: '#ffffff', ...danger },
+        info: { DEFAULT: primary[700], foreground: '#ffffff', ...primary },
+
+        // Legacy Tailwind hues still used by unconverted pages are folded into
+        // the brand system so nothing renders off-palette.
+        gray: neutral,
+        slate: neutral,
+        zinc: neutral,
+        stone: neutral,
+        blue: primary,
+        indigo: primary,
+        violet: primary,
+        purple: primary,
+        sky: primary,
+        cyan: primary,
+        green: success,
+        emerald: success,
+        teal: success,
+        lime: success,
+        amber: warning,
+        orange: warning,
+        yellow: warning,
+        red: danger,
+        rose: danger,
+        pink: danger,
+        fuchsia: primary,
       },
       fontFamily: {
         sans: [
-          'Inter',
+          '"IBM Plex Sans"',
+          '"IBM Plex Sans Arabic"',
           'system-ui',
           '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
+          '"Segoe UI"',
           'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'Noto Sans',
-          'Noto Sans Arabic', // Arabic fallback
           'sans-serif',
         ],
-        mono: [
-          'JetBrains Mono',
-          'Fira Code',
-          'Consolas',
-          'Monaco',
-          'monospace',
-        ],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
-        // Typography scale
-        'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
-        '2xl': ['1.5rem', { lineHeight: '2rem' }],
-        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
-        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
-        '5xl': ['3rem', { lineHeight: '1' }],
+        // 1.25 modular scale
+        xs: ['0.75rem', { lineHeight: '1rem' }], // 12
+        sm: ['0.875rem', { lineHeight: '1.25rem' }], // 14
+        base: ['1rem', { lineHeight: '1.5rem' }], // 16
+        lg: ['1.125rem', { lineHeight: '1.625rem' }], // 18
+        xl: ['1.25rem', { lineHeight: '1.75rem' }], // 20
+        '2xl': ['1.5625rem', { lineHeight: '1.25' }], // 25
+        '3xl': ['1.9375rem', { lineHeight: '1.2' }], // 31
+        '4xl': ['2.4375rem', { lineHeight: '1.15' }], // 39
+        '5xl': ['2.4375rem', { lineHeight: '1.15' }], // capped
+        '6xl': ['2.4375rem', { lineHeight: '1.15' }], // capped
       },
       spacing: {
-        '18': '4.5rem',
-        '22': '5.5rem',
+        18: '4.5rem',
+        22: '5.5rem',
       },
-      boxShadow: {
-        'soft': '0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.1)',
-        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-        'elevated': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-        'dropdown': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+      maxWidth: {
+        prose: '70ch',
       },
       borderRadius: {
-        'DEFAULT': '0.5rem',
-        'lg': '0.75rem',
-        'xl': '1rem',
+        // 6px controls, 8px panels. Larger radii are normalised down.
+        sm: '4px',
+        DEFAULT: '6px',
+        md: '6px',
+        lg: '6px',
+        xl: '8px',
+        '2xl': '8px',
+        '3xl': '8px',
+      },
+      boxShadow: {
+        // Panels are border-only; shadows are for overlays.
+        overlay: '0 8px 24px -6px rgb(15 26 40 / 0.18), 0 2px 6px -2px rgb(15 26 40 / 0.08)',
+        dropdown: '0 8px 24px -6px rgb(15 26 40 / 0.18), 0 2px 6px -2px rgb(15 26 40 / 0.08)',
+        soft: 'none',
+        card: 'none',
+        elevated: 'none',
+        md: 'none',
+        lg: '0 8px 24px -6px rgb(15 26 40 / 0.18), 0 2px 6px -2px rgb(15 26 40 / 0.08)',
+        xl: '0 8px 24px -6px rgb(15 26 40 / 0.18), 0 2px 6px -2px rgb(15 26 40 / 0.08)',
+        '2xl': '0 12px 32px -8px rgb(15 26 40 / 0.22)',
+      },
+      transitionDuration: {
+        DEFAULT: '150ms',
       },
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
-        'slide-in': 'slideIn 0.2s ease-out',
-        'slide-up': 'slideUp 0.2s ease-out',
-        'scale-in': 'scaleIn 0.2s ease-out',
-        'shimmer': 'shimmer 2s infinite linear',
+        'fade-in': 'fadeIn 120ms ease-out',
+        // Legacy names kept as a plain fade so nothing slides or scales.
+        'slide-in': 'fadeIn 120ms ease-out',
+        'slide-up': 'fadeIn 120ms ease-out',
+        'scale-in': 'fadeIn 120ms ease-out',
+        shimmer: 'none',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        slideIn: {
-          '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(0)' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        scaleIn: {
-          '0%': { transform: 'scale(0.95)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
       },
     },
   },
   plugins: [],
-}
+};

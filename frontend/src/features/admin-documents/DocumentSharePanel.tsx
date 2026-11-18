@@ -1,4 +1,6 @@
+import i18next from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Link2, Lock, Share2, Shield } from 'lucide-react';
 import type { AdminDocument, AdminDocumentAudience, AdminDocumentAccessLevel } from '@/entities/document/types';
 import {
@@ -27,12 +29,13 @@ const audienceToAccessLevel = (audience: AdminDocumentAudience): AdminDocumentAc
 };
 
 const formatAudienceLabel = (audience: AdminDocumentAudience) => {
-  if (audience === 'students') return 'Students';
-  if (audience === 'companies') return 'Companies';
-  return 'Internal only';
+  if (audience === 'students') return i18next.t('adminDocs.students');
+  if (audience === 'companies') return i18next.t('adminDocs.companies');
+  return i18next.t('adminDocs.internal');
 };
 
 export function DocumentSharePanel({ open, onClose, document }: Props) {
+  const { t } = useTranslation();
   const docId = document?.id;
   const shares = useAdminDocumentShares(docId);
   const createShare = useCreateAdminShare();
@@ -68,9 +71,9 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
   const onCopy = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      setNotice('Link copied to clipboard.');
+      setNotice(t('adminDocs.copied'));
     } catch {
-      setNotice('Could not copy automatically. Please copy the link manually.');
+      setNotice(t('adminDocs.copyFailed'));
     }
   };
 
@@ -82,9 +85,9 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         id: document.id,
         payload: { accessLevel: audienceToAccessLevel(audience), updatedAt: document.updatedAt ?? null },
       });
-      setNotice('Visibility updated.');
+      setNotice(t('adminDocs.visibilityUpdated'));
     } catch (err: unknown) {
-      setNotice(getErrorMessage(err, 'Failed to update visibility.'));
+      setNotice(getErrorMessage(err, t('adminDocs.visibilityFailed')));
     }
   };
 
@@ -97,10 +100,10 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         payload: { expiresInDays, audience },
       });
       const url = res.data.shareUrl;
-      setNotice('Share link created.');
+      setNotice(t('adminDocs.linkCreated'));
       if (url) void onCopy(url);
     } catch (err: unknown) {
-      setNotice(getErrorMessage(err, 'Failed to create share link.'));
+      setNotice(getErrorMessage(err, t('adminDocs.linkFailed')));
     }
   };
 
@@ -108,9 +111,9 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
     setNotice('');
     try {
       await revokeShare.mutateAsync(shareId);
-      setNotice('Share link revoked.');
+      setNotice(t('adminDocs.linkRevoked'));
     } catch (err: unknown) {
-      setNotice(getErrorMessage(err, 'Failed to revoke share link.'));
+      setNotice(getErrorMessage(err, t('adminDocs.revokeFailed')));
     }
   };
 
@@ -121,8 +124,8 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         if (isBusy) return;
         onClose();
       }}
-      title={document ? `Share: ${document.title}` : 'Share document'}
-      description="Visibility controls who can open the shared link. Share links always require login."
+      title={document ? t('adminDocs.shareOf', { title: document.title }) : t('adminDocs.shareDoc')}
+      description={t('adminDocs.shareDesc')}
       size="lg"
     >
       {notice ? (
@@ -133,23 +136,23 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         <section className="rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
             <Shield className="h-4 w-4" />
-            Visibility
+            {t('adminDocs.visibility')}
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            Select who is allowed to access this document via share links.
+            {t('adminDocs.visibilityHint')}
           </p>
 
           <div className="mt-3 flex flex-col md:flex-row md:items-end gap-3">
             <label className="flex-1">
-              <span className="text-sm font-semibold text-gray-700">Audience</span>
+              <span className="text-sm font-semibold text-gray-700">{t('adminDocs.audience')}</span>
               <select
                 value={audience}
                 onChange={(e) => setAudience(e.target.value as AdminDocumentAudience)}
                 className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
               >
-                <option value="internal">Internal only</option>
-                <option value="students">Students</option>
-                <option value="companies">Companies</option>
+                <option value="internal">{t('adminDocs.internal')}</option>
+                <option value="students">{t('adminDocs.students')}</option>
+                <option value="companies">{t('adminDocs.companies')}</option>
               </select>
             </label>
             <Button
@@ -159,7 +162,7 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
               disabled={!document || isBusy}
               leftIcon={<Lock className="h-4 w-4" />}
             >
-              Save visibility
+              {t('adminDocs.saveVisibility')}
             </Button>
           </div>
         </section>
@@ -167,15 +170,15 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
         <section className="rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
             <Share2 className="h-4 w-4" />
-            Share links
+            {t('adminDocs.shareLinks')}
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            Create an expiring link. Recipients must be logged in and match the selected audience.
+            {t('adminDocs.shareLinksHint')}
           </p>
 
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <label>
-              <span className="text-sm font-semibold text-gray-700">Expiration (days)</span>
+              <span className="text-sm font-semibold text-gray-700">{t('adminDocs.expiration')}</span>
               <input
                 type="number"
                 min={1}
@@ -186,15 +189,15 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
               />
             </label>
             <label>
-              <span className="text-sm font-semibold text-gray-700">Audience</span>
+              <span className="text-sm font-semibold text-gray-700">{t('adminDocs.audience')}</span>
               <select
                 value={audience}
                 onChange={(e) => setAudience(e.target.value as AdminDocumentAudience)}
                 className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
               >
-                <option value="internal">Internal only</option>
-                <option value="students">Students</option>
-                <option value="companies">Companies</option>
+                <option value="internal">{t('adminDocs.internal')}</option>
+                <option value="students">{t('adminDocs.students')}</option>
+                <option value="companies">{t('adminDocs.companies')}</option>
               </select>
             </label>
             <Button
@@ -203,18 +206,18 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
               disabled={!document || isBusy}
               leftIcon={<Link2 className="h-4 w-4" />}
             >
-              Create link
+              {t('adminDocs.createLink')}
             </Button>
           </div>
 
           <div className="mt-4">
             {shares.isLoading ? (
-              <div className="text-sm text-gray-500">Loading share links…</div>
+              <div className="text-sm text-gray-500">{t('adminDocs.loadingLinks')}</div>
             ) : shares.data && shares.data.length ? (
               <div className="space-y-3">
                 {shares.data.map((share) => {
                   const isRevoked = Boolean(share.revokedAt);
-                  const expiresAt = share.expiresAt ? new Date(share.expiresAt).toLocaleString() : 'No expiry';
+                  const expiresAt = share.expiresAt ? new Date(share.expiresAt).toLocaleString() : t('adminDocs.noExpiry');
                   return (
                     <div
                       key={share.id}
@@ -241,7 +244,7 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
                             disabled={isBusy}
                             leftIcon={<Copy className="h-4 w-4" />}
                           >
-                            Copy
+                            {t('adminDocs.copy')}
                           </Button>
                         </div>
                       </div>
@@ -253,7 +256,7 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
                           onClick={() => onRevoke(share.id)}
                           disabled={isBusy || isRevoked}
                         >
-                          Revoke
+                          {t('adminDocs.revoke')}
                         </Button>
                       </div>
                     </div>
@@ -261,7 +264,7 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
                 })}
               </div>
             ) : (
-              <div className="text-sm text-gray-500">No share links yet.</div>
+              <div className="text-sm text-gray-500">{t('adminDocs.noLinks')}</div>
             )}
           </div>
         </section>
@@ -269,7 +272,7 @@ export function DocumentSharePanel({ open, onClose, document }: Props) {
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose} disabled={isBusy}>
-          Close
+          {t('adminDocs.close')}
         </Button>
       </DialogFooter>
     </Dialog>

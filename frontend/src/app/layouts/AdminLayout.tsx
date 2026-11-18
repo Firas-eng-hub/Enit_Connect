@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Users, Mail, FileText, MessageSquare, UserPlus, Handshake, BarChart2 } from 'lucide-react';
+import { Newspaper, Users, Mail, FileText, MessageSquare, UserPlus, Handshake, BarChart2 } from 'lucide-react';
 import { Topbar } from '@/widgets/navbars/Topbar';
 import { Sidebar, type SidebarSection } from '@/widgets/sidebars/Sidebar';
 
@@ -13,7 +13,7 @@ export function AdminLayout() {
     {
       title: t('nav._overview'),
       items: [
-        { path: '/admin/home', label: t('nav.dashboard'), icon: Home },
+        { path: '/admin/home', label: t('nav.news'), icon: Newspaper },
         { path: '/admin/dashboard', label: t('nav.analytics'), icon: BarChart2 },
       ],
     },
@@ -45,7 +45,7 @@ export function AdminLayout() {
       />
       <main className="dashboard-main">
         <div className="dashboard-content">
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto max-w-[var(--content-max-width)]">
             <Outlet />
           </div>
         </div>

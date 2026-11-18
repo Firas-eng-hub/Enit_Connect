@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
@@ -83,7 +84,7 @@ function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md w-full pointer-events-none">
+    <div className="fixed bottom-4 end-4 z-[100] flex flex-col gap-2 max-w-md w-full pointer-events-none">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
@@ -99,32 +100,33 @@ interface ToastItemProps {
 const variantConfig = {
   default: {
     icon: null,
-    containerClass: 'bg-surface border-border text-foreground',
+    containerClass: 'bg-surface border-line text-ink',
     iconClass: '',
   },
   success: {
     icon: CheckCircle2,
-    containerClass: 'bg-success-50 border-success-200 text-success-800',
-    iconClass: 'text-success-500',
+    containerClass: 'bg-surface border-line text-ink',
+    iconClass: 'text-success-600',
   },
   danger: {
     icon: AlertCircle,
-    containerClass: 'bg-danger-50 border-danger-200 text-danger-800',
-    iconClass: 'text-danger-500',
+    containerClass: 'bg-surface border-line text-ink',
+    iconClass: 'text-danger-600',
   },
   warning: {
     icon: AlertTriangle,
-    containerClass: 'bg-warning-50 border-warning-200 text-warning-800',
-    iconClass: 'text-warning-500',
+    containerClass: 'bg-surface border-line text-ink',
+    iconClass: 'text-warning-600',
   },
   info: {
     icon: Info,
-    containerClass: 'bg-info-50 border-info-200 text-info-800',
-    iconClass: 'text-info-500',
+    containerClass: 'bg-surface border-line text-ink',
+    iconClass: 'text-primary-700',
   },
 };
 
 function ToastItem({ toast, onRemove }: ToastItemProps) {
+  const { t } = useTranslation();
   const config = variantConfig[toast.variant || 'default'];
   const Icon = config.icon;
 
@@ -132,8 +134,8 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
     <div
       role="alert"
       className={cn(
-        'pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-elevated',
-        'animate-slide-up',
+        'pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-overlay',
+        'animate-fade-in',
         config.containerClass
       )}
     >
@@ -145,7 +147,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       <button
         onClick={() => onRemove(toast.id)}
         className="flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors"
-        aria-label="Dismiss"
+        aria-label={t('common.close')}
       >
         <X className="h-4 w-4" />
       </button>

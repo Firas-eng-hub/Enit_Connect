@@ -1,87 +1,38 @@
-import { Handshake } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { usePartners } from '@/entities/partner';
 
+/**
+ * Partner companies as a calm, static row of logos.
+ * Renders nothing while loading, on error, or when there are no partners:
+ * the strip is supporting content and should never show a broken state.
+ */
 export function PartnerLogoMarquee() {
-  const { data: partners = [], isLoading, isError, refetch } = usePartners(15000);
+  const { t } = useTranslation();
+  const { data: partners = [], isLoading, isError } = usePartners(15000);
 
-  if (isLoading) {
-    return (
-      <section className="mb-12">
-        <div className="mb-4 flex items-center gap-2 text-primary-900">
-          <Handshake className="w-5 h-5" />
-          <h3 className="text-lg font-semibold">Our Partners</h3>
-        </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-4">
-          <div className="h-14 rounded-xl bg-gray-100 animate-pulse" />
-        </div>
-      </section>
-    );
-  }
-
-  if (isError && partners.length === 0) {
-    return (
-      <section className="mb-12 bg-white border border-gray-100 rounded-2xl p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-gray-600">Failed to load partner logos.</p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="text-sm font-medium text-primary-700 hover:text-primary-800"
-          >
-            Retry
-          </button>
-        </div>
-      </section>
-    );
-  }
-
-  if (!isLoading && partners.length === 0) {
+  if (isLoading || isError || partners.length === 0) {
     return null;
   }
 
-  const repeatCount = Math.max(2, Math.ceil(14 / partners.length));
-  const marqueeItems = Array.from({ length: repeatCount }).flatMap((_, repeatIndex) =>
-    partners.map((partner) => ({
-      ...partner,
-      loopKey: `${partner._id}-${repeatIndex}`,
-    }))
-  );
-  const animationDuration = `${Math.max(20, marqueeItems.length * 1.9)}s`;
-
   return (
-    <section className="mb-10">
-      <div className="mb-4 flex items-center gap-2 text-primary-900">
-        <Handshake className="w-5 h-5" />
-        <h3 className="text-lg font-semibold">Our Partners</h3>
-      </div>
-
-      <div className="partner-marquee rounded-2xl border border-gray-100 bg-white/90 shadow-sm">
-        <div className="partner-marquee-track" style={{ animationDuration }}>
-          <ul className="partner-marquee-list">
-            {marqueeItems.map((partner) => (
-              <li key={partner.loopKey} className="partner-marquee-item">
-                <img
-                  src={partner.logoUrl}
-                  alt={partner.name}
-                  loading="lazy"
-                  className="h-12 sm:h-14 md:h-16 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
-                />
-              </li>
-            ))}
-          </ul>
-          <ul className="partner-marquee-list" aria-hidden="true">
-            {marqueeItems.map((partner) => (
-              <li key={`${partner.loopKey}-duplicate`} className="partner-marquee-item">
-                <img
-                  src={partner.logoUrl}
-                  alt=""
-                  loading="lazy"
-                  className="h-12 sm:h-14 md:h-16 w-auto object-contain opacity-90"
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
+    <section aria-labelledby="partners-heading" className="border-b border-line bg-surface">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
+        <h2 id="partners-heading" className="text-sm font-medium text-muted-foreground shrink-0">
+          {t('visitor.partners.title')}
+        </h2>
+        <ul className="partner-marquee-list">
+          {partners.map((partner) => (
+            <li key={partner._id} className="partner-marquee-item">
+              <img
+                src={partner.logoUrl}
+                alt={partner.name}
+                loading="lazy"
+                decoding="async"
+                className="h-8 sm:h-9 w-auto max-w-[140px] object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100"
+              />
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

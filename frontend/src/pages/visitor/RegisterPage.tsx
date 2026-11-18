@@ -1,52 +1,18 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Building2, Eye, EyeOff, CheckCircle, UserPlus, ArrowLeft, Mail, Lock, Briefcase, GraduationCap, Sparkles, Globe, MapPin, Phone } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
-import enitLogo from '@/assets/img/ENIT.png';
-import bgImage from '@/assets/img/Acceuil.BG.jpg';
+import { Input } from '@/shared/ui/Input';
+import { Textarea } from '@/shared/ui/Textarea';
+import { AuthShell } from '@/widgets/auth-shell';
 
-const passwordSchema = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
-    'Password must include uppercase, lowercase, number, and special character'
-  );
-
-const phoneSchema = z
-  .string()
-  .regex(/^\+?[\d\s\-\(\)]{8,20}$/, 'Phone number must be 8-20 digits');
-
-const studentSchema = z.object({
-  firstname: z.string().min(1, 'First name is required'),
-  lastname: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Please enter a valid email'),
-  password: passwordSchema,
-  class: z.string().optional(),
-  promotion: z.string().optional(),
-});
-
-const companySchema = z.object({
-  name: z.string().min(1, 'Company name is required'),
-  email: z.string().email('Please enter a valid email'),
-  password: passwordSchema,
-  website: z.string().url('Please enter a valid URL'),
-  address: z.string().min(1, 'Address is required'),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(1, 'Country is required'),
-  phone: phoneSchema,
-  about: z.string().optional(),
-});
-
-type StudentFormData = z.infer<typeof studentSchema>;
-type CompanyFormData = z.infer<typeof companySchema>;
 type UserType = 'student' | 'company';
 
 const classes = [
@@ -58,561 +24,278 @@ const classes = [
   '3rd Tel 1', '3rd Tel 2', '3rd Tel 3',
 ];
 
+function getErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const response = (err as { response?: { data?: { message?: string } } }).response;
+    const message = response?.data?.message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
+
+const selectClass =
+  'h-10 w-full rounded-md border border-neutral-400 bg-surface px-3 text-ink hover:border-neutral-500 focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40';
+
+function PasswordField({
+  id,
+  label,
+  hint,
+  error,
+  registration,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  error?: string;
+  registration: React.InputHTMLAttributes<HTMLInputElement> & { ref: React.Ref<HTMLInputElement> };
+}) {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  const describedBy = error ? `${id}-error` : `${id}-hint`;
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={visible ? 'text' : 'password'}
+          autoComplete="new-password"
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={describedBy}
+          className={cn(
+            'h-10 w-full rounded-md border bg-surface ps-3 pe-11 text-ink',
+            'focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40',
+            error ? 'border-danger-600' : 'border-neutral-400 hover:border-neutral-500'
+          )}
+          {...registration}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((value) => !value)}
+          className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-neutral-500 hover:text-ink"
+          aria-label={visible ? t('auth.hidePassword') : t('auth.showPassword')}
+          aria-pressed={visible}
+        >
+          {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </button>
+      </div>
+      {error ? (
+        <p id={`${id}-error`} className="mt-1.5 text-sm text-danger-600">{error}</p>
+      ) : (
+        <p id={`${id}-hint`} className="mt-1.5 text-sm text-muted-foreground">{hint}</p>
+      )}
+    </div>
+  );
+}
+
 export function RegisterPage() {
   const { t } = useTranslation();
-  const [selectedType, setSelectedType] = useState<UserType>('student');
-  const [showPassword, setShowPassword] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [selectedType, setSelectedType] = useState<UserType>(
+    searchParams.get('type') === 'company' ? 'company' : 'student'
+  );
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState('');
 
-  const studentForm = useForm<StudentFormData>({
-    resolver: zodResolver(studentSchema),
-  });
+  const { studentSchema, companySchema } = useMemo(() => {
+    const required = t('registerPage.v.required');
+    const passwordSchema = z
+      .string()
+      .min(8, t('registerPage.v.passwordLength'))
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, t('registerPage.v.passwordRules'));
+    return {
+      studentSchema: z.object({
+        firstname: z.string().trim().min(1, required),
+        lastname: z.string().trim().min(1, required),
+        email: z.string().trim().email(t('registerPage.v.email')),
+        password: passwordSchema,
+        class: z.string().optional(),
+        promotion: z.string().optional(),
+      }),
+      companySchema: z.object({
+        name: z.string().trim().min(1, required),
+        email: z.string().trim().email(t('registerPage.v.email')),
+        password: passwordSchema,
+        website: z.string().trim().url(t('registerPage.v.url')),
+        address: z.string().trim().min(1, required),
+        city: z.string().trim().min(1, required),
+        country: z.string().trim().min(1, required),
+        phone: z.string().regex(/^\+?[\d\s\-()]{8,20}$/, t('registerPage.v.phone')),
+        about: z.string().optional(),
+      }),
+    };
+  }, [t]);
 
-  const companyForm = useForm<CompanyFormData>({
-    resolver: zodResolver(companySchema),
-  });
+  type StudentFormData = z.infer<typeof studentSchema>;
+  type CompanyFormData = z.infer<typeof companySchema>;
+
+  const studentForm = useForm<StudentFormData>({ resolver: zodResolver(studentSchema) });
+  const companyForm = useForm<CompanyFormData>({ resolver: zodResolver(companySchema) });
+  const se = studentForm.formState.errors;
+  const ce = companyForm.formState.errors;
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => (2000 + i).toString());
 
-  const getErrorMessage = (err: unknown, fallback: string) => {
-    if (err && typeof err === 'object') {
-      const response = (err as { response?: { data?: { message?: string } } }).response;
-      const message = response?.data?.message;
-      if (typeof message === 'string' && message.trim()) return message;
-    }
-    if (err instanceof Error && err.message) return err.message;
-    return fallback;
-  };
-
-  const onSubmitStudent = async (data: StudentFormData) => {
+  const submit = async (url: string, payload: Record<string, unknown>, email: string) => {
     setIsLoading(true);
     setError(null);
-
     try {
-      await httpClient.post('/api/student/signup', { ...data, type: 'Student' });
-      setSuccessEmail(data.email);
+      await httpClient.post(url, payload);
+      setSuccessEmail(email);
       setSuccess(true);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
+      setError(getErrorMessage(err, t('registerPage.v.failed')));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const onSubmitCompany = async (data: CompanyFormData) => {
-    setIsLoading(true);
-    setError(null);
+  const onSubmitStudent = (data: StudentFormData) =>
+    submit('/api/student/signup', { ...data, type: 'Student' }, data.email);
+  const onSubmitCompany = (data: CompanyFormData) => submit('/api/company/signup', data, data.email);
 
-    try {
-      await httpClient.post('/api/company/signup', data);
-      setSuccessEmail(data.email);
-      setSuccess(true);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Success State
   if (success) {
+    const verifyLink = `/verify?type=${selectedType}${successEmail ? `&email=${encodeURIComponent(successEmail)}` : ''}`;
     return (
-      <div className="min-h-screen relative flex items-center justify-center p-4">
-        {/* Background */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${bgImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/95 via-primary-800/90 to-primary-900/95" />
+      <AuthShell title={t('registerPage.allSet')} description={t('registerPage.verificationSent')}>
+        <div className="flex flex-col gap-3">
+          <Link
+            to={verifyLink}
+            className="inline-flex h-11 items-center justify-center rounded-md border border-ink bg-ink px-5 font-medium text-white hover:bg-primary-800"
+          >
+            {t('registerPage.enterVerificationCode')}
+          </Link>
+          <Link
+            to="/login"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-neutral-300 px-5 font-medium text-ink hover:bg-canvas"
+          >
+            {t('registerPage.continueToSignIn')}
+          </Link>
         </div>
-        
-        <div className="relative z-10 w-full max-w-md">
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 text-center border border-white/30">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 mb-6 shadow-xl shadow-emerald-500/30">
-              <CheckCircle className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">{t('registerPage.allSet')}</h2>
-            <p className="text-gray-500 mb-8 leading-relaxed">
-              {t('registerPage.verificationSent')}
-            </p>
-            <div className="space-y-3">
-              <Link to={`/verify?type=${selectedType}${successEmail ? `&email=${encodeURIComponent(successEmail)}` : ''}`}>
-                <Button className="w-full py-4 rounded-xl font-bold shadow-lg shadow-primary-500/30" size="lg">
-                  {t('registerPage.enterVerificationCode')}
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="secondary" className="w-full py-4 rounded-xl font-bold" size="lg">
-                  {t('registerPage.continueToSignIn')}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      </AuthShell>
     );
   }
 
-  const inputClass = (hasError: boolean) => cn(
-    'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900 placeholder:text-gray-400',
-    'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
-    'transition-all duration-200 font-medium',
-    hasError ? 'border-red-300 bg-red-50/50' : 'border-gray-100'
-  );
-
-  const selectClass = cn(
-    'w-full px-4 py-3.5 rounded-xl border-2 bg-gray-50/50 text-gray-900',
-    'focus:outline-none focus:ring-0 focus:border-primary-500 focus:bg-white',
-    'transition-all duration-200 font-medium border-gray-100 cursor-pointer'
-  );
+  const typeOptions: { type: UserType; label: string; desc: string }[] = [
+    { type: 'student', label: t('registerPage.studentLabel'), desc: t('registerPage.studentDesc') },
+    { type: 'company', label: t('registerPage.companyLabel'), desc: t('registerPage.companyDesc') },
+  ];
 
   return (
-    <div className="min-h-screen relative flex overflow-hidden">
-      {/* Animated Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/95 via-primary-800/90 to-accent-900/95" />
-        {/* Floating orbs */}
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-accent-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/3 left-1/4 w-80 h-80 bg-primary-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
-
-      {/* Left Side - Branding (Desktop) */}
-      <div className="hidden lg:flex lg:w-5/12 relative z-10 flex-col justify-between p-12 xl:p-16">
-        <div>
-          <Link to="/visitor/news" className="inline-flex items-center gap-3 group">
-            <img src={enitLogo} alt="ENIT" className="w-14 h-14 object-contain drop-shadow-lg group-hover:scale-105 transition-transform duration-300" />
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">ENIT-Connect</h1>
-              <p className="text-white/60 text-sm font-medium">Career Platform</p>
-            </div>
+    <AuthShell
+      wide
+      title={t('registerPage.createYourAccount')}
+      description={
+        <>
+          {t('registerPage.alreadyHaveAccount')}{' '}
+          <Link to="/login" className="font-medium text-ink underline underline-offset-2 hover:text-primary-700">
+            {t('registerPage.signIn')}
           </Link>
-        </div>
-
-        <div className="space-y-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/80 text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4 text-accent-400" />
-              {t('registerPage.joinCommunity')}
-            </div>
-            <h2 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
-              {t('registerPage.startYour')}
-              <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-accent-400 via-accent-300 to-yellow-300">
-                {t('registerPage.successStory')}
+        </>
+      }
+    >
+      <fieldset className="mb-6">
+        <legend className="mb-1.5 text-sm font-medium text-ink">{t('registerPage.registerAs')}</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {typeOptions.map(({ type, label, desc }) => (
+            <label
+              key={type}
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-md border p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold/60',
+                selectedType === type ? 'border-ink bg-primary-50' : 'border-neutral-300 hover:border-neutral-400'
+              )}
+            >
+              <input
+                type="radio"
+                name="registerType"
+                value={type}
+                checked={selectedType === type}
+                onChange={() => {
+                  setSelectedType(type);
+                  setError(null);
+                }}
+                className="mt-1 h-4 w-4 accent-[rgb(var(--ink))]"
+              />
+              <span>
+                <span className="block font-medium text-ink">{label}</span>
+                <span className="block text-sm text-muted-foreground">{desc}</span>
               </span>
-            </h2>
-            <p className="mt-8 text-xl text-white/70 max-w-lg leading-relaxed">
-              {t('registerPage.createDesc')}
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="space-y-4">
-            {[
-              { icon: Briefcase, text: t('registerPage.features.exclusiveJobs') },
-              { icon: GraduationCap, text: t('registerPage.features.alumniNetwork') },
-              { icon: Mail, text: t('registerPage.features.notifications') },
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-4 text-white/70">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                  <feature.icon className="w-5 h-5 text-accent-400" />
-                </div>
-                <span className="font-medium">{feature.text}</span>
-              </div>
-            ))}
-          </div>
+            </label>
+          ))}
         </div>
+      </fieldset>
 
-        <div className="flex items-center gap-3 text-white/40 text-sm">
-          <GraduationCap className="w-5 h-5" />
-          <span className="font-medium">École Nationale d'Ingénieurs de Tunis</span>
-        </div>
-      </div>
+      {error && <Alert variant="danger" className="mb-5">{error}</Alert>}
 
-      {/* Right Side - Register Form */}
-      <div className="w-full lg:w-7/12 relative z-10 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
-        <div className="w-full max-w-xl">
-          {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8">
-            <Link to="/visitor/news" className="inline-flex flex-col items-center gap-3">
-              <img src={enitLogo} alt="ENIT" className="w-14 h-14 object-contain drop-shadow-lg" />
-              <span className="text-xl font-bold text-white">ENIT-Connect</span>
-            </Link>
+      {selectedType === 'student' ? (
+        <form onSubmit={studentForm.handleSubmit(onSubmitStudent)} noValidate className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input id="reg-firstname" label={t('registerPage.firstName')} autoComplete="given-name" error={se.firstname?.message} {...studentForm.register('firstname')} />
+            <Input id="reg-lastname" label={t('registerPage.lastName')} autoComplete="family-name" error={se.lastname?.message} {...studentForm.register('lastname')} />
           </div>
-
-          {/* Back link */}
-          <Link
-            to="/visitor/news"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t('registerPage.backToHome')}
-          </Link>
-
-          {/* Glassmorphism Form Card */}
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/30 relative overflow-hidden">
-            {/* Decorative gradient */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-accent-100 to-primary-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-            
-            <div className="relative">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{t('registerPage.createYourAccount')}</h2>
-                <p className="text-gray-500 mt-2">
-                  {t('registerPage.alreadyHaveAccount')}{' '}
-                  <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-                    {t('registerPage.signIn')}
-                  </Link>
-                </p>
-              </div>
-
-              {/* User Type Selection */}
-              <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  {t('registerPage.registerAs')}
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedType('student')}
-                    className={cn(
-                      'relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border-2',
-                      selectedType === 'student'
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border-transparent'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-100 hover:border-gray-200'
-                    )}
-                  >
-                    <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center',
-                      selectedType === 'student' ? 'bg-white/20' : 'bg-white'
-                    )}>
-                      <User className={cn('w-6 h-6', selectedType === 'student' ? 'text-white' : 'text-blue-600')} />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">{t('registerPage.studentLabel')}</div>
-                      <div className={cn('text-xs', selectedType === 'student' ? 'text-white/70' : 'text-gray-400')}>
-                        {t('registerPage.studentDesc')}
-                      </div>
-                    </div>
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setSelectedType('company')}
-                    className={cn(
-                      'relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border-2',
-                      selectedType === 'company'
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border-transparent'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-100 hover:border-gray-200'
-                    )}
-                  >
-                    <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center',
-                      selectedType === 'company' ? 'bg-white/20' : 'bg-white'
-                    )}>
-                      <Building2 className={cn('w-6 h-6', selectedType === 'company' ? 'text-white' : 'text-emerald-600')} />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">{t('registerPage.companyLabel')}</div>
-                      <div className={cn('text-xs', selectedType === 'company' ? 'text-white/70' : 'text-gray-400')}>
-                        {t('registerPage.companyDesc')}
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <Alert variant="danger" className="text-sm rounded-xl mb-6">
-                  {error}
-                </Alert>
-              )}
-
-              {/* Student Form */}
-              {selectedType === 'student' && (
-                <form onSubmit={studentForm.handleSubmit(onSubmitStudent)} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.firstName')}</label>
-                      <input
-                        {...studentForm.register('firstname')}
-                        placeholder="John"
-                        className={inputClass(!!studentForm.formState.errors.firstname)}
-                      />
-                      {studentForm.formState.errors.firstname && (
-                        <p className="mt-1.5 text-sm text-red-600">{studentForm.formState.errors.firstname.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.lastName')}</label>
-                      <input
-                        {...studentForm.register('lastname')}
-                        placeholder="Doe"
-                        className={inputClass(!!studentForm.formState.errors.lastname)}
-                      />
-                      {studentForm.formState.errors.lastname && (
-                        <p className="mt-1.5 text-sm text-red-600">{studentForm.formState.errors.lastname.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Mail className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.emailAddress')}
-                    </label>
-                    <input
-                      {...studentForm.register('email')}
-                      type="email"
-                      placeholder="john.doe@enit.utm.tn"
-                      className={inputClass(!!studentForm.formState.errors.email)}
-                    />
-                    {studentForm.formState.errors.email && (
-                      <p className="mt-1.5 text-sm text-red-600">{studentForm.formState.errors.email.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Lock className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.password')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        {...studentForm.register('password')}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        className={inputClass(!!studentForm.formState.errors.password)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {studentForm.formState.errors.password && (
-                      <p className="mt-1.5 text-sm text-red-600">{studentForm.formState.errors.password.message}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.classLabel')}</label>
-                      <select {...studentForm.register('class')} className={selectClass}>
-                        <option value="">{t('registerPage.selectClass')}</option>
-                        {classes.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.promotion')}</label>
-                      <select {...studentForm.register('promotion')} className={selectClass}>
-                        <option value="">{t('registerPage.selectYear')}</option>
-                        {years.map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full py-4 rounded-xl font-bold text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 mt-6"
-                    size="lg"
-                    disabled={isLoading}
-                    leftIcon={!isLoading && <UserPlus className="w-5 h-5" />}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>{t('registerPage.creatingAccount')}</span>
-                      </div>
-                    ) : (
-                      t('registerPage.createStudentAccount')
-                    )}
-                  </Button>
-                </form>
-              )}
-
-              {/* Company Form */}
-              {selectedType === 'company' && (
-                <form onSubmit={companyForm.handleSubmit(onSubmitCompany)} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Building2 className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.companyName')}
-                    </label>
-                    <input
-                      {...companyForm.register('name')}
-                      placeholder="Acme Corporation"
-                      className={inputClass(!!companyForm.formState.errors.name)}
-                    />
-                    {companyForm.formState.errors.name && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Mail className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.businessEmail')}
-                    </label>
-                    <input
-                      {...companyForm.register('email')}
-                      type="email"
-                      placeholder="contact@company.com"
-                      className={inputClass(!!companyForm.formState.errors.email)}
-                    />
-                    {companyForm.formState.errors.email && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.email.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Lock className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.password')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        {...companyForm.register('password')}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        className={inputClass(!!companyForm.formState.errors.password)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {companyForm.formState.errors.password && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.password.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Globe className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.website')}
-                    </label>
-                    <input
-                      {...companyForm.register('website')}
-                      type="url"
-                      placeholder="https://www.company.com"
-                      className={inputClass(!!companyForm.formState.errors.website)}
-                    />
-                    {companyForm.formState.errors.website && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.website.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <Phone className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.phone')}
-                    </label>
-                    <input
-                      {...companyForm.register('phone')}
-                      type="tel"
-                      placeholder="+216 XX XXX XXX"
-                      className={inputClass(!!companyForm.formState.errors.phone)}
-                    />
-                    {companyForm.formState.errors.phone && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.phone.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      <MapPin className="w-4 h-4 inline mr-1.5 text-gray-400" />
-                      {t('registerPage.address')}
-                    </label>
-                    <input
-                      {...companyForm.register('address')}
-                      placeholder="123 Business Street"
-                      className={inputClass(!!companyForm.formState.errors.address)}
-                    />
-                    {companyForm.formState.errors.address && (
-                      <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.address.message}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.city')}</label>
-                      <input
-                        {...companyForm.register('city')}
-                        placeholder="Tunis"
-                        className={inputClass(!!companyForm.formState.errors.city)}
-                      />
-                      {companyForm.formState.errors.city && (
-                        <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.city.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.country')}</label>
-                      <input
-                        {...companyForm.register('country')}
-                        placeholder="Tunisia"
-                        className={inputClass(!!companyForm.formState.errors.country)}
-                      />
-                      {companyForm.formState.errors.country && (
-                        <p className="mt-1.5 text-sm text-red-600">{companyForm.formState.errors.country.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('registerPage.aboutCompany')}</label>
-                    <textarea
-                      {...companyForm.register('about')}
-                      rows={3}
-                      placeholder={t('registerPage.aboutCompanyPlaceholder')}
-                      className={cn(inputClass(false), 'resize-none')}
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full py-4 rounded-xl font-bold text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 mt-6"
-                    size="lg"
-                    disabled={isLoading}
-                    leftIcon={!isLoading && <UserPlus className="w-5 h-5" />}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>{t('registerPage.creatingAccount')}</span>
-                      </div>
-                    ) : (
-                      t('registerPage.createCompanyAccount')
-                    )}
-                  </Button>
-                </form>
-              )}
-
-              {/* Terms */}
-              <p className="text-center text-xs text-gray-400 mt-6">
-                {t('registerPage.termsAgreement')}{' '}
-                <a href="#" className="text-primary-600 hover:underline">{t('registerPage.termsOfService')}</a>
-                {' '}{t('registerPage.and')}{' '}
-                <a href="#" className="text-primary-600 hover:underline">{t('registerPage.privacyPolicy')}</a>
-              </p>
+          <Input id="reg-email" type="email" label={t('registerPage.emailAddress')} autoComplete="email" error={se.email?.message} {...studentForm.register('email')} />
+          <PasswordField
+            id="reg-password"
+            label={t('registerPage.password')}
+            hint={t('registerPage.passwordHint')}
+            error={se.password?.message}
+            registration={studentForm.register('password')}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="reg-class" className="mb-1.5 block text-sm font-medium text-ink">{t('registerPage.classLabel')}</label>
+              <select id="reg-class" className={selectClass} {...studentForm.register('class')}>
+                <option value="">{t('registerPage.selectClass')}</option>
+                {classes.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="reg-promotion" className="mb-1.5 block text-sm font-medium text-ink">{t('registerPage.promotion')}</label>
+              <select id="reg-promotion" className={selectClass} {...studentForm.register('promotion')}>
+                <option value="">{t('registerPage.selectYear')}</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+          <Button type="submit" size="lg" className="w-full" isLoading={isLoading}>
+            {t('registerPage.createStudentAccount')}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={companyForm.handleSubmit(onSubmitCompany)} noValidate className="space-y-4">
+          <Input id="reg-company" label={t('registerPage.companyName')} autoComplete="organization" error={ce.name?.message} {...companyForm.register('name')} />
+          <Input id="reg-company-email" type="email" label={t('registerPage.businessEmail')} autoComplete="email" error={ce.email?.message} {...companyForm.register('email')} />
+          <PasswordField
+            id="reg-company-password"
+            label={t('registerPage.password')}
+            hint={t('registerPage.passwordHint')}
+            error={ce.password?.message}
+            registration={companyForm.register('password')}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input id="reg-website" type="url" label={t('registerPage.website')} placeholder="https://" autoComplete="url" error={ce.website?.message} {...companyForm.register('website')} />
+            <Input id="reg-phone" type="tel" label={t('registerPage.phone')} autoComplete="tel" error={ce.phone?.message} {...companyForm.register('phone')} />
+          </div>
+          <Input id="reg-address" label={t('registerPage.address')} autoComplete="street-address" error={ce.address?.message} {...companyForm.register('address')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input id="reg-city" label={t('registerPage.city')} autoComplete="address-level2" error={ce.city?.message} {...companyForm.register('city')} />
+            <Input id="reg-country" label={t('registerPage.country')} autoComplete="country-name" error={ce.country?.message} {...companyForm.register('country')} />
+          </div>
+          <Textarea id="reg-about" label={t('registerPage.aboutCompany')} rows={4} {...companyForm.register('about')} />
+          <Button type="submit" size="lg" className="w-full" isLoading={isLoading}>
+            {t('registerPage.createCompanyAccount')}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

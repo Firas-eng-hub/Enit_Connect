@@ -8,7 +8,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-lg bg-neutral-200',
+        'rounded-md bg-neutral-100',
         className
       )}
     />
@@ -33,7 +33,7 @@ export function SkeletonText({ className, lines = 3 }: { className?: string; lin
 
 export function SkeletonCard({ className }: SkeletonProps) {
   return (
-    <div className={cn('rounded-xl border border-border bg-surface p-6', className)}>
+    <div className={cn('rounded-lg border border-line bg-surface p-5', className)}>
       <div className="space-y-4">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
@@ -59,9 +59,9 @@ export function SkeletonAvatar({ className, size = 'md' }: { className?: string;
 
 export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
+    <div className="rounded-lg border border-line overflow-hidden">
       {/* Header */}
-      <div className="bg-neutral-100 px-4 py-3 grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+      <div className="bg-canvas px-4 py-3 grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-4" />
         ))}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   Filter,
@@ -30,6 +31,7 @@ interface MessageItem {
 type StatusFilter = 'all' | 'unread' | 'read' | 'archived';
 
 export function MessagesPage() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function MessagesPage() {
       const response = await httpClient.get('/api/admin/message?includeArchived=true');
       setMessages(response.data || []);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load messages.'));
+      setError(getApiErrorMessage(err, t('messagesAdmin.loadFailed')));
     } finally {
       setLoading(false);
     }
@@ -143,7 +145,7 @@ export function MessagesPage() {
       }
       updateLocalMessages(targetIds, { read });
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to update message status.'));
+      setActionError(getApiErrorMessage(err, t('messagesAdmin.statusFailed')));
     }
   };
 
@@ -163,7 +165,7 @@ export function MessagesPage() {
         setSelectedIds(new Set());
       }
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to update messages.'));
+      setActionError(getApiErrorMessage(err, t('messagesAdmin.updateFailed')));
     }
   };
 
@@ -181,7 +183,7 @@ export function MessagesPage() {
         setSelectedMessage(null);
       }
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to delete messages.'));
+      setActionError(getApiErrorMessage(err, t('messagesAdmin.deleteFailed')));
     }
   };
 
@@ -193,13 +195,13 @@ export function MessagesPage() {
         prev.map((msg) => (msg.archived ? msg : { ...msg, read }))
       );
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Failed to update messages.'));
+      setActionError(getApiErrorMessage(err, t('messagesAdmin.updateFailed')));
     }
   };
 
   const openReply = (msg: MessageItem) => {
-    const subject = encodeURIComponent(`Re: Your message to ENIT Connect`);
-    const body = encodeURIComponent(`Hello ${msg.name},\n\nThanks for reaching out. \n\n---\n${msg.message}`);
+    const subject = encodeURIComponent(t('messagesAdmin.replySubject'));
+    const body = encodeURIComponent(t('messagesAdmin.replyBody', { name: msg.name, message: msg.message }));
     window.location.href = `mailto:${msg.email}?subject=${subject}&body=${body}`;
   };
 
@@ -213,9 +215,9 @@ export function MessagesPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Messages</h1>
-        <p className="text-primary-100 text-lg">View and manage platform messages</p>
+      <div className="mb-8 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('messagesAdmin.title')}</h1>
+        <p className="text-muted-foreground text-lg">{t('messagesAdmin.subtitle')}</p>
       </div>
 
       {error && (
@@ -227,68 +229,68 @@ export function MessagesPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <p className="text-sm font-semibold text-gray-500">Total Messages</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{messages.length}</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-gray-500">{t('messagesAdmin.total')}</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">{messages.length}</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <p className="text-sm font-semibold text-gray-500">Unread</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{unreadCount}</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-gray-500">{t('messagesAdmin.unread')}</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">{unreadCount}</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-              <p className="text-sm font-semibold text-gray-500">Latest Message</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-gray-500">{t('messagesAdmin.latest')}</p>
               <p className="text-lg font-semibold text-gray-900 mt-2">
                 {latestMessage?.date ? formatDate(latestMessage.date) : 'N/A'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {latestMessage ? `${latestMessage.name} · ${latestMessage.email}` : 'No messages yet'}
+                {latestMessage ? `${latestMessage.name} · ${latestMessage.email}` : t('messagesAdmin.none')}
               </p>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
               <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('messagesAdmin.search')}</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                    placeholder="Search by sender or content"
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    placeholder={t('messagesAdmin.searchPlaceholder')}
                   />
                 </div>
               </div>
               <div className="min-w-[180px]">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('messagesAdmin.status')}</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white"
                 >
-                  <option value="all">Inbox</option>
-                  <option value="unread">Unread</option>
-                  <option value="read">Read</option>
-                  <option value="archived">Archived</option>
+                  <option value="all">{t('messagesAdmin.inbox')}</option>
+                  <option value="unread">{t('messagesAdmin.unread')}</option>
+                  <option value="read">{t('messagesAdmin.read')}</option>
+                  <option value="archived">{t('messagesAdmin.archived')}</option>
                 </select>
               </div>
               <div className="min-w-[200px]">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Sender</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('messagesAdmin.sender')}</label>
                 <input
                   value={senderFilter}
                   onChange={(e) => setSenderFilter(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                  placeholder="Name or email"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  placeholder={t('messagesAdmin.senderPlaceholder')}
                 />
               </div>
               <div className="min-w-[160px]">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">From</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('messagesAdmin.from')}</label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 />
               </div>
               <div className="min-w-[160px]">
@@ -297,7 +299,7 @@ export function MessagesPage() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
@@ -313,7 +315,7 @@ export function MessagesPage() {
             </Alert>
           )}
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
             <div className="flex flex-wrap gap-3 items-center justify-between">
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -323,7 +325,7 @@ export function MessagesPage() {
                     onChange={toggleSelectAll}
                     className="h-4 w-4 text-primary-600 border-gray-300 rounded"
                   />
-                  Select all
+                  {t('messagesAdmin.selectAll')}
                 </label>
                 <span className="text-sm text-gray-500">
                   {selectedIds.size} selected
@@ -331,28 +333,28 @@ export function MessagesPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => markAll(true)}>
-                  Mark all read
+                  {t('messagesAdmin.markAllRead')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => markAll(false)}>
-                  Mark all unread
+                  {t('messagesAdmin.markAllUnread')}
                 </Button>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => handleMarkRead(true)}>
-                Mark read
+                {t('messagesAdmin.markRead')}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleMarkRead(false)}>
-                Mark unread
+                {t('messagesAdmin.markUnread')}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleArchive(true)}>
-                Archive
+                {t('messagesAdmin.archive')}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleArchive(false)}>
-                Unarchive
+                {t('messagesAdmin.unarchive')}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleDelete()}>
-                Delete
+                {t('messagesAdmin.delete')}
               </Button>
             </div>
           </div>
@@ -360,7 +362,7 @@ export function MessagesPage() {
           <div className="space-y-3">
             {filteredMessages.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 text-center text-gray-600">
-                No messages match your filters.
+                {t('messagesAdmin.noMatch')}
               </div>
             ) : (
               filteredMessages.map((msg) => {
@@ -377,7 +379,7 @@ export function MessagesPage() {
                       }
                     }}
                     className={`w-full text-left border rounded-2xl p-5 transition-all ${
-                      isActive ? 'border-primary-500 bg-primary-50/60' : 'border-gray-200 bg-white hover:shadow-md'
+                      isActive ? 'border-primary-500 bg-primary-50/60' : 'border-gray-200 bg-white'
                     }`}
                   >
                     <div className="flex items-start gap-4">
@@ -408,7 +410,7 @@ export function MessagesPage() {
                           {msg.archived && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">
                               <Archive className="w-3 h-3" />
-                              Archived
+                              {t('messagesAdmin.archived')}
                             </span>
                           )}
                         </div>
@@ -421,12 +423,12 @@ export function MessagesPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
           {selectedMessage ? (
             <div className="space-y-5">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">Message Detail</p>
-                <h2 className="text-2xl font-bold text-gray-900 mt-2">{selectedMessage.name}</h2>
+                <p className="text-xs text-gray-500 font-semibold">{t('messagesAdmin.detail')}</p>
+                <h2 className="text-2xl font-semibold text-gray-900 mt-2">{selectedMessage.name}</h2>
                 <p className="text-sm text-gray-500">{selectedMessage.email}</p>
               </div>
 
@@ -446,27 +448,27 @@ export function MessagesPage() {
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs text-gray-500 font-semibold mb-2">THREAD</p>
-                <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
+                <p className="text-xs text-gray-500 font-semibold mb-2">{t('messagesAdmin.thread')}</p>
+                <div className="rounded-xl bg-white border border-gray-200 p-4">
                   <p className="text-gray-700 whitespace-pre-line">{selectedMessage.message}</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => openReply(selectedMessage)}>
-                  Quick Reply
+                  {t('messagesAdmin.quickReply')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleMarkRead(false, [selectedMessage.id])}>
-                  Mark unread
+                  {t('messagesAdmin.markUnread')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleArchive(true, [selectedMessage.id])}>
-                  Archive
+                  {t('messagesAdmin.archive')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleArchive(false, [selectedMessage.id])}>
-                  Unarchive
+                  {t('messagesAdmin.unarchive')}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleDelete([selectedMessage.id])}>
-                  Delete
+                  {t('messagesAdmin.delete')}
                 </Button>
               </div>
             </div>
@@ -475,8 +477,8 @@ export function MessagesPage() {
               <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mb-4">
                 <Inbox className="w-7 h-7 text-primary-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Select a message</h3>
-              <p className="text-sm text-gray-500 mt-2">Choose a message to see details and reply.</p>
+              <h3 className="text-lg font-semibold text-gray-900">{t('messagesAdmin.selectTitle')}</h3>
+              <p className="text-sm text-gray-500 mt-2">{t('messagesAdmin.selectDesc')}</p>
               <Button
                 size="sm"
                 variant="outline"
@@ -484,7 +486,7 @@ export function MessagesPage() {
                 onClick={fetchMessages}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Refresh inbox
+                {t('messagesAdmin.refreshInbox')}
               </Button>
             </div>
           )}

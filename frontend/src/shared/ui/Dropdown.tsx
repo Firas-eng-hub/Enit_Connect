@@ -47,9 +47,9 @@ export function Dropdown({ trigger, children, align = 'right', className }: Drop
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div
             className={cn(
-              'absolute z-50 mt-2 min-w-[200px] bg-surface rounded-xl border border-border',
-              'shadow-dropdown animate-scale-in origin-top overflow-hidden',
-              align === 'right' ? 'right-0' : 'left-0'
+              'absolute z-50 mt-2 min-w-[200px] bg-surface rounded-lg border border-line',
+              'shadow-overlay animate-fade-in overflow-hidden',
+              align === 'right' ? 'end-0' : 'start-0'
             )}
           >
             <div className="p-1" onClick={() => setIsOpen(false)}>
@@ -77,7 +77,7 @@ export function DropdownItem({ children, onClick, disabled, danger, icon, classN
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors rounded-lg',
+        'w-full flex items-center gap-2 px-3 py-2 text-sm text-start rounded-md',
         'appearance-none border-0 bg-transparent',
         'hover:bg-neutral-100 focus-visible:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed',
         danger && 'text-danger-600 hover:bg-danger-50',
@@ -104,7 +104,7 @@ export function DropdownButton({ children, className }: DropdownButtonProps) {
     <button
       className={cn(
         'inline-flex items-center gap-2 px-3 py-2 text-sm font-medium',
-        'bg-surface border border-neutral-300 rounded-lg',
+        'bg-surface border border-neutral-300 rounded-md',
         'hover:bg-neutral-50 transition-colors',
         className
       )}

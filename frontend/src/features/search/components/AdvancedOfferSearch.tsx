@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Search as SearchIcon,
     Filter,
@@ -34,6 +35,7 @@ interface AdvancedOfferSearchProps {
 }
 
 export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps) {
+  const { t } = useTranslation();
     const [query, setQuery] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [companyId, setCompanyId] = useState('');
@@ -181,7 +183,7 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
             )}
 
             {/* Search form */}
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-6">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
                 <div className="flex gap-3 mb-4">
                     <div className="relative flex-1">
                         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -189,8 +191,8 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search offers by title or description..."
-                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-all"
+                            placeholder={t('search.offersPlaceholder')}
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-colors"
                         />
                     </div>
 
@@ -198,14 +200,14 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                         type="button"
                         onClick={() => setShowFilters(!showFilters)}
                         className={cn(
-                            'flex items-center gap-2 px-4 py-3 border-2 rounded-xl font-semibold transition-all',
+                            'flex items-center gap-2 px-4 py-3 border rounded-xl font-semibold transition-colors',
                             hasActiveFilters
                                 ? 'border-primary-400 text-primary-700 bg-primary-50'
                                 : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                         )}
                     >
                         <Filter className="w-4 h-4" />
-                        Filters
+                        {t('search.filters')}
                         {hasActiveFilters && (
                             <span className="w-2 h-2 rounded-full bg-primary-500" />
                         )}
@@ -218,7 +220,7 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                     <div className="border-t border-gray-200 pt-4 space-y-4">
                         {/* Type checkboxes */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Offer Type</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.offerType')}</label>
                             <div className="flex flex-wrap gap-2">
                                 {OFFER_TYPES.map((type) => (
                                     <button
@@ -226,7 +228,7 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                                         type="button"
                                         onClick={() => toggleType(type)}
                                         className={cn(
-                                            'px-3 py-1.5 rounded-lg text-sm font-bold border transition-all',
+                                            'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
                                             selectedTypes.includes(type)
                                                 ? typeColors[type]
                                                 : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
@@ -241,13 +243,13 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                         {/* Company + date range */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Company</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.company')}</label>
                                 <select
                                     value={companyId}
                                     onChange={(e) => setCompanyId(e.target.value)}
-                                    className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
                                 >
-                                    <option value="">All companies</option>
+                                    <option value="">{t('search.allCompanies')}</option>
                                     {companies.map((c) => (
                                         <option key={c._id} value={c._id}>
                                             {c.name}
@@ -256,21 +258,21 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Posted After</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.postedAfter')}</label>
                                 <input
                                     type="date"
                                     value={dateFrom}
                                     onChange={(e) => setDateFrom(e.target.value)}
-                                    className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Posted Before</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.postedBefore')}</label>
                                 <input
                                     type="date"
                                     value={dateTo}
                                     onChange={(e) => setDateTo(e.target.value)}
-                                    className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                 />
                             </div>
                         </div>
@@ -283,7 +285,7 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                                 onChange={(e) => setActiveOnly(e.target.checked)}
                                 className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
-                            <span className="text-sm font-medium text-gray-700">Active offers only</span>
+                            <span className="text-sm font-medium text-gray-700">{t('search.activeOnly')}</span>
                         </label>
 
                         {hasActiveFilters && (
@@ -292,7 +294,7 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                                 onClick={clearFilters}
                                 className="text-sm text-red-600 hover:text-red-700 font-medium"
                             >
-                                Clear all filters
+                                {t('search.clearFilters')}
                             </button>
                         )}
                     </div>
@@ -302,18 +304,18 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 disabled:opacity-50"
+                        className="bg-ink flex-1 px-4 py-2 text-white rounded-md transition-colors font-medium disabled:opacity-50 hover:bg-primary-800 text-sm"
                     >
-                        {loading ? 'Searching...' : 'Search Offers'}
+                        {loading ? t('search.searching') : t('search.searchOffers')}
                     </button>
                     {searched && (
                         <button
                             type="button"
                             onClick={() => setShowSaveModal(true)}
-                            className="px-4 py-3 border-2 border-primary-300 text-primary-700 rounded-xl hover:bg-primary-50 transition-all font-semibold flex items-center gap-2"
+                            className="px-4 py-3 border border-primary-300 text-primary-700 rounded-xl hover:bg-primary-50 transition-colors font-semibold flex items-center gap-2"
                         >
                             <BookmarkPlus className="w-4 h-4" />
-                            Save
+                            {t('search.save')}
                         </button>
                     )}
                 </div>
@@ -340,29 +342,29 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                     <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gray-100 mb-4">
                         <SearchIcon className="w-10 h-10 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No offers found</h3>
-                    <p className="text-gray-600">Try adjusting your filters or search terms</p>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('search.noOffers')}</h3>
+                    <p className="text-gray-600">{t('search.noOffersHint')}</p>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {results.map((offer) => (
                         <div
                             key={offer.id}
-                            className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-300 hover:shadow-xl transition-all cursor-pointer overflow-hidden"
+                            className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-300 transition-colors cursor-pointer overflow-hidden"
                             onClick={() => onSelectOffer?.(offer)}
                         >
                             <div
                                 className={cn(
                                     'h-1.5',
-                                    offer.type === 'PFA' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                                        offer.type === 'PFE' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600' :
-                                            offer.type === 'Intership' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                                                'bg-gradient-to-r from-amber-500 to-amber-600'
+                                    offer.type === 'PFA' ? 'bg-ink' :
+                                        offer.type === 'PFE' ? 'bg-ink' :
+                                            offer.type === 'Intership' ? 'bg-success-600' :
+                                                'bg-warning-600'
                                 )}
                             />
                             <div className="p-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className={cn('px-2.5 py-1 rounded-lg text-xs font-bold border', typeColors[offer.type] || 'bg-gray-100 text-gray-700 border-gray-200')}>
+                                    <span className={cn('px-2.5 py-1 rounded-lg text-xs font-semibold border', typeColors[offer.type] || 'bg-gray-100 text-gray-700 border-gray-200')}>
                                         {offer.type}
                                     </span>
                                     <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -370,13 +372,13 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                                         {formatDate(offer.createdAt)}
                                     </span>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors line-clamp-2">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors line-clamp-2">
                                     {offer.title}
                                 </h3>
                                 <p className="text-sm text-gray-600 line-clamp-2 mb-3">{offer.content}</p>
                                 <div className="flex items-center gap-2 text-sm text-gray-500">
                                     <Building2 className="w-4 h-4 text-gray-400" />
-                                    <span className="truncate">Company</span>
+                                    <span className="truncate">{t('search.company')}</span>
                                 </div>
                             </div>
                         </div>
@@ -390,9 +392,9 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                     <button
                         onClick={() => performSearch(currentPage - 1)}
                         disabled={currentPage === 0}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-all"
+                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-colors"
                     >
-                        Previous
+                        {t('search.previous')}
                     </button>
                     <span className="text-sm text-gray-600 px-4">
                         Page {currentPage + 1} of {totalPages}
@@ -400,9 +402,9 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
                     <button
                         onClick={() => performSearch(currentPage + 1)}
                         disabled={currentPage >= totalPages - 1}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-all"
+                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-colors"
                     >
-                        Next
+                        {t('search.next')}
                     </button>
                 </div>
             )}
@@ -410,35 +412,35 @@ export function AdvancedOfferSearch({ onSelectOffer }: AdvancedOfferSearchProps)
             {/* Save search modal */}
             {showSaveModal && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                    className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50"
                     onClick={() => setShowSaveModal(false)}
                 >
                     <div
-                        className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6"
+                        className="bg-white rounded-2xl max-w-md w-full p-6"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Save Search</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('search.saveSearch')}</h3>
                         <input
                             type="text"
                             value={saveName}
                             onChange={(e) => setSaveName(e.target.value)}
-                            placeholder="Give this search a name..."
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-4"
+                            placeholder={t('search.nameSearch')}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-4"
                             autoFocus
                         />
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowSaveModal(false)}
-                                className="flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold"
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold"
                             >
-                                Cancel
+                                {t('search.cancel')}
                             </button>
                             <button
                                 onClick={handleSaveSearch}
                                 disabled={!saveName.trim()}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg disabled:opacity-50"
+                                className="bg-ink flex-1 px-4 py-2.5 text-white rounded-md font-medium disabled:opacity-50 text-sm"
                             >
-                                Save
+                                {t('search.save')}
                             </button>
                         </div>
                     </div>

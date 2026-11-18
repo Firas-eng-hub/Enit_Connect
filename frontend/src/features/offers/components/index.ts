@@ -1,4 +1,3 @@
 export { OfferCard } from './OfferCard';
-export { OfferList } from './OfferList';
-export { CreateOfferForm } from './CreateOfferForm';
+export { useOfferTypeLabel } from '../lib/useOfferTypeLabel';
 export { ApplyModal } from './ApplyModal';

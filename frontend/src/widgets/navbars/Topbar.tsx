@@ -151,85 +151,77 @@ export function Topbar({ onMenuClick, showMenuButton = true }: TopbarProps) {
     navigate(`${basePath}/profile`);
   };
 
+  const displayName = userName || user?.name || t('auth.' + (userType || 'student'));
+  const roleLabel = userType ? t(`auth.${userType}`) : '';
+
   const userMenuTrigger = (
-    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
-      <Avatar
-        src={null}
-        fallback={userName || user?.name || 'User'}
-        size="sm"
-      />
-      <div className="hidden md:block text-left">
-        <p className="text-sm font-medium text-foreground line-clamp-1">
-          {userName || user?.name || 'User'}
-        </p>
-        <p className="text-xs text-muted-foreground capitalize">{userType}</p>
-      </div>
-      <ChevronDown className="w-4 h-4 text-neutral-400 hidden md:block" />
+    <button
+      type="button"
+      className="flex items-center gap-2.5 rounded-md px-2 py-1 hover:bg-canvas"
+      aria-haspopup="menu"
+    >
+      <Avatar src={null} fallback={displayName} size="sm" />
+      <span className="hidden md:block text-start leading-tight">
+        <span className="block text-sm font-medium text-ink line-clamp-1">{displayName}</span>
+        <span className="block text-xs text-muted-foreground">{roleLabel}</span>
+      </span>
+      <ChevronDown className="w-4 h-4 text-neutral-500 hidden md:block" aria-hidden="true" />
     </button>
   );
 
   return (
-    <header className="dashboard-topbar">
-      <div className="h-full px-4 flex items-center justify-between gap-4">
-        {/* Left section */}
-        <div className="flex items-center gap-3">
+    <header className="fixed inset-x-0 top-0 z-50 h-[var(--topbar-height)] border-b border-line bg-surface">
+      <div className="h-full px-3 sm:px-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
           {showMenuButton && (
             <button
+              type="button"
               onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
-              aria-label="Toggle menu"
+              className="lg:hidden p-2 rounded-md text-ink hover:bg-canvas"
+              aria-label={t('visitor.nav.openMenu')}
+              aria-controls="app-sidebar"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
           )}
 
-          {/* Logo & Brand */}
-          <Link to="/" className="flex items-center gap-3">
-            <img
-              src={enitLogo}
-              alt="ENIT Logo"
-              className="w-10 h-10 object-contain"
-            />
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-primary-900">ENIT-Connect</h1>
-              <p className="text-xs text-muted-foreground -mt-0.5">{t('topbar.tagline')}</p>
-            </div>
+          <Link to="/" className="flex items-center gap-2.5 px-1">
+            <img src={enitLogo} alt="" className="w-8 h-8 object-contain" />
+            <span className="hidden sm:block font-semibold text-ink">ENIT Connect</span>
           </Link>
         </div>
 
-        {/* Right section */}
-        <div className="flex items-center gap-2">
-          {/* Notifications */}
+        <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={handleNotifications}
-            className="relative p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
-            aria-label={t('nav.notifications')}
+            className="relative p-2 rounded-md text-body hover:bg-canvas hover:text-ink"
+            aria-label={
+              notificationCount > 0
+                ? `${t('nav.notifications')} (${notificationCount})`
+                : t('nav.notifications')
+            }
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-5 h-5" aria-hidden="true" />
             {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-danger-500 text-white text-xs rounded-full flex items-center justify-center">
+              <span
+                className="absolute top-1 end-1 min-w-4 h-4 px-1 bg-danger-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center tabular-nums"
+                aria-hidden="true"
+              >
                 {notificationCount > 9 ? '9+' : notificationCount}
               </span>
             )}
           </button>
 
-          {/* User menu */}
           <Dropdown trigger={userMenuTrigger} align="right">
             <DropdownItem icon={<User className="w-4 h-4" />} onClick={handleProfile}>
               {t('nav.profile')}
             </DropdownItem>
-            <DropdownItem
-              icon={<Settings className="w-4 h-4" />}
-              onClick={handleSettings}
-            >
+            <DropdownItem icon={<Settings className="w-4 h-4" />} onClick={handleSettings}>
               {t('nav.settings')}
             </DropdownItem>
             <DropdownDivider />
-            <DropdownItem
-              icon={<LogOut className="w-4 h-4" />}
-              onClick={handleLogout}
-              danger
-            >
+            <DropdownItem icon={<LogOut className="w-4 h-4" />} onClick={handleLogout} danger>
               {t('auth.logout')}
             </DropdownItem>
           </Dropdown>

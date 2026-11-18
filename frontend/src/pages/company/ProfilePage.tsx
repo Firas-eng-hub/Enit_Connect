@@ -56,12 +56,12 @@ export function ProfilePage() {
       setProfile(response.data);
       reset(response.data);
     } catch (err) {
-      setError('Failed to load profile');
+      setError(t('pagesMisc.profileFailed'));
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [reset]);
+  }, [reset, t]);
 
   useEffect(() => {
     fetchProfile();
@@ -77,7 +77,7 @@ export function ProfilePage() {
       fetchProfile();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError('Failed to update profile');
+      setError(t('pagesMisc.profileUpdateFailed'));
       console.error(err);
     } finally {
       setSaving(false);
@@ -114,7 +114,7 @@ export function ProfilePage() {
       fetchProfile();
     } catch (err) {
       console.error('Failed to upload logo:', err);
-      setUploadError(getApiErrorMessage(err, 'Failed to upload logo. Please try again.'));
+      setUploadError(getApiErrorMessage(err, t('pagesMisc.logoFailed')));
     } finally {
       setUploadingLogo(false);
     }
@@ -134,13 +134,13 @@ export function ProfilePage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">{t('profile.companyProfile')}</h1>
-        <p className="text-primary-100 text-lg">{t('profile.companyInfoDesc')}</p>
+      <div className="mb-8 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('profile.companyProfile')}</h1>
+        <p className="text-muted-foreground text-lg">{t('profile.companyInfoDesc')}</p>
       </div>
 
       {success && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 text-green-700 p-4 rounded-xl mb-6 shadow-md">
+        <div className="bg-success-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,29 +153,28 @@ export function ProfilePage() {
       )}
 
       {error && (
-        <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 text-red-700 p-4 rounded-xl mb-6 shadow-md">
+        <div className="bg-danger-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="relative bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-12">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="bg-ink relative px-4 py-12 text-sm">
           <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="flex flex-col items-center md:items-start">
               <div className="relative group">
                 {resolveLogoSrc(profile?.logo) ? (
                   <img
                     src={resolveLogoSrc(profile?.logo) as string}
-                    alt="Company Logo"
-                    className="w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-2xl"
+                    alt={t('pagesMisc.companyLogoAlt')}
+                    className="w-32 h-32 rounded-2xl object-cover border-4 border-white"
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-2xl bg-white/20 backdrop-blur-sm border-4 border-white flex items-center justify-center shadow-2xl">
+                  <div className="w-32 h-32 rounded-2xl bg-white/20 border-4 border-white flex items-center justify-center">
                     <Building2 className="w-16 h-16 text-white" />
                   </div>
                 )}
-                <label className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-all shadow-lg group-hover:scale-110">
+                <label className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
                   <Camera className="w-5 h-5 text-primary-600" />
                   <input
                     type="file"
@@ -198,7 +197,7 @@ export function ProfilePage() {
               )}
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-3xl font-bold text-white mb-2">
+              <h2 className="text-3xl font-semibold text-white mb-2">
                 {profile?.name}
               </h2>
               <p className="text-primary-100 text-lg mb-3">{profile?.email}</p>
@@ -212,7 +211,7 @@ export function ProfilePage() {
                   {profile?.status}
                 </span>
                 {profile?.sector && (
-                  <span className="inline-flex items-center gap-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl text-sm font-bold">
+                  <span className="inline-flex items-center gap-1 px-4 py-2 bg-white/20 text-white rounded-xl text-sm font-semibold">
                     {profile.sector}
                   </span>
                 )}
@@ -224,14 +223,14 @@ export function ProfilePage() {
         <form onSubmit={handleSubmit(onSubmit)} className="p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">{t('profile.companyInfo')}</h3>
+              <h3 className="text-2xl font-semibold text-gray-900">{t('profile.companyInfo')}</h3>
               <p className="text-gray-500 mt-1">{t('profile.companyInfoDescForm')}</p>
             </div>
             {!editing ? (
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl"
+                className="bg-ink px-4 py-2 text-white rounded-md transition-colors font-medium hover:bg-primary-800 text-sm"
               >
                 {t('common.editProfile')}
               </button>
@@ -243,18 +242,18 @@ export function ProfilePage() {
                     setEditing(false);
                     reset(profile || {});
                   }}
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold"
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl disabled:opacity-50"
+                  className="bg-success-600 px-4 py-2 text-white rounded-md transition-colors font-medium disabled:opacity-50 hover:bg-success-700 text-sm"
                 >
                   {saving ? (
                     <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                      <div className="animate-spin rounded-full h-5 w-5 border border-white border-t-transparent" />
                       <span>{t('common.saving')}</span>
                     </div>
                   ) : (
@@ -287,7 +286,7 @@ export function ProfilePage() {
               <input
                 value={profile?.email || ''}
                 disabled
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">{t('profile.emailCannotChange')}</p>
             </div>
@@ -318,7 +317,7 @@ export function ProfilePage() {
                     ? 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                     : 'border-gray-200 bg-gray-50 text-gray-600'
                 }`}
-                placeholder="Enter phone number"
+                placeholder={t('pagesMisc.phonePh')}
               />
             </div>
             <div>
@@ -348,7 +347,7 @@ export function ProfilePage() {
                     ? 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                     : 'border-gray-200 bg-gray-50 text-gray-600'
                 }`}
-                placeholder="Enter address"
+                placeholder={t('pagesMisc.addressPh')}
               />
             </div>
             <div className="md:col-span-2">
@@ -364,7 +363,7 @@ export function ProfilePage() {
                     ? 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                     : 'border-gray-200 bg-gray-50 text-gray-600'
                 }`}
-                placeholder="Tell students about your company..."
+                placeholder={t('pagesMisc.aboutCompanyPh')}
               />
             </div>
           </div>

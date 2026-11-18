@@ -1,3 +1,1 @@
-export { NewsCard, NewsCardSkeleton, NewsEmpty } from './NewsCard';
-export { NewsList } from './NewsList';
-export { CreateNewsForm } from './CreateNewsForm';
+export { NewsCard, NewsCardSkeleton, NewsEmpty, NewsArticleDialog } from './NewsCard';

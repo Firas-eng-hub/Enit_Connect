@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon, User, GraduationCap, Calendar, FileText, Send } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Student } from '@/entities/student/types';
@@ -7,6 +8,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { Dialog, DialogFooter } from '@/shared/ui/Dialog';
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -67,7 +69,7 @@ export function SearchPage() {
   const handleOpenRequest = (student: Student) => {
     setRequestStudent(student);
     setRequestForm({
-      title: `Documents request for ${student.firstname} ${student.lastname}`,
+      title: t('search.defaultRequestTitle', { name: `${student.firstname} ${student.lastname}` }),
       message: '',
       dueDate: '',
     });
@@ -78,7 +80,7 @@ export function SearchPage() {
   const handleSendRequest = async () => {
     if (!requestStudent) return;
     if (!requestForm.title.trim()) {
-      setRequestError('Request title is required.');
+      setRequestError(t('search.requestTitleRequired'));
       return;
     }
 
@@ -93,9 +95,9 @@ export function SearchPage() {
         message: requestForm.message,
         dueDate: requestForm.dueDate || undefined,
       });
-      setRequestSuccess('Request sent successfully.');
+      setRequestSuccess(t('search.requestSent'));
     } catch (err: unknown) {
-      setRequestError(getErrorMessage(err, 'Failed to send request.'));
+      setRequestError(getErrorMessage(err, t('search.requestFailed')));
     } finally {
       setIsRequesting(false);
     }
@@ -103,14 +105,14 @@ export function SearchPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 shadow-xl mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Search Students</h1>
-        <p className="text-primary-100 text-lg">Find talented students for your positions</p>
+      <div className="mb-8 pb-5 border-b border-line">
+        <h1 className="text-2xl font-semibold text-ink mb-2">{t('search.searchStudents')}</h1>
+        <p className="text-muted-foreground text-lg">{t('search.companySubtitle')}</p>
       </div>
 
       {/* Search form */}
       <form onSubmit={handleSearch} className="mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="flex-1 relative">
               <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
@@ -118,62 +120,62 @@ export function SearchPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name..."
-                className="w-full pl-14 pr-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-lg"
+                placeholder={t('search.byName')}
+                className="w-full pl-14 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-lg"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl disabled:opacity-50"
+              className="bg-ink px-4 py-2 text-white rounded-md transition-colors font-medium disabled:opacity-50 hover:bg-primary-800 text-sm"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
+                <div className="animate-spin rounded-full h-6 w-6 border border-white border-t-transparent" />
               ) : (
-                <span className="text-lg">Search</span>
+                <span className="text-lg">{t('search.title')}</span>
               )}
             </button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.country')}</label>
               <input
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder="e.g., Tunisia"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.city')}</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="e.g., Tunis"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Promotion</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.promotion')}</label>
               <input
                 type="text"
                 value={promotion}
                 onChange={(e) => setPromotion(e.target.value)}
                 placeholder="e.g., 2026"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.class')}</label>
               <input
                 type="text"
                 value={studentClass}
                 onChange={(e) => setStudentClass(e.target.value)}
                 placeholder="e.g., 2nd Tel 1"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
           </div>
@@ -188,15 +190,14 @@ export function SearchPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
             </div>
           ) : results.length === 0 ? (
-            <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-emerald-50 rounded-3xl border-2 border-dashed border-gray-300 p-16 shadow-xl">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-gray-100 to-emerald-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
+            <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
               
               <div className="relative text-center">
-                <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-gray-400 to-gray-500 mb-6 shadow-2xl shadow-gray-500/40">
-                  <SearchIcon className="w-12 h-12 text-white" />
+                <div className="bg-primary-50 inline-flex items-center justify-center w-10 h-10 rounded-3xl mb-3 text-primary-700">
+                  <SearchIcon className="w-5 h-5 text-primary-700" />
                 </div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-3">No Students Found</h3>
-                <p className="text-lg text-gray-600 mb-4 max-w-md mx-auto">Try different keywords or search criteria to find the right candidates</p>
+                <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.noStudents')}</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">{t('search.noCandidatesHint')}</p>
               </div>
             </div>
           ) : (
@@ -244,7 +245,7 @@ export function SearchPage() {
                     <Button size="sm" variant="secondary" onClick={() => handleOpenRequest(student)}>
                       <span className="inline-flex items-center gap-2">
                         <FileText className="w-4 h-4" />
-                        Request documents
+                        {t('search.requestDocuments')}
                       </span>
                     </Button>
                   </div>
@@ -259,16 +260,16 @@ export function SearchPage() {
       {!searched && (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <SearchIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Start searching</h3>
-          <p className="text-gray-500">Enter keywords to find students</p>
+          <h3 className="text-lg font-medium text-gray-900">{t('search.startSearching')}</h3>
+          <p className="text-gray-500">{t('search.enterKeywords')}</p>
         </div>
       )}
 
       <Dialog
         open={Boolean(requestStudent)}
         onClose={() => setRequestStudent(null)}
-        title="Request documents"
-        description="Ask a student to upload specific documents."
+        title={t('search.requestDocuments')}
+        description={t('search.requestDesc')}
         size="lg"
       >
         <div className="space-y-4">
@@ -283,7 +284,7 @@ export function SearchPage() {
             </Alert>
           )}
           <div>
-            <label className="text-sm font-semibold text-gray-700">Title</label>
+            <label className="text-sm font-semibold text-gray-700">{t('search.requestTitleField')}</label>
             <input
               value={requestForm.title}
               onChange={(event) => setRequestForm((prev) => ({ ...prev, title: event.target.value }))}
@@ -291,7 +292,7 @@ export function SearchPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-gray-700">Message</label>
+            <label className="text-sm font-semibold text-gray-700">{t('search.message')}</label>
             <textarea
               value={requestForm.message}
               onChange={(event) => setRequestForm((prev) => ({ ...prev, message: event.target.value }))}
@@ -300,7 +301,7 @@ export function SearchPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-gray-700">Due date (optional)</label>
+            <label className="text-sm font-semibold text-gray-700">{t('search.dueDate')}</label>
             <input
               type="date"
               value={requestForm.dueDate}
@@ -311,12 +312,12 @@ export function SearchPage() {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setRequestStudent(null)}>
-            Close
+            {t('search.close')}
           </Button>
           <Button onClick={handleSendRequest} isLoading={isRequesting}>
             <span className="inline-flex items-center gap-2">
               <Send className="w-4 h-4" />
-              Send request
+              {t('search.sendRequest')}
             </span>
           </Button>
         </DialogFooter>

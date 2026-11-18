@@ -7,6 +7,13 @@ import { AuthProvider } from '@/features/auth/hooks/useAuth';
 import { ToastProvider } from '@/shared/ui/Toast';
 import { router } from '@/app/router';
 
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-400.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-500.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-600.css';
+
 import '@/app/i18n';
 import './index.css';
 

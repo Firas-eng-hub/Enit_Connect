@@ -8,23 +8,23 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variants = {
-  default: 'bg-surface border border-border shadow-card',
-  elevated: 'bg-surface shadow-elevated',
-  outlined: 'bg-transparent border-2 border-border',
+  default: 'bg-surface border border-line',
+  elevated: 'bg-surface border border-line',
+  outlined: 'bg-transparent border border-line',
 };
 
 const paddings = {
   none: '',
   sm: 'p-3 sm:p-4',
-  md: 'p-4 sm:p-6',
-  lg: 'p-6 sm:p-8',
+  md: 'p-4 sm:p-5',
+  lg: 'p-5 sm:p-6',
 };
 
 export function Card({ className, children, variant = 'default', padding = 'none', ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl',
+        'rounded-lg',
         variants[variant],
         paddings[padding],
         className
@@ -43,9 +43,9 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardHeader({ className, children, action, ...props }: CardHeaderProps) {
   return (
-    <div className={cn('px-4 py-3 border-b border-border flex items-center justify-between sm:px-6 sm:py-4', className)} {...props}>
+    <div className={cn('px-4 py-3 border-b border-line flex items-center justify-between gap-4 sm:px-5', className)} {...props}>
       <div className="min-w-0 flex-1">{children}</div>
-      {action && <div className="ml-4 flex-shrink-0">{action}</div>}
+      {action && <div className="flex-shrink-0">{action}</div>}
     </div>
   );
 }
@@ -57,7 +57,7 @@ export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
 
 export function CardTitle({ className, children, as: Tag = 'h3', ...props }: CardTitleProps) {
   return (
-    <Tag className={cn('text-lg font-semibold text-foreground', className)} {...props}>
+    <Tag className={cn('text-base font-semibold text-ink', className)} {...props}>
       {children}
     </Tag>
   );
@@ -81,7 +81,7 @@ export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardContent({ className, children, ...props }: CardContentProps) {
   return (
-    <div className={cn('p-4 sm:p-6', className)} {...props}>
+    <div className={cn('p-4 sm:p-5', className)} {...props}>
       {children}
     </div>
   );
@@ -93,7 +93,7 @@ export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
 
 export function CardFooter({ className, children, ...props }: CardFooterProps) {
   return (
-    <div className={cn('px-4 py-3 border-t border-border bg-muted/30 rounded-b-xl sm:px-6 sm:py-4', className)} {...props}>
+    <div className={cn('px-4 py-3 border-t border-line sm:px-5', className)} {...props}>
       {children}
     </div>
   );

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -10,17 +11,18 @@ import type { News } from '@/entities/news/types';
 import { formatDate, getApiErrorMessage } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
 
-const newsSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  content: z.string().min(1, 'Content is required'),
-  date: z.string().min(1, 'Date is required'),
+const buildNewsSchema = (t: TFunction) =>
+  z.object({
+  title: z.string().min(1, t('pagesMisc.v.title')),
+  content: z.string().min(1, t('pagesMisc.v.content')),
+  date: z.string().min(1, t('pagesMisc.v.date')),
   status: z.enum(['draft', 'published']),
-  audience: z.array(z.enum(['student', 'company', 'visitor'])).min(1, 'Select at least one audience'),
+  audience: z.array(z.enum(['student', 'company', 'visitor'])).min(1, t('pagesMisc.v.audience')),
   category: z.string().optional(),
   tags: z.string().optional(),
 });
 
-type NewsFormData = z.infer<typeof newsSchema>;
+type NewsFormData = z.infer<ReturnType<typeof buildNewsSchema>>;
 
 type MessagePreview = {
   id: string;
@@ -35,6 +37,7 @@ type MessagePreview = {
 
 export function HomePage() {
   const { t } = useTranslation();
+  const newsSchema = useMemo(() => buildNewsSchema(t), [t]);
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(true);
@@ -96,7 +99,7 @@ export function HomePage() {
       setRecentUnread(unread);
     } catch (err) {
       console.error('Failed to fetch messages:', err);
-      setMessagesError(getApiErrorMessage(err, 'Failed to load messages.'));
+      setMessagesError(getApiErrorMessage(err, t('pagesMisc.messagesFailed')));
     } finally {
       setMessagesLoading(false);
     }
@@ -164,7 +167,7 @@ export function HomePage() {
       fetchNews();
     } catch (err) {
       console.error('Failed to create news:', err);
-      setFormError(getApiErrorMessage(err, 'Failed to create news. Please try again.'));
+      setFormError(getApiErrorMessage(err, t('pagesMisc.newsFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -259,9 +262,9 @@ export function HomePage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-8 py-6 shadow-xl flex-1 mr-6">
-          <h1 className="text-3xl font-bold text-white">{t('home.newsManagement')}</h1>
-          <p className="text-primary-100 mt-1">{t('home.createAndManageNews')}</p>
+        <div className="flex-1 mb-6 pb-5 border-b border-line">
+          <h1 className="text-2xl font-semibold text-ink">{t('home.newsManagement')}</h1>
+          <p className="text-muted-foreground mt-1">{t('home.createAndManageNews')}</p>
         </div>
         <button
           onClick={() => {
@@ -280,38 +283,38 @@ export function HomePage() {
             setImageRemoved(false);
             setShowForm(true);
           }}
-          className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl flex items-center gap-2 shrink-0"
+          className="bg-ink px-4 py-2 text-white rounded-md transition-colors font-medium flex items-center gap-2 shrink-0 hover:bg-primary-800 text-sm"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           {t('home.createNews')}
         </button>
       </div>
 
       {/* Create News Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-white">{editingNews ? t('home.editNews') : t('home.createNews')}</h2>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowForm(false)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full my-8" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-ink px-4 py-6 rounded-t-2xl text-sm">
+              <h2 className="text-2xl font-semibold text-white">{editingNews ? t('home.editNews') : t('home.createNews')}</h2>
               <p className="text-primary-100 mt-1">{t('home.shareUpdates')}</p>
             </div>
 
             <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
               <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
                 {formError && (
-                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 rounded-xl p-4">
+                  <div className="bg-danger-50 border border-red-200 text-red-700 rounded-xl p-4">
                     {formError}
                   </div>
                 )}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.titleField')} *</label>
-                  <input {...register('title')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="Enter news title" />
+                  <input {...register('title')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" placeholder="Enter news title" />
                   {errors.title && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.title.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.contentField')} *</label>
-                  <textarea {...register('content')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none" rows={6} placeholder="Write the news content..." />
+                  <textarea {...register('content')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none" rows={6} placeholder="Write the news content..." />
                   {errors.content && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.content.message}</p>}
                 </div>
 
@@ -321,7 +324,7 @@ export function HomePage() {
                     <input
                       type="date"
                       {...register('date')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     />
                     {errors.date && <p className="mt-2 text-sm text-red-600 flex items-center gap-1">⚠️ {errors.date.message}</p>}
                   </div>
@@ -329,7 +332,7 @@ export function HomePage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.statusField')} *</label>
                   <select
                     {...register('status')}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white"
                   >
                     <option value="published">{t('common.published')}</option>
                     <option value="draft">{t('common.draft')}</option>
@@ -362,15 +365,15 @@ export function HomePage() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.categoryOptional')}</label>
                     <input
                       {...register('category')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                      placeholder="Announcements, Events, Careers..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                      placeholder={t('pagesMisc.categoryPh')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('home.tagsOptional')}</label>
                     <input
                       {...register('tags')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                       placeholder="internship, hackathon, alumni"
                     />
                   </div>
@@ -381,7 +384,7 @@ export function HomePage() {
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-primary-400 transition-colors">
                     {imagePreview ? (
                       <div className="relative">
-                        <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                        <img src={imagePreview} alt={t('pagesMisc.preview')} className="w-full h-48 object-cover rounded-lg" />
                         <button
                           type="button"
                           onClick={() => {
@@ -389,14 +392,14 @@ export function HomePage() {
                             setImagePreview(null);
                             setImageRemoved(true);
                           }}
-                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     ) : (
                       <label className="flex flex-col items-center cursor-pointer">
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-3">
+                        <div className="bg-primary-50 w-16 h-16 rounded-xl flex items-center justify-center mb-3">
                           <Image className="w-8 h-8 text-primary-600" />
                         </div>
                         <span className="text-sm font-medium text-gray-700 mb-1">{t('home.clickToUpload')}</span>
@@ -417,14 +420,14 @@ export function HomePage() {
                       setImageRemoved(false);
                       setEditingNews(null);
                     }}
-                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors font-semibold"
                   >
                     {t('common.cancel')}
                   </button>
-                  <button type="submit" disabled={submitting} className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  <button type="submit" disabled={submitting} className="bg-ink flex-1 px-4 py-2 text-white rounded-md transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:bg-primary-800 text-sm">
                     {submitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                        <div className="animate-spin rounded-full h-5 w-5 border border-white border-t-transparent" />
                         {t('home.publishing')}
                       </>
                     ) : (
@@ -443,25 +446,23 @@ export function HomePage() {
 
       {/* News list */}
       {news.length === 0 ? (
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-blue-50 rounded-3xl border-2 border-dashed border-primary-300 p-16 shadow-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100 to-blue-100 rounded-full blur-3xl opacity-30 -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-emerald-100 to-purple-100 rounded-full blur-3xl opacity-30 -ml-32 -mb-32"></div>
+        <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
           
           <div className="relative text-center">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-600 mb-6 shadow-2xl shadow-primary-500/40 animate-pulse">
-              <Newspaper className="w-12 h-12 text-white" />
+            <div className="bg-primary-50 inline-flex items-center justify-center w-10 h-10 rounded-3xl mb-3 text-primary-700">
+              <Newspaper className="w-5 h-5 text-primary-700" />
             </div>
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">{t('home.noNewsPosted')}</h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">{t('home.noNewsPostedDesc')}</p>
-            <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold text-lg shadow-2xl shadow-primary-500/40 hover:shadow-3xl hover:shadow-primary-500/50 hover:scale-105 transform">
-              <Plus className="w-6 h-6" />
+            <h3 className="text-base font-semibold text-gray-900 mb-3">{t('home.noNewsPosted')}</h3>
+            <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">{t('home.noNewsPostedDesc')}</p>
+            <button onClick={() => setShowForm(true)} className="bg-ink inline-flex items-center gap-2 px-4 py-2 text-white rounded-md transition-colors font-medium text-sm hover:bg-primary-800">
+              <Plus className="w-4 h-4" />
               {t('home.createFirstNews')}
             </button>
           </div>
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-5">
             <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
               <div className="flex-1">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t('common.search')}</label>
@@ -473,7 +474,7 @@ export function HomePage() {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder={t('home.searchByTitleContent')}
                   />
                 </div>
@@ -487,7 +488,7 @@ export function HomePage() {
                       setStatusFilter(e.target.value as typeof statusFilter);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white"
                   >
                     <option value="all">{t('common.all')}</option>
                     <option value="published">{t('common.published')}</option>
@@ -503,7 +504,7 @@ export function HomePage() {
                       setDateFrom(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -515,7 +516,7 @@ export function HomePage() {
                       setDateTo(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   />
                 </div>
               </div>
@@ -527,7 +528,7 @@ export function HomePage() {
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white"
                 >
                   {[6, 12, 24].map((size) => (
                     <option key={size} value={size}>{t('common.perPage', { n: size })}</option>
@@ -565,19 +566,19 @@ export function HomePage() {
             }
             
             return (
-            <div key={item._id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 hover:shadow-2xl transition-all duration-300 overflow-hidden">
-              <div className="h-1.5 bg-gradient-to-r from-primary-500 to-primary-600" />
+            <div key={item._id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 transition-colors overflow-hidden">
+              <div className="bg-ink h-1.5" />
               <div className="p-8">
                 <div className="flex items-start gap-6">
                   {imageUrl && (
                     <img
                       src={imageUrl}
                       alt={item.title}
-                      className="w-32 h-32 rounded-xl object-cover flex-shrink-0 shadow-lg"
+                      className="w-32 h-32 rounded-xl object-cover flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">{item.title}</h3>
+                    <h3 className="text-2xl font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">{item.title}</h3>
                     <p className="text-gray-600 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                       <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
@@ -602,15 +603,15 @@ export function HomePage() {
                   </div>
                   <button
                     onClick={() => handleEdit(item)}
-                    className="p-3 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all border-2 border-transparent hover:border-primary-200"
-                    aria-label="Edit news"
+                    className="p-3 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-colors border border-transparent hover:border-primary-200"
+                    aria-label={t('pagesMisc.editNews')}
                   >
                     <Pencil className="w-6 h-6" />
                   </button>
                   <button
                     onClick={() => handleDelete(item._id)}
-                    className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border-2 border-transparent hover:border-red-200"
-                    aria-label="Delete news"
+                    className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200"
+                    aria-label={t('pagesMisc.deleteNews')}
                   >
                     <Trash2 className="w-6 h-6" />
                   </button>
@@ -647,14 +648,14 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="mt-12 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+      <div className="mt-12 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center">
               <MessageSquare className="w-6 h-6 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{t('home.messagesCenter')}</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">{t('home.messagesCenter')}</h2>
               <p className="mt-2 text-gray-600">{t('home.messagesCenterDesc')}</p>
             </div>
           </div>

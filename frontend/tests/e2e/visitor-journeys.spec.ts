@@ -52,21 +52,11 @@ test.describe('Visitor Journey', () => {
     await expect(content).toBeVisible();
   });
 
-  test('should view members page', async ({ page }) => {
-    // Navigate to members page
-    await page.goto('/members');
-    
-    // Check that page loads
-    const heading = page.locator('h1, h2, [class*="heading"]').first();
-    await expect(heading).toBeVisible();
-  });
-
-  test('should view statistics page', async ({ page }) => {
-    // Navigate to statistics page
-    await page.goto('/statistics');
-    
-    // Check that page loads
-    const content = page.locator('main, [class*="container"]').first();
-    await expect(content).toBeVisible();
-  });
+  // Statistics and How It Works were removed; their old URLs redirect to the news home.
+  for (const path of ['/visitor/statistics', '/visitor/how-it-works', '/visitor/members']) {
+    test(`should redirect ${path} to news`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/visitor\/news$/);
+    });
+  }
 });

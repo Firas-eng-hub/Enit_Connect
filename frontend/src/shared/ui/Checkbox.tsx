@@ -21,30 +21,29 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               type="checkbox"
               id={checkboxId}
               className={cn(
-                'peer h-5 w-5 shrink-0 rounded border-2 cursor-pointer',
-                'appearance-none bg-surface transition-colors duration-200',
-                'checked:bg-primary-900 checked:border-primary-900',
-                'hover:border-primary-400',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:ring-offset-2',
-                'disabled:cursor-not-allowed disabled:opacity-50',
-                error ? 'border-danger-500' : 'border-neutral-300',
+                'peer h-[18px] w-[18px] shrink-0 rounded-sm border cursor-pointer',
+                'appearance-none bg-surface',
+                'checked:bg-ink checked:border-ink',
+                'hover:border-neutral-500',
+                                'disabled:cursor-not-allowed disabled:opacity-50',
+                error ? 'border-danger-600' : 'border-neutral-400',
                 className
               )}
               {...props}
             />
             <Check 
               className={cn(
-                'absolute top-0.5 left-0.5 h-4 w-4 text-white pointer-events-none',
-                'opacity-0 peer-checked:opacity-100 transition-opacity'
+                'absolute top-[3px] start-[3px] h-3 w-3 text-white pointer-events-none',
+                'opacity-0 peer-checked:opacity-100'
               )}
               strokeWidth={3}
             />
           </div>
         </div>
         {(label || description) && (
-          <div className="ml-3 text-sm leading-6">
+          <div className="ms-3 text-sm leading-6">
             {label && (
-              <label htmlFor={checkboxId} className="font-medium text-foreground cursor-pointer">
+              <label htmlFor={checkboxId} className="font-medium text-ink cursor-pointer">
                 {label}
               </label>
             )}

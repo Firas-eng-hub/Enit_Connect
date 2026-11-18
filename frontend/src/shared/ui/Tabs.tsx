@@ -69,7 +69,7 @@ export function TabsList({ children, className }: TabsListProps) {
     <div
       role="tablist"
       className={cn(
-        'inline-flex items-center gap-1 p-1 rounded-lg bg-neutral-100',
+        'flex items-center gap-6 border-b border-line overflow-x-auto',
         className
       )}
     >
@@ -90,11 +90,10 @@ export function TabsTrigger({ value, children, disabled, className }: TabsTrigge
       disabled={disabled}
       onClick={() => onValueChange(value)}
       className={cn(
-        'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+        '-mb-px py-2.5 text-sm font-medium border-b-2 whitespace-nowrap',
         isSelected
-          ? 'bg-surface text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground',
+          ? 'border-gold text-ink'
+          : 'border-transparent text-muted-foreground hover:text-ink',
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
@@ -114,7 +113,7 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
   return (
     <div
       role="tabpanel"
-      className={cn('mt-4 animate-fade-in', className)}
+      className={cn('mt-5', className)}
     >
       {children}
     </div>

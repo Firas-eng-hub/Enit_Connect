@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdminDocument } from '@/entities/document/types';
 import { useAdminDocumentVersions, useRestoreAdminDocumentVersion } from '@/entities/document/hooks';
 import { Button } from '@/shared/ui/Button';
@@ -30,6 +31,7 @@ const formatSize = (bytes?: number | null) => {
 };
 
 export function DocumentVersionsDialog({ open, onClose, document }: Props) {
+  const { t } = useTranslation();
   const docId = document?.id;
   const versionsQuery = useAdminDocumentVersions(docId);
   const restore = useRestoreAdminDocumentVersion();
@@ -50,12 +52,12 @@ export function DocumentVersionsDialog({ open, onClose, document }: Props) {
         if (isBusy) return;
         onClose();
       }}
-      title={document ? `Versions: ${document.title}` : 'Versions'}
-      description="Restoring a version creates a new current version."
+      title={document ? t('adminDocs.versionsOf', { title: document.title }) : t('adminDocs.versions')}
+      description={t('adminDocs.restoreDesc')}
       size="lg"
     >
       {versionsQuery.isLoading ? (
-        <div className="text-sm text-gray-500">Loading versions…</div>
+        <div className="text-sm text-gray-500">{t('adminDocs.loadingVersions')}</div>
       ) : versions.length ? (
         <div className="mt-2 space-y-3">
           {versions.map((v) => {
@@ -81,7 +83,7 @@ export function DocumentVersionsDialog({ open, onClose, document }: Props) {
                   {v.link ? (
                     <a href={v.link} target="_blank" rel="noreferrer">
                       <Button variant="outline" size="sm" disabled={isBusy}>
-                        Open
+                        {t('adminDocs.open')}
                       </Button>
                     </a>
                   ) : null}
@@ -91,7 +93,7 @@ export function DocumentVersionsDialog({ open, onClose, document }: Props) {
                     isLoading={restore.isPending}
                     disabled={isBusy}
                   >
-                    Restore
+                    {t('adminDocs.restore')}
                   </Button>
                 </div>
               </div>
@@ -99,12 +101,12 @@ export function DocumentVersionsDialog({ open, onClose, document }: Props) {
           })}
         </div>
       ) : (
-        <div className="text-sm text-gray-500">No versions yet.</div>
+        <div className="text-sm text-gray-500">{t('adminDocs.noVersions')}</div>
       )}
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose} disabled={isBusy}>
-          Close
+          {t('adminDocs.close')}
         </Button>
       </DialogFooter>
     </Dialog>
