@@ -6,27 +6,29 @@ import type L from 'leaflet';
 import type {} from 'leaflet.markercluster';
 import 'leaflet/dist/leaflet.css';
 import './student-map.css';
-import type { MapBounds, MapPerson } from '../model/types';
-import { PersonMarker } from './PersonMarker';
+import { cellKey } from '../model/filters';
+import type { MapBounds, MapCell } from '../model/types';
+import { CellMarker } from './CellMarker';
 import { createClusterIcon } from './personIcon';
-import { BoundsWatcher, FitToPeople, ResizeSync } from './mapControllers';
+import { BoundsWatcher, FitToCells, ResizeSync } from './mapControllers';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, MAX_ZOOM, TILE_ATTRIBUTION, TILE_URL, USE_TILE_TINT } from './mapConfig';
 
-
+/** Ask the map to reveal a cell (list click). `seq` makes repeat clicks re-trigger. */
 export interface FocusRequest {
-  id: string;
+  lat: number;
+  lng: number;
   seq: number;
 }
 
 interface StudentNetworkMapProps {
-  people: MapPerson[];
-  activeId: string | null;
+  cells: MapCell[];
+  activeCellId: string | null;
   focusRequest: FocusRequest | null;
-  onSelect: (id: string) => void;
+  onCellSelect: (cell: MapCell) => void;
   onBoundsChange: (bounds: MapBounds) => void;
 }
 
-export function StudentNetworkMap({ people, activeId, focusRequest, onSelect, onBoundsChange }: StudentNetworkMapProps) {
+export function StudentNetworkMap({ cells, activeCellId, focusRequest, onCellSelect, onBoundsChange }: StudentNetworkMapProps) {
   const { t } = useTranslation();
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const markersRef = useRef(new Map<string, L.Marker>());
@@ -36,13 +38,15 @@ export function StudentNetworkMap({ people, activeId, focusRequest, onSelect, on
     else markersRef.current.delete(id);
   }, []);
 
-  // List click: expand the cluster holding the person, then open their popup.
+  // List click: expand whatever cluster holds the cell, then open a person popup if it has one.
   useEffect(() => {
     if (!focusRequest) return;
-    const marker = markersRef.current.get(focusRequest.id);
+    const marker = markersRef.current.get(cellKey(focusRequest.lat, focusRequest.lng));
     const cluster = clusterRef.current;
     if (!marker || !cluster) return;
-    cluster.zoomToShowLayer(marker, () => marker.openPopup());
+    cluster.zoomToShowLayer(marker, () => {
+      if (marker.getPopup()) marker.openPopup();
+    });
   }, [focusRequest]);
 
   return (
@@ -57,7 +61,12 @@ export function StudentNetworkMap({ people, activeId, focusRequest, onSelect, on
         worldCopyJump
         className="h-full w-full"
       >
-        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={MAX_ZOOM} className={USE_TILE_TINT ? 'student-map-tiles--tint' : undefined} />
+        <TileLayer
+          url={TILE_URL}
+          attribution={TILE_ATTRIBUTION}
+          maxZoom={MAX_ZOOM}
+          className={USE_TILE_TINT ? 'student-map-tiles--tint' : undefined}
+        />
         <ZoomControl position="topright" />
         <MarkerClusterGroup
           ref={clusterRef}
@@ -67,17 +76,21 @@ export function StudentNetworkMap({ people, activeId, focusRequest, onSelect, on
           maxClusterRadius={48}
           iconCreateFunction={createClusterIcon}
         >
-          {people.map((person) => (
-            <PersonMarker
-              key={person.id}
-              person={person}
-              active={person.id === activeId}
-              onSelect={onSelect}
-              registerMarker={registerMarker}
-            />
-          ))}
+          {cells.map((cell) => {
+            const id = cellKey(cell.lat, cell.lng);
+            return (
+              <CellMarker
+                key={id}
+                cell={cell}
+                cellId={id}
+                active={id === activeCellId}
+                onSelect={onCellSelect}
+                registerMarker={registerMarker}
+              />
+            );
+          })}
         </MarkerClusterGroup>
-        <FitToPeople people={people} />
+        <FitToCells cells={cells} />
         <BoundsWatcher onChange={onBoundsChange} />
         <ResizeSync />
       </MapContainer>

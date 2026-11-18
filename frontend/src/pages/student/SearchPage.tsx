@@ -8,6 +8,9 @@ import { StudentResultCard, type StudentResult } from './components/StudentResul
 
 type ViewMode = 'list' | 'map';
 
+// Must match the backend default page size for /api/student/search.
+const PAGE_SIZE = 50;
+
 const tabClass = (active: boolean) =>
   `flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
     active ? 'bg-ink text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -29,6 +32,13 @@ export function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchPage = (property: string, key: string, offset: number) =>
+    httpClient
+      .get<StudentResult[]>('/api/student/search', { params: { property, key, limit: PAGE_SIZE, offset } })
+      .then((response) => response.data);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,21 +47,35 @@ export function SearchPage() {
     if (!key) {
       setSearched(false);
       setResults([]);
+      setHasMore(false);
       return;
     }
 
     setLoading(true);
     setSearched(true);
     try {
-      const response = await httpClient.get('/api/student/search', {
-        params: { property: searchProperty, key }
-      });
-      setResults(response.data);
+      const page = await fetchPage(searchProperty, key, 0);
+      setResults(page);
+      setHasMore(page.length === PAGE_SIZE);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const page = await fetchPage(submitted.property, submitted.key, results.length);
+      setResults((prev) => [...prev, ...page]);
+      setHasMore(page.length === PAGE_SIZE);
+    } catch (err) {
+      console.error('Load more failed:', err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -159,7 +183,12 @@ export function SearchPage() {
           </div>
 
           {viewMode === 'map' ? (
-            <NetworkMapPanel property={submitted.property} searchKey={submitted.key} />
+            // A new search starts the map fresh (filters, list scope, selection).
+            <NetworkMapPanel
+              key={`${submitted.property}:${submitted.key}`}
+              property={submitted.property}
+              searchKey={submitted.key}
+            />
           ) : searched ? (
             loading ? (
               <div className="flex items-center justify-center h-64">
@@ -174,11 +203,25 @@ export function SearchPage() {
                 <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">{t('search.noStudentsHint')}</p>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {results.map((student) => (
-                  <StudentResultCard key={student.id} student={student} />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {results.map((student) => (
+                    <StudentResultCard key={student.id} student={student} />
+                  ))}
+                </div>
+                {hasMore && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="rounded-md border border-line bg-surface px-5 py-2 text-sm font-medium text-ink hover:bg-canvas disabled:opacity-60"
+                    >
+                      {loadingMore ? t('search.searching') : t('search.loadMore')}
+                    </button>
+                  </div>
+                )}
+              </>
             )
           ) : (
             <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">

@@ -751,6 +751,7 @@ const ar = {
     },
 
     search: {
+        loadMore: "تحميل المزيد",
         firstName: "الاسم الأول",
         lastName: "اسم العائلة",
         city: "المدينة",
@@ -1077,6 +1078,10 @@ const ar = {
     },
 
     studentMap: {
+        scopeCell: "الأشخاص قرب {{place}}",
+        clearScope: "عرض الجميع",
+        loadMore: "تحميل المزيد",
+        loading: "جارٍ التحميل...",
         mapAria: "خريطة طلاب وخريجي المدرسة الوطنية للمهندسين بتونس",
         statsPeople: "الأشخاص على الخريطة",
         statsCountries: "الدول",
@@ -1091,7 +1096,7 @@ const ar = {
         allClasses: "كل الأقسام",
         employedOnly: "يعمل في شركة",
         resetFilters: "إعادة الضبط",
-        listCount: "الأشخاص: {{count}}",
+        listCount: "الأشخاص: {{total}}",
         areaOnly: "المنطقة المعروضة فقط",
         emptyArea: "لا أحد في هذه المنطقة. صغّر الخريطة أو حرّكها.",
         typeStudent: "طالب",

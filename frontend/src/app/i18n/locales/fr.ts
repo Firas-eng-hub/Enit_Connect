@@ -751,6 +751,7 @@ const fr = {
     },
 
     search: {
+        loadMore: "Charger plus",
         firstName: "Prénom",
         lastName: "Nom",
         city: "Ville",
@@ -1077,6 +1078,10 @@ const fr = {
     },
 
     studentMap: {
+        scopeCell: "Personnes près de {{place}}",
+        clearScope: "Afficher tout le monde",
+        loadMore: "Charger plus",
+        loading: "Chargement...",
         mapAria: "Carte des étudiants et diplômés de l'ENIT",
         statsPeople: "Personnes sur la carte",
         statsCountries: "Pays",
@@ -1091,7 +1096,7 @@ const fr = {
         allClasses: "Toutes les classes",
         employedOnly: "En poste dans une entreprise",
         resetFilters: "Réinitialiser",
-        listCount: "Personnes : {{count}}",
+        listCount: "Personnes : {{total}}",
         areaOnly: "Zone visible uniquement",
         emptyArea: "Personne dans cette zone. Dézoomez ou déplacez la carte.",
         typeStudent: "Étudiant",

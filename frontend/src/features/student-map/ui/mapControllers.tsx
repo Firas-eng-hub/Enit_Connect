@@ -1,26 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import type { MapBounds, MapPerson } from '../model/types';
+import type { MapBounds, MapCell } from '../model/types';
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from './mapConfig';
 
-
-/** Fit the view to the people whenever the dataset (not the selection) changes. */
-export function FitToPeople({ people }: { people: MapPerson[] }) {
+/** Fit the view to the cells whenever the dataset (search/filters) changes, not on selection. */
+export function FitToCells({ cells }: { cells: MapCell[] }) {
   const map = useMap();
-  const signature = people.map((p) => p.id).join('|');
+  const signature = cells.map((c) => `${c.lat},${c.lng}`).join('|');
   const lastSignature = useRef<string | null>(null);
 
   useEffect(() => {
     if (signature === lastSignature.current) return;
     lastSignature.current = signature;
-    if (people.length === 0) {
+    if (cells.length === 0) {
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       return;
     }
-    const bounds = L.latLngBounds(people.map((p) => [p.lat, p.lng] as L.LatLngTuple));
+    const bounds = L.latLngBounds(cells.map((c) => [c.lat, c.lng] as L.LatLngTuple));
     map.fitBounds(bounds, { padding: [48, 48], maxZoom: 10 });
-  }, [map, people, signature]);
+  }, [map, cells, signature]);
 
   return null;
 }
