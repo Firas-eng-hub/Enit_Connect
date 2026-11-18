@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { User, Mail, Phone, MapPin, GraduationCap, Calendar, Camera, Briefcase, Linkedin, FileText } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { getApiErrorMessage, validateFile } from '@/shared/lib/utils';
-import { config } from '@/app/config/env';
+import { resolvePictureSrc } from '@/shared/lib/media';
 import type { Student } from '@/entities/student/types';
 
 const classes = [
@@ -29,34 +29,6 @@ export function ProfilePage() {
 
   const { register, handleSubmit, reset } = useForm<Partial<Student>>();
 
-  const resolvePictureSrc = (picture?: string | null) => {
-    if (!picture) return null;
-    const trimmed = picture.trim();
-    if (!trimmed) return null;
-    const apiBase = config.apiUrl || window.location.origin;
-
-    if (trimmed.startsWith('/uploads')) {
-      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
-    }
-    if (trimmed.startsWith('uploads/')) {
-      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
-    }
-    if (
-      trimmed.startsWith('http://localhost') ||
-      trimmed.startsWith('http://127.0.0.1') ||
-      trimmed.startsWith('http://0.0.0.0') ||
-      trimmed.startsWith('https://localhost') ||
-      trimmed.startsWith('https://127.0.0.1')
-    ) {
-      try {
-        const url = new URL(trimmed);
-        return `${apiBase}${url.pathname}`;
-      } catch {
-        return trimmed;
-      }
-    }
-    return trimmed;
-  };
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2000 + 5 }, (_, i) => (2000 + i).toString());

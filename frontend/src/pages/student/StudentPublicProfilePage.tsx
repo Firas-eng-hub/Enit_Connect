@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Building2, Mail, MapPin, Phone, User } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import type { Student } from '@/entities/student/types';
-import { config } from '@/app/config/env';
+import { resolvePictureSrc } from '@/shared/lib/media';
 
 export function StudentPublicProfilePage() {
   const { t } = useTranslation();
@@ -13,34 +13,6 @@ export function StudentPublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const resolvePictureSrc = (picture?: string | null) => {
-    if (!picture) return null;
-    const trimmed = picture.trim();
-    if (!trimmed) return null;
-    const apiBase = config.apiUrl || window.location.origin;
-
-    if (trimmed.startsWith('/uploads')) {
-      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
-    }
-    if (trimmed.startsWith('uploads/')) {
-      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
-    }
-    if (
-      trimmed.startsWith('http://localhost') ||
-      trimmed.startsWith('http://127.0.0.1') ||
-      trimmed.startsWith('http://0.0.0.0') ||
-      trimmed.startsWith('https://localhost') ||
-      trimmed.startsWith('https://127.0.0.1')
-    ) {
-      try {
-        const url = new URL(trimmed);
-        return `${apiBase}${url.pathname}`;
-      } catch {
-        return trimmed;
-      }
-    }
-    return trimmed;
-  };
 
   useEffect(() => {
     if (!id) return;

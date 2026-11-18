@@ -1,0 +1,134 @@
+/* Student network map: brand overrides for Leaflet + markercluster.
+   Scoped under .student-map so other Leaflet maps are unaffected. */
+
+.student-map .leaflet-container {
+  font-family: inherit;
+  background: rgb(var(--canvas));
+}
+
+/* OSM's default palette is loud: mute it into a pale, cool basemap so the
+   navy/gold pins carry the eye. */
+.student-map .student-map-tiles--tint {
+  filter: grayscale(0.85) sepia(0.12) hue-rotate(175deg) saturate(0.9) brightness(1.04) contrast(0.92);
+}
+
+/* ---------- Person pin ---------- */
+.student-map-pin {
+  background: transparent;
+  border: 0;
+}
+
+.student-map-pin__face {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50% 50% 50% 4px;
+  transform: rotate(-45deg);
+  background: rgb(var(--ink));
+  border: 2px solid rgb(var(--gold));
+  box-shadow: 0 4px 10px rgb(var(--ink) / 0.35);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.student-map-pin__face > img,
+.student-map-pin__face > span {
+  transform: rotate(45deg);
+}
+
+.student-map-pin__face > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: rotate(45deg) scale(1.15);
+}
+
+.student-map-pin__face > span {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.student-map-pin.is-active .student-map-pin__face {
+  transform: rotate(-45deg) scale(1.18);
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgb(var(--gold)), 0 6px 14px rgb(var(--ink) / 0.45);
+}
+
+/* ---------- Cluster bubble ---------- */
+.student-map-cluster {
+  background: transparent;
+  border: 0;
+}
+
+.student-map-cluster > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: rgb(var(--ink));
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 0 0 4px rgb(var(--gold) / 0.45), 0 0 0 9px rgb(var(--gold) / 0.15),
+    0 4px 10px rgb(var(--ink) / 0.3);
+  transition: transform 150ms ease;
+}
+
+.student-map-cluster:hover > span {
+  transform: scale(1.08);
+}
+
+.student-map-cluster--md > span {
+  font-size: 14px;
+}
+
+.student-map-cluster--lg > span {
+  font-size: 15px;
+}
+
+/* ---------- Popup ---------- */
+.student-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  padding: 0;
+  border: 1px solid rgb(var(--line));
+  box-shadow: 0 10px 30px rgb(var(--ink) / 0.18);
+}
+
+.student-map-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+/* ---------- Controls ---------- */
+.student-map .leaflet-bar {
+  border: 1px solid rgb(var(--line));
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgb(var(--ink) / 0.08);
+}
+
+.student-map .leaflet-bar a {
+  color: rgb(var(--ink));
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+}
+
+.student-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgb(var(--surface) / 0.8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-map-pin__face,
+  .student-map-cluster > span {
+    transition: none;
+  }
+}

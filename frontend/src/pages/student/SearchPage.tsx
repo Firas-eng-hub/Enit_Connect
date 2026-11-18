@@ -1,96 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search as SearchIcon, Filter, Map as MapIcon, List, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
+import { Search as SearchIcon, Filter, Map as MapIcon, List, User, Briefcase } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
-import { StudentMap } from '@/widgets/maps/StudentMap';
-import { config } from '@/app/config/env';
 import { AdvancedOfferSearch } from '@/features/search/components/AdvancedOfferSearch';
+import { NetworkMapPanel } from '@/features/student-map';
+import { StudentResultCard, type StudentResult } from './components/StudentResultCard';
 
-interface StudentResult {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  country?: string;
-  city?: string;
-  address?: string;
-  phone?: string;
-  type?: string;
-  workAt?: string;
-  class?: string;
-  promotion?: string;
-  linkedin?: string;
-  picture?: string;
-  aboutme?: string;
-}
+type ViewMode = 'list' | 'map';
 
-interface StudentLocation {
-  id?: string;
-  lat: number | string;
-  lng: number | string;
-  name: string;
-}
+const tabClass = (active: boolean) =>
+  `flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+    active ? 'bg-ink text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+  }`;
+
+const viewClass = (active: boolean) =>
+  `px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+    active ? 'bg-ink text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+  }`;
 
 export function SearchPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'students' | 'offers'>('students');
   const [searchKey, setSearchKey] = useState('');
   const [searchProperty, setSearchProperty] = useState('firstname');
+  // The query the map follows: empty key shows everyone.
+  const [submitted, setSubmitted] = useState({ property: 'firstname', key: '' });
   const [results, setResults] = useState<StudentResult[]>([]);
-  const [locations, setLocations] = useState<StudentLocation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const [showMap, setShowMap] = useState(false);
-
-  const resolvePictureSrc = (picture?: string | null) => {
-    if (!picture) return null;
-    const trimmed = picture.trim();
-    if (!trimmed) return null;
-    const apiBase = config.apiUrl || window.location.origin;
-
-    if (trimmed.startsWith('/uploads')) {
-      return config.apiUrl ? `${config.apiUrl}${trimmed}` : trimmed;
-    }
-    if (trimmed.startsWith('uploads/')) {
-      return config.apiUrl ? `${config.apiUrl}/${trimmed}` : `/${trimmed}`;
-    }
-    if (
-      trimmed.startsWith('http://localhost') ||
-      trimmed.startsWith('http://127.0.0.1') ||
-      trimmed.startsWith('http://0.0.0.0') ||
-      trimmed.startsWith('https://localhost') ||
-      trimmed.startsWith('https://127.0.0.1')
-    ) {
-      try {
-        const url = new URL(trimmed);
-        return `${apiBase}${url.pathname}`;
-      } catch {
-        return trimmed;
-      }
-    }
-    return trimmed;
-  };
-
-  useEffect(() => {
-    const loadAllLocations = async () => {
-      try {
-        const response = await httpClient.get('/api/student/location', {
-          params: { property: 'firstname', key: '' }
-        });
-        setLocations(response.data);
-      } catch (err) {
-        console.error('Failed to load locations:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadAllLocations();
-  }, []);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchKey.trim()) {
+    const key = searchKey.trim();
+    setSubmitted({ property: searchProperty, key });
+    if (!key) {
       setSearched(false);
       setResults([]);
       return;
@@ -100,23 +44,12 @@ export function SearchPage() {
     setSearched(true);
     try {
       const response = await httpClient.get('/api/student/search', {
-        params: { property: searchProperty, key: searchKey }
+        params: { property: searchProperty, key }
       });
       setResults(response.data);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);
-    }
-
-    // Map data is secondary: a failure here must not hide the search results.
-    try {
-      const locationResponse = await httpClient.get('/api/student/location', {
-        params: { property: searchProperty, key: searchKey }
-      });
-      setLocations(locationResponse.data);
-    } catch (err) {
-      console.error('Failed to load locations:', err);
-      setLocations([]);
     } finally {
       setLoading(false);
     }
@@ -131,6 +64,7 @@ export function SearchPage() {
     { value: 'class', label: t('search.class') },
     { value: 'promotion', label: t('search.promotion') },
   ];
+  const propertyLabel = searchProperties.find((p) => p.value === searchProperty)?.label ?? '';
 
   return (
     <div>
@@ -141,23 +75,11 @@ export function SearchPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab('students')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'students'
-              ? 'bg-ink text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-        >
+        <button onClick={() => setActiveTab('students')} className={tabClass(activeTab === 'students')}>
           <User className="w-4 h-4" />
           {t('search.students')}
         </button>
-        <button
-          onClick={() => setActiveTab('offers')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'offers'
-              ? 'bg-ink text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-        >
+        <button onClick={() => setActiveTab('offers')} className={tabClass(activeTab === 'offers')}>
           <Briefcase className="w-4 h-4" />
           {t('search.offers')}
         </button>
@@ -170,9 +92,9 @@ export function SearchPage() {
       {activeTab === 'students' && (
         <>
           {/* Search form */}
-          <form onSubmit={handleSearch} className="mb-8">
+          <form onSubmit={handleSearch} className="mb-6">
             <div className="bg-white rounded-2xl p-6 border border-gray-200">
-              <div className="flex gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 sm:flex-row">
                 <div className="flex-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.searchBy')}</label>
                   <select
@@ -188,13 +110,13 @@ export function SearchPage() {
                 <div className="flex-[2]">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.searchTerm')}</label>
                   <div className="relative">
-                    <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <SearchIcon className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
                       value={searchKey}
                       onChange={(e) => setSearchKey(e.target.value)}
-                      placeholder={`Enter ${searchProperties.find(p => p.value === searchProperty)?.label.toLowerCase()}...`}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-colors"
+                      placeholder={t('search.enterTerm', { field: propertyLabel.toLowerCase() })}
+                      className="w-full ps-12 pe-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -216,198 +138,63 @@ export function SearchPage() {
             </div>
           </form>
 
-          {/* View All Students on Map button */}
-          {!searched && (
-            <div className="mb-6 flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowMap(!showMap)}
-                className="bg-ink px-4 py-2 text-white rounded-md font-medium transition-colors flex items-center gap-2 hover:bg-primary-800 text-sm"
-              >
+          {/* View mode toggle: always available */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-semibold text-gray-700">
+                {searched ? t('search.studentsFound', { count: results.length }) : t('search.everyone')}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setViewMode('list')} className={viewClass(viewMode === 'list')}>
+                <List className="w-4 h-4" />
+                {t('search.listView')}
+              </button>
+              <button type="button" onClick={() => setViewMode('map')} className={viewClass(viewMode === 'map')}>
                 <MapIcon className="w-4 h-4" />
-                {showMap ? t('search.hideMap') : t('search.viewMap')}
+                {t('search.mapView')}
               </button>
             </div>
-          )}
+          </div>
 
-          {/* View mode toggle */}
-          {searched && results.length > 0 && (
-            <div className="flex items-center justify-between mb-6 bg-white rounded-xl p-4 border border-gray-200">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-semibold text-gray-700">{t('search.studentsFound', { count: results.length })}</span>
+          {viewMode === 'map' ? (
+            <NetworkMapPanel property={submitted.property} searchKey={submitted.key} />
+          ) : searched ? (
+            loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${viewMode === 'list'
-                      ? 'bg-ink text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <List className="w-4 h-4" />
-                  {t('search.listView')}
-                </button>
-                <button
-                  onClick={() => setViewMode('map')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${viewMode === 'map'
-                      ? 'bg-ink text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <MapIcon className="w-4 h-4" />
-                  {t('search.mapView')}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Results */}
-          {searched && (
-            <div>
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-                </div>
-              ) : results.length === 0 ? (
-                <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
-                  <div className="relative text-center">
-                    <div className="bg-primary-50 inline-flex items-center justify-center w-10 h-10 rounded-3xl mb-3 text-primary-700">
-                      <SearchIcon className="w-5 h-5 text-primary-700" />
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.noStudents')}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">{t('search.noStudentsHint')}</p>
-                  </div>
-                </div>
-              ) : viewMode === 'list' ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {results.map((student) => (
-                    <div key={student.id} className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-400 transition-colors overflow-hidden">
-                      <div className="bg-ink h-1.5" />
-                      <div className="p-6">
-                        <div className="flex items-start gap-4 mb-4">
-                          {resolvePictureSrc(student.picture) ? (
-                            <img
-                              src={resolvePictureSrc(student.picture) as string}
-                              alt={`${student.firstname} ${student.lastname}`}
-                              className="w-16 h-16 rounded-xl object-cover"
-                            />
-                          ) : (
-                            <div className="bg-primary-50 w-16 h-16 rounded-xl flex items-center justify-center text-primary-700">
-                              <User className="w-8 h-8 text-primary-700" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                              {student.firstname} {student.lastname}
-                            </h3>
-                            {student.type && (
-                              <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold mt-1">
-                                {student.type}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 mb-4">
-                          {student.email && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Mail className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm truncate">{student.email}</span>
-                            </div>
-                          )}
-                          {student.phone && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Phone className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm">{student.phone}</span>
-                            </div>
-                          )}
-                          {(student.city || student.country) && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <MapPin className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm">
-                                {student.city}{student.city && student.country && ', '}{student.country}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {(student.class || student.promotion || student.workAt) && (
-                          <div className="pt-4 border-t border-gray-200">
-                            <div className="flex flex-wrap gap-2 text-xs">
-                              {student.class && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium">
-                                  {t('search.classLabel', { value: student.class })}
-                                </span>
-                              )}
-                              {student.promotion && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium">
-                                  {t('search.promoLabel', { value: student.promotion })}
-                                </span>
-                              )}
-                              {student.workAt && (
-                                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md font-medium">
-                                  @ {student.workAt}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {student.aboutme && (
-                          <p className="mt-4 text-sm text-gray-600 line-clamp-2 italic">
-                            "{student.aboutme}"
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="h-[360px] sm:h-[480px] lg:h-[600px]">
-                    <StudentMap locations={locations} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Map view - before search */}
-          {!searched && showMap && (
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
-              <div className="h-[360px] sm:h-[480px] lg:h-[600px]">
-                <StudentMap locations={locations} />
-              </div>
-            </div>
-          )}
-
-          {/* Empty state before search */}
-          {!searched && !showMap && (
-            <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
-              <div className="relative text-center">
+            ) : results.length === 0 ? (
+              <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
                 <div className="bg-primary-50 inline-flex items-center justify-center w-10 h-10 rounded-3xl mb-3 text-primary-700">
                   <SearchIcon className="w-5 h-5 text-primary-700" />
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.startTitle')}</h3>
-                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                  {t('search.startHint')}
-                </p>
-                <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-2">
-                      <List className="w-6 h-6 text-primary-600" />
-                    </div>
-                    <p className="font-semibold">{t('search.listView')}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
-                      <MapIcon className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <p className="font-semibold">{t('search.mapView')}</p>
-                  </div>
-                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.noStudents')}</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">{t('search.noStudentsHint')}</p>
               </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                {results.map((student) => (
+                  <StudentResultCard key={student.id} student={student} />
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
+              <div className="bg-primary-50 inline-flex items-center justify-center w-10 h-10 rounded-3xl mb-3 text-primary-700">
+                <SearchIcon className="w-5 h-5 text-primary-700" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.startTitle')}</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">{t('search.startHint')}</p>
+              <button
+                type="button"
+                onClick={() => setViewMode('map')}
+                className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-primary-800"
+              >
+                <MapIcon className="w-4 h-4" />
+                {t('search.exploreMap')}
+              </button>
             </div>
           )}
         </>
