@@ -7,6 +7,7 @@ const { authJwt } = require("../middlewares");
 const { validation } = require("../middlewares");
 const controller = require("../controllers/student.controller");
 const notifications = require("../controllers/notification.controller");
+const studentMap = require("../controllers/studentMap.controller");
 const storage = require('../helpers/storage');
 const savedoc = require('../helpers/savedoc');
 const { verifyLimiter } = require("../middlewares/rateLimiters");
@@ -30,7 +31,7 @@ router.post("/login", authLimiter, validation.sqlInjectionCheck, validation.vali
 //Get All Companies
 router.get("/companies", authJwt.verifyToken, authJwt.isStudent, controller.getCompaniesForBrowse);
 //Get Student's Locations
-router.get("/location", authJwt.verifyToken, controller.getStudentLocations);
+router.get("/location", authJwt.verifyToken, authJwt.isStudent, studentMap.getStudentLocations);
 //Search for Students by Property & Key
 router.get("/search", authJwt.verifyToken, controller.getByKey);
 //Student Notifications

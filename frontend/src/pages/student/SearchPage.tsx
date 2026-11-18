@@ -103,14 +103,19 @@ export function SearchPage() {
         params: { property: searchProperty, key: searchKey }
       });
       setResults(response.data);
+    } catch (err) {
+      console.error('Search failed:', err);
+      setResults([]);
+    }
 
+    // Map data is secondary: a failure here must not hide the search results.
+    try {
       const locationResponse = await httpClient.get('/api/student/location', {
         params: { property: searchProperty, key: searchKey }
       });
       setLocations(locationResponse.data);
     } catch (err) {
-      console.error('Search failed:', err);
-      setResults([]);
+      console.error('Failed to load locations:', err);
       setLocations([]);
     } finally {
       setLoading(false);
@@ -230,7 +235,7 @@ export function SearchPage() {
             <div className="flex items-center justify-between mb-6 bg-white rounded-xl p-4 border border-gray-200">
               <div className="flex items-center gap-2">
                 <Filter className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-semibold text-gray-700">{results.length} student{results.length !== 1 ? 's' : ''} found</span>
+                <span className="text-sm font-semibold text-gray-700">{t('search.studentsFound', { count: results.length })}</span>
               </div>
               <div className="flex gap-2">
                 <button
@@ -332,12 +337,12 @@ export function SearchPage() {
                             <div className="flex flex-wrap gap-2 text-xs">
                               {student.class && (
                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium">
-                                  Class: {student.class}
+                                  {t('search.classLabel', { value: student.class })}
                                 </span>
                               )}
                               {student.promotion && (
                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium">
-                                  Promo: {student.promotion}
+                                  {t('search.promoLabel', { value: student.promotion })}
                                 </span>
                               )}
                               {student.workAt && (
@@ -386,7 +391,7 @@ export function SearchPage() {
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 mb-3">{t('search.startTitle')}</h3>
                 <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                  Select a search property, enter your search term, and click t('search.searchStudents') to find your classmates
+                  {t('search.startHint')}
                 </p>
                 <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
                   <div className="text-center">

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef } from 'react';
+import { useNavigate, type NavigateFunction } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -10,14 +11,43 @@ interface StudentLocation {
   name: string;
 }
 
+// Built from DOM nodes with textContent so user-controlled names are never parsed as HTML.
+function buildPopup(location: StudentLocation, viewProfileLabel: string, navigate: NavigateFunction) {
+  const root = document.createElement('div');
+  root.style.cssText = 'padding: 8px; min-width: 150px;';
+
+  const name = document.createElement('div');
+  name.style.cssText = 'font-weight: 600; color: #14304D; margin-bottom: 8px; font-size: 14px;';
+  name.textContent = location.name;
+  root.appendChild(name);
+
+  if (location.id) {
+    const href = `/user/student/${encodeURIComponent(location.id)}`;
+    const link = document.createElement('a');
+    link.href = href;
+    link.textContent = viewProfileLabel;
+    link.style.cssText =
+      'display: inline-block; padding: 6px 12px; background: #14304D; color: white; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;';
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      navigate(href);
+    });
+    root.appendChild(link);
+  }
+  return root;
+}
+
 interface StudentMapProps {
   locations: StudentLocation[];
 }
 
 export function StudentMap({ locations }: StudentMapProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const viewProfileLabel = t('pagesMisc.viewProfile');
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -27,8 +57,10 @@ export function StudentMap({ locations }: StudentMapProps) {
     mapInstanceRef.current = map;
 
     // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
       maxZoom: 19,
     }).addTo(map);
 
@@ -36,6 +68,7 @@ export function StudentMap({ locations }: StudentMapProps) {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        markersRef.current = null;
       }
     };
   }, []);
@@ -69,26 +102,22 @@ export function StudentMap({ locations }: StudentMapProps) {
   }, []);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || locations.length === 0) return;
-
     const map = mapInstanceRef.current;
+    if (!map) return;
 
-    // Clear existing markers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
-        map.removeLayer(layer);
-      }
-    });
+    // Always reset markers, including when a search returns no locations.
+    markersRef.current?.remove();
+    const layer = L.layerGroup().addTo(map);
+    markersRef.current = layer;
 
-    // Custom icon
     const studentIcon = L.divIcon({
       className: 'custom-student-marker',
       html: `
         <div style="
           width: 32px;
           height: 32px;
-          background: linear-gradient(135deg, #1a3a5c 0%, #2563eb 100%);
-          border: 3px solid white;
+          background: #14304D;
+          border: 3px solid #C99A3B;
           border-radius: 50%;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
           display: flex;
@@ -106,66 +135,32 @@ export function StudentMap({ locations }: StudentMapProps) {
       popupAnchor: [0, -32],
     });
 
-    // Add markers for each student location
     const bounds: L.LatLngTuple[] = [];
     locations.forEach((location) => {
-      const lat = typeof location.lat === 'number' ? location.lat : Number(location.lat);
-      const lng = typeof location.lng === 'number' ? location.lng : Number(location.lng);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        const profileUrl = location.id ? `/user/student/${location.id}` : '';
-        L.marker([lat, lng], { icon: studentIcon })
-          .addTo(map)
-          .bindPopup(`
-            <div style="padding: 8px; min-width: 150px;">
-              <div style="font-weight: bold; color: #1a3a5c; margin-bottom: 4px; font-size: 14px;">
-                ${location.name}
-              </div>
-              <div style="color: #6b7280; font-size: 12px; margin-bottom: 8px;">
-                📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}
-              </div>
-              ${profileUrl ? `
-                <a href="${profileUrl}" 
-                   style="
-                     display: inline-block;
-                     padding: 6px 12px;
-                     background: linear-gradient(to right, #1a3a5c, #2563eb);
-                     color: white;
-                     text-decoration: none;
-                     border-radius: 6px;
-                     font-size: 12px;
-                     font-weight: 600;
-                   "
-                   target="_blank">
-                  {t('pagesMisc.viewProfile')}
-                </a>
-              ` : ''}
-            </div>
-          `);
-        bounds.push([lat, lng]);
-      }
+      const lat = Number(location.lat);
+      const lng = Number(location.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      L.marker([lat, lng], { icon: studentIcon })
+        .addTo(layer)
+        .bindPopup(() => buildPopup(location, viewProfileLabel, navigate));
+      bounds.push([lat, lng]);
     });
 
-    // Fit map to show all markers
     if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     } else {
       map.setView([36.8, 10.1], 7);
     }
-  }, [locations]);
+  }, [locations, viewProfileLabel, navigate]);
 
   return (
     <div className="relative w-full h-full">
       <div ref={mapRef} className="absolute inset-0 rounded-2xl overflow-hidden" />
       {locations.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-2xl">
-          <div className="text-center">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('map.noDataTitle')}</h3>
-            <p className="text-gray-600 max-w-sm">
-              {t('map.noDataBody')}
-            </p>
+        <div className="pointer-events-none absolute inset-x-0 top-4 z-[1000] flex justify-center px-4">
+          <div className="max-w-sm rounded-lg border border-line bg-surface/95 px-4 py-3 text-center shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-900">{t('map.noDataTitle')}</h3>
+            <p className="mt-1 text-xs text-gray-600">{t('map.noDataBody')}</p>
           </div>
         </div>
       )}
