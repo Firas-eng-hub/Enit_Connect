@@ -127,6 +127,23 @@ app.get("/health", (req, res) => {
 // Serve uploaded files statically
 // Uploaded files are untrusted: never let the browser render them as active content.
 const INLINE_UPLOAD_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".pdf"]);
+// Old document versions live in uploads/versions/ under predictable names. They are only
+// served through the authenticated version-download endpoints, never statically.
+// Checked on the decoded, normalised path, the same way serve-static resolves it.
+const PRIVATE_UPLOAD_DIRS = new Set(["versions"]);
+app.use("/uploads", (req, res, next) => {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(req.path);
+  } catch (err) {
+    return res.status(400).end();
+  }
+  const firstSegment = path.posix.normalize(decoded).split("/").filter(Boolean)[0] || "";
+  if (PRIVATE_UPLOAD_DIRS.has(firstSegment.toLowerCase())) {
+    return res.status(404).end();
+  }
+  return next();
+});
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
   dotfiles: "deny",
   index: false,

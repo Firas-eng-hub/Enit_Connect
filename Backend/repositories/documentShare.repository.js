@@ -75,7 +75,24 @@ const findByTokenHash = async (tokenHash) => {
   return result.rows[0] || null;
 };
 
-const revokeShare = async (shareId) => {
+const findById = async (shareId) => {
+  const result = await db.query(`SELECT * FROM document_shares WHERE id = $1`, [shareId]);
+  return result.rows[0] || null;
+};
+
+// Revoke a share. Pass `ownerId` to only revoke shares of documents created by that user
+// (a share id alone is not proof of ownership: admin share ids double as the share token).
+const revokeShare = async (shareId, { ownerId } = {}) => {
+  if (ownerId) {
+    const result = await db.query(
+      `UPDATE document_shares SET revoked_at = now()
+       WHERE id = $1
+         AND document_id IN (SELECT id FROM documents WHERE creator_id = $2)
+       RETURNING *`,
+      [shareId, ownerId]
+    );
+    return result.rows[0] || null;
+  }
   const result = await db.query(
     `UPDATE document_shares SET revoked_at = now() WHERE id = $1 RETURNING *`,
     [shareId]
@@ -92,6 +109,7 @@ module.exports = {
   createShare,
   listByDocumentId,
   findByTokenHash,
+  findById,
   revokeShare,
   deleteByDocumentId,
   parseShareAccess,

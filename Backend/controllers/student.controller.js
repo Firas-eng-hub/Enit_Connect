@@ -27,6 +27,7 @@ const {
 } = require("../repositories");
 const { isUuid, pickAllowed } = require("../utils/validation");
 const crypto = require("crypto");
+const documentFiles = require("../helpers/document-files");
 
 // A well-formed bcrypt hash of a discarded random value. Compared against when
 // no account matches, so an unknown email costs the same time as a known one
@@ -271,6 +272,21 @@ const createThumbnail = async (filename) => {
   return `${baseUrl}/uploads/thumbnails/${thumbName}`;
 };
 
+const removeThumbnailFile = (thumbnailUrl) => {
+  const thumbName = getFilenameFromLink(thumbnailUrl);
+  if (!thumbName) return;
+  documentFiles.safeUnlinkPath(path.join(getUploadsSubdir("thumbnails"), path.basename(thumbName)));
+};
+
+// Old versions are private files: delete them (and their rows) with the document.
+const removeDocumentVersions = async (documentId) => {
+  const versions = await documentVersionRepository.listByDocumentId(documentId);
+  documentFiles.removeVersionFiles(versions);
+  if (versions.length) {
+    await documentVersionRepository.deleteByDocumentId(documentId);
+  }
+};
+
 const getInitialScanState = () => {
   if (process.env.DOC_AV_SCAN_URL) {
     return { scanStatus: "pending", quarantined: true };
@@ -329,11 +345,6 @@ const enqueueDocumentScan = async ({ documentId, filePath, mimeType, sizeBytes }
       });
     }
   });
-};
-
-const getVersionedPath = (documentId, version, extension) => {
-  const ext = extension ? `.${extension}` : "";
-  return path.join(getUploadsDir(), "versions", `${documentId}-v${version}${ext}`);
 };
 
 exports.listDocuments = async (req, res) => {
@@ -533,7 +544,8 @@ exports.revokeDocumentShare = async (req, res) => {
       return res.status(400).send({ message: "Invalid share id." });
     }
 
-    const share = await documentShareRepository.revokeShare(req.params.id);
+    // Only the owner of the shared document may revoke it.
+    const share = await documentShareRepository.revokeShare(req.params.id, { ownerId: req.id });
     if (!share) {
       return res.status(404).send({ message: "Share not found." });
     }
@@ -808,6 +820,10 @@ exports.deleteDocumentById = async (req, res) => {
       }
     }
 
+    if (doc.type === "file") {
+      await removeDocumentVersions(doc.id);
+    }
+
     await documentRepository.deleteById(req.params.id);
     await documentAuditRepository.createLog({
       documentId: doc.id,
@@ -854,6 +870,10 @@ exports.batchDeleteDocuments = async (req, res) => {
         } catch (err) {
           console.error(err);
         }
+      }
+      if (doc.type === "file") {
+        // eslint-disable-next-line no-await-in-loop
+        await removeDocumentVersions(doc.id);
       }
       // eslint-disable-next-line no-await-in-loop
       await documentRepository.deleteById(doc.id);
@@ -953,20 +973,15 @@ exports.replaceDocumentFile = async (req, res) => {
       return res.status(415).send({ message: "Unsupported file extension." });
     }
 
-    const currentFilename = getFilenameFromLink(doc.link);
-    const currentPath = currentFilename ? path.join(getUploadsDir(), currentFilename) : null;
-    const versionsDir = path.join(getUploadsDir(), "versions");
-    fs.mkdirSync(versionsDir, { recursive: true });
-
+    // The current file stays where it is and becomes the previous version. The new content keeps
+    // the fresh random name multer gave it, so links handed out earlier (revoked or expired shares,
+    // mail attachments) never serve the new content.
+    const currentPath = documentFiles.resolveUploadPath(doc.link);
     if (currentPath && fs.existsSync(currentPath)) {
-      const previousVersion = doc.version || 1;
-      const versionPath = getVersionedPath(doc.id, previousVersion, doc.extension || extension);
-      fs.copyFileSync(currentPath, versionPath);
-      const baseUrl = getFileBaseUrl();
       await documentVersionRepository.createVersion({
         documentId: doc.id,
-        version: previousVersion,
-        link: `${baseUrl}/uploads/versions/${path.basename(versionPath)}`,
+        version: doc.version || 1,
+        link: doc.link,
         extension: doc.extension || extension,
         mimeType: doc.mime_type || req.file.mimetype,
         size: doc.size || null,
@@ -974,15 +989,11 @@ exports.replaceDocumentFile = async (req, res) => {
       });
     }
 
-    if (currentPath) {
-      fs.renameSync(req.file.path, currentPath);
-    }
-
-    let thumbnailUrl = doc.thumbnail_url || null;
+    // Never keep the previous content's thumbnail on the new content.
+    let thumbnailUrl = null;
     if (isImageMime(req.file.mimetype)) {
       try {
-        const filename = path.basename(currentPath || req.file.filename);
-        thumbnailUrl = await createThumbnail(filename);
+        thumbnailUrl = await createThumbnail(req.file.filename);
       } catch (thumbErr) {
         console.warn("Thumbnail creation failed:", thumbErr.message || thumbErr);
       }
@@ -990,16 +1001,18 @@ exports.replaceDocumentFile = async (req, res) => {
 
     const scanState = getInitialScanState();
     const updated = await documentRepository.updateDocumentFile(doc.id, {
-      link: doc.link,
+      link: documentFiles.buildUploadLink(req.file.filename),
       extension,
       mimeType: req.file.mimetype || null,
       size: req.file.size ? String(req.file.size) : null,
       sizeBytes: req.file.size || null,
       version: (doc.version || 1) + 1,
       thumbnailUrl,
+      clearThumbnail: !thumbnailUrl,
       scanStatus: scanState.scanStatus,
       quarantined: scanState.quarantined,
     });
+    removeThumbnailFile(doc.thumbnail_url);
 
     await documentAuditRepository.createLog({
       documentId: doc.id,
@@ -1010,10 +1023,9 @@ exports.replaceDocumentFile = async (req, res) => {
     });
 
     if (scanState.scanStatus === "pending") {
-      const filePath = currentPath || path.join(getUploadsDir(), req.file.filename);
       await enqueueDocumentScan({
         documentId: doc.id,
-        filePath,
+        filePath: req.file.path,
         mimeType: req.file.mimetype || null,
         sizeBytes: req.file.size || null,
       });
@@ -1042,7 +1054,7 @@ exports.listDocumentVersions = async (req, res) => {
       versions.map((version) => ({
         id: version.id,
         version: version.version,
-        link: version.link,
+        link: documentFiles.buildVersionDownloadLink("student", doc.id, version.id),
         extension: version.extension,
         sizeBytes: version.size_bytes,
         createdAt: version.created_at,
@@ -1051,6 +1063,30 @@ exports.listDocumentVersions = async (req, res) => {
   } catch (err) {
     console.error("List versions failed:", err);
     res.status(500).send({ message: "Failed to load versions." });
+  }
+};
+
+// Owner-only download of an old version (version files are never served statically).
+exports.downloadDocumentVersion = async (req, res) => {
+  try {
+    if (!isUuid(req.id) || !isUuid(req.params.id) || !isUuid(req.params.versionId)) {
+      return res.status(400).send({ message: "Invalid request." });
+    }
+
+    const [doc] = await documentRepository.listByIds([req.params.id]);
+    if (!doc || doc.creator_id !== req.id) {
+      return res.status(404).send({ message: "Document not found." });
+    }
+
+    const version = await documentVersionRepository.findById(req.params.versionId);
+    if (!version || version.document_id !== doc.id) {
+      return res.status(404).send({ message: "Version not found." });
+    }
+
+    return documentFiles.sendVersionFile(res, { doc, version });
+  } catch (err) {
+    console.error("Download version failed:", err);
+    res.status(500).send({ message: "Failed to download version." });
   }
 };
 
@@ -1070,26 +1106,20 @@ exports.restoreDocumentVersion = async (req, res) => {
       return res.status(404).send({ message: "Version not found." });
     }
 
-    const currentFilename = getFilenameFromLink(doc.link);
-    const currentPath = currentFilename ? path.join(getUploadsDir(), currentFilename) : null;
-    const versionFilename = getFilenameFromLink(version.link);
-    const versionPath = versionFilename ? path.join(getUploadsDir(), "versions", versionFilename) : null;
-
-    if (!currentPath || !versionPath || !fs.existsSync(versionPath)) {
+    const versionPath = documentFiles.resolveUploadPath(version.link);
+    if (!versionPath || !fs.existsSync(versionPath)) {
       return res.status(404).send({ message: "Version file missing." });
     }
 
+    // Keep the current file as a version, and restore into a NEW file/URL (never overwrite a
+    // file in place: its URL may already be in the hands of people whose access was revoked).
     const currentVersion = doc.version || 1;
-    const versionsDir = path.join(getUploadsDir(), "versions");
-    fs.mkdirSync(versionsDir, { recursive: true });
-    const currentBackupPath = getVersionedPath(doc.id, currentVersion, doc.extension || version.extension);
-    if (fs.existsSync(currentPath)) {
-      const baseUrl = getFileBaseUrl();
-      fs.copyFileSync(currentPath, currentBackupPath);
+    const currentPath = documentFiles.resolveUploadPath(doc.link);
+    if (currentPath && fs.existsSync(currentPath)) {
       await documentVersionRepository.createVersion({
         documentId: doc.id,
         version: currentVersion,
-        link: `${baseUrl}/uploads/versions/${path.basename(currentBackupPath)}`,
+        link: doc.link,
         extension: doc.extension || null,
         mimeType: doc.mime_type || null,
         size: doc.size || null,
@@ -1097,16 +1127,28 @@ exports.restoreDocumentVersion = async (req, res) => {
       });
     }
 
-    fs.copyFileSync(versionPath, currentPath);
+    const restoredFilename = documentFiles.copyToNewUpload(versionPath);
+
+    let thumbnailUrl = null;
+    if (isImageMime(version.mime_type || doc.mime_type)) {
+      try {
+        thumbnailUrl = await createThumbnail(restoredFilename);
+      } catch (thumbErr) {
+        console.warn("Thumbnail creation failed:", thumbErr.message || thumbErr);
+      }
+    }
 
     const updated = await documentRepository.updateDocumentFile(doc.id, {
-      link: doc.link,
+      link: documentFiles.buildUploadLink(restoredFilename),
       extension: version.extension || doc.extension,
       mimeType: version.mime_type || doc.mime_type,
       size: version.size || doc.size,
       sizeBytes: version.size_bytes || doc.size_bytes,
       version: currentVersion + 1,
+      thumbnailUrl,
+      clearThumbnail: !thumbnailUrl,
     });
+    removeThumbnailFile(doc.thumbnail_url);
 
     await documentAuditRepository.createLog({
       documentId: doc.id,
