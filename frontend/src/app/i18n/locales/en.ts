@@ -754,6 +754,7 @@ const en = {
     },
 
     search: {
+        loadMore: "Load more",
         firstName: "First Name",
         lastName: "Last Name",
         city: "City",
@@ -1080,6 +1081,10 @@ const en = {
     },
 
     studentMap: {
+        scopeCell: "People near {{place}}",
+        clearScope: "Show everyone",
+        loadMore: "Load more",
+        loading: "Loading...",
         mapAria: "Map of ENIT students and alumni",
         statsPeople: "People on the map",
         statsCountries: "Countries",
@@ -1094,7 +1099,7 @@ const en = {
         allClasses: "All classes",
         employedOnly: "Working at a company",
         resetFilters: "Reset",
-        listCount: "People: {{count}}",
+        listCount: "People: {{total}}",
         areaOnly: "Visible area only",
         emptyArea: "No one in this area. Zoom out or pan the map.",
         typeStudent: "Student",

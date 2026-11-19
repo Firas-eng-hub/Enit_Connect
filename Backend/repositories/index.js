@@ -20,10 +20,12 @@ const matchingRepository = require("./matching.repository");
 const offerViewRepository = require("./offerView.repository");
 const savedSearchRepository = require("./savedSearch.repository");
 const companyStatsRepository = require("./companyStats.repository");
+const studentMapRepository = require("./studentMap.repository");
 
 module.exports = {
   adminRepository,
   studentRepository,
+  studentMapRepository,
   companyRepository,
   offerRepository,
   documentRepository,

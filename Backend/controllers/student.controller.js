@@ -2,7 +2,6 @@ const { serverError } = require("../utils/http");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry, getVerificationLimits } = require("../utils/verification");
-const stringSimilarity = require("string-similarity");
 const nodemailer = require("../config/nodemailer.config");
 const location = require("../config/geocoder.config");
 const config = require("../config/auth.config");
@@ -26,6 +25,7 @@ const {
   documentAuditRepository,
 } = require("../repositories");
 const { isUuid, pickAllowed } = require("../utils/validation");
+const { parseLimit, parseOffset } = require("../utils/pagination");
 const crypto = require("crypto");
 const documentFiles = require("../helpers/document-files");
 
@@ -77,17 +77,6 @@ const mapStudentDirectoryRow = (row) => ({
   _id: row.id,
 });
 
-const parseLimit = (value, fallback = 24, max = 100) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(Math.floor(parsed), 1), max);
-};
-
-const parseOffset = (value, fallback = 0) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.max(Math.floor(parsed), 0);
-};
 
 exports.apply = async (req, res) => {
   try {
@@ -1432,19 +1421,16 @@ exports.getLocation = (req, res) => {
 };
 
 exports.getByName = async (req, res) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (!q || q.length > 100) {
+    return res.status(400).send({ message: "Missing search query." });
+  }
   try {
-    if (!req.query.q) {
-      return res.status(400).send({ message: "Missing search query." });
-    }
-    const students = await studentRepository.listAll();
-    const response = [];
-    students.forEach((doc) => {
-      const name = `${doc.firstname} ${doc.lastname}`;
-      if (stringSimilarity.compareTwoStrings(name.toLowerCase(), req.query.q.toLowerCase()) > 0.45) {
-        response.push(mapStudentDirectoryRow(doc));
-      }
+    const docs = await studentRepository.searchByName(q, {
+      limit: parseLimit(req.query.limit, 20, 50),
+      activeOnly: true,
     });
-    res.status(200).send(response);
+    res.status(200).send(docs.map(mapStudentDirectoryRow));
   } catch (err) {
     serverError(res, err);
   }
@@ -1466,7 +1452,11 @@ exports.getByKey = async (req, res) => {
   }
 
   try {
-    const docs = await studentRepository.searchByKey(column, req.query.key);
+    const docs = await studentRepository.searchByKey(column, req.query.key, {
+      limit: parseLimit(req.query.limit, 50, 100),
+      offset: parseOffset(req.query.offset),
+      activeOnly: true,
+    });
     const response = docs.map(mapStudentDirectoryRow);
     res.status(200).send(response);
   } catch (err) {
@@ -1481,12 +1471,14 @@ exports.getByFilters = async (req, res) => {
   }
 
   try {
-    const docs = await studentRepository.searchByFilters({
-      country,
-      city,
-      promotion,
-      className,
-    });
+    const docs = await studentRepository.searchByFilters(
+      { country, city, promotion, className },
+      {
+        limit: parseLimit(req.query.limit, 50, 100),
+        offset: parseOffset(req.query.offset),
+        activeOnly: true,
+      }
+    );
     res.status(200).send(docs.map(mapStudentDirectoryRow));
   } catch (err) {
     serverError(res, err);

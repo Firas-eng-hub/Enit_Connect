@@ -98,17 +98,8 @@ const createNotification = async (data, client = null) => {
       toJson(data.extra || {}, {}),
     ]
   );
-  // Keep only the newest 30 notifications per recipient.
-  await runner.query(
-    `DELETE FROM notifications
-     WHERE id IN (
-       SELECT id FROM notifications
-       WHERE recipient_id = $1 AND recipient_type = $2
-       ORDER BY created_at DESC NULLS LAST
-       OFFSET 30
-     )`,
-    [data.recipientId, data.recipientType]
-  );
+  // Pruning to the newest 30 per recipient is done by the
+  // notifications_limit_trigger (migrations 010/017), not here.
   // Push via SSE if user is connected
   try {
     const sseManager = require("../helpers/sse.manager");
@@ -126,6 +117,71 @@ const createNotification = async (data, client = null) => {
   }
 
   return result.rows[0];
+};
+
+const KEEP_PER_RECIPIENT = 30;
+
+// Audience tables for broadcasts (allowlist: never interpolate user input).
+const BROADCAST_SOURCES = {
+  student: "students",
+  company: "companies",
+};
+
+/**
+ * Notify every Active user of one type in a single INSERT ... SELECT, then
+ * prune each recipient to the newest 30 with one set-based DELETE. The
+ * per-row limit trigger is skipped for this transaction (app.bulk_notify).
+ * Cost is a few statements regardless of audience size; callers should not
+ * await it on the request path.
+ */
+const broadcast = async ({ recipientType, title, message, type = "info", extra = {} }) => {
+  const table = BROADCAST_SOURCES[recipientType];
+  if (!Object.prototype.hasOwnProperty.call(BROADCAST_SOURCES, recipientType)) {
+    throw new Error(`Unsupported broadcast audience: ${recipientType}`);
+  }
+
+  const inserted = await db.withTransaction(async (client) => {
+    await client.query("SELECT set_config('app.bulk_notify', 'on', true)");
+    const result = await client.query(
+      `INSERT INTO notifications (recipient_id, recipient_type, title, message, type, read, created_at, extra)
+       SELECT u.id, $1, $2, $3, $4, false, now(), $5::jsonb
+       FROM ${table} u
+       WHERE u.status = 'Active'`,
+      [recipientType, title, message, type, toJson(extra, {})]
+    );
+    await client.query(
+      `DELETE FROM notifications n
+       USING (
+         SELECT id FROM (
+           SELECT id, row_number() OVER (
+             PARTITION BY recipient_id ORDER BY created_at DESC NULLS LAST, id DESC
+           ) AS rn
+           FROM notifications
+           WHERE recipient_type = $1
+         ) ranked
+         WHERE ranked.rn > $2
+       ) stale
+       WHERE n.id = stale.id`,
+      [recipientType, KEEP_PER_RECIPIENT]
+    );
+    return result.rowCount;
+  });
+
+  // Live update only for currently connected users of that type.
+  try {
+    const sseManager = require("../helpers/sse.manager");
+    sseManager.broadcastToType(recipientType, "notification", {
+      id: `broadcast-${Date.now()}`,
+      title,
+      message,
+      type,
+      createdAt: new Date().toISOString(),
+    });
+  } catch {
+    // SSE push is best-effort
+  }
+
+  return inserted;
 };
 
 const createMany = async (items, client = null) => {
@@ -158,5 +214,6 @@ module.exports = {
   deleteNotification,
   createNotification,
   createMany,
+  broadcast,
   mapNotificationRow,
 };

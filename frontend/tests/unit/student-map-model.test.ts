@@ -1,74 +1,65 @@
 import { describe, it, expect } from 'vitest';
-import { applyFilters, getFilterOptions, hasActiveFilters, isWithinBounds } from '@/features/student-map/model/filters';
-import { computeStats } from '@/features/student-map/model/stats';
-import { EMPTY_FILTERS, type MapPerson } from '@/features/student-map/model/types';
+import {
+  cellKey,
+  countInBounds,
+  formatCount,
+  hasActiveFilters,
+  isWithinBounds,
+  scopeParams,
+  toBboxParam,
+  toQueryParams,
+} from '@/features/student-map/model/filters';
+import { EMPTY_FILTERS, type MapCell } from '@/features/student-map/model/types';
 
-const person = (overrides: Partial<MapPerson>): MapPerson => ({
-  id: 'x',
-  name: 'Test Person',
-  picture: null,
-  type: 'Student',
-  promotion: '2024',
-  class: 'GI',
-  workAt: null,
-  city: 'Tunis',
-  country: 'Tunisia',
-  lat: 36.8,
-  lng: 10.2,
-  ...overrides,
-});
+const cell = (lat: number, lng: number, count: number): MapCell => ({ lat, lng, count, label: null, person: null });
+const search = { property: 'firstname', key: '' };
 
-const people: MapPerson[] = [
-  person({ id: 'a', type: 'Alumni', promotion: '2019', workAt: 'Acme', city: 'Paris', country: 'France', lat: 48.9, lng: 2.4 }),
-  person({ id: 'b', type: 'Alumni', promotion: '2021', workAt: 'acme ', city: 'tunis' }),
-  // 'tunis' appears first, but the capitalised spelling should win for display.
-  person({ id: 'c', class: 'GC' }),
-  person({ id: 'd', city: 'Sfax', workAt: 'Vermeg', lat: 34.7, lng: 10.8 }),
-];
-
-describe('student map filters', () => {
-  it('returns everyone with empty filters', () => {
-    expect(applyFilters(people, EMPTY_FILTERS)).toHaveLength(4);
+describe('map query params', () => {
+  it('only sends active filters', () => {
+    expect(toQueryParams(search, EMPTY_FILTERS)).toEqual({ property: 'firstname', key: '' });
+    expect(
+      toQueryParams({ property: 'city', key: 'Tunis' }, { type: 'Alumni', promotion: '2020', className: 'GI', employedOnly: true })
+    ).toEqual({ property: 'city', key: 'Tunis', type: 'Alumni', promotion: '2020', class: 'GI', employed: 'true' });
     expect(hasActiveFilters(EMPTY_FILTERS)).toBe(false);
+    expect(hasActiveFilters({ ...EMPTY_FILTERS, employedOnly: true })).toBe(true);
   });
 
-  it('filters by type, promotion, class and employment (case-insensitive)', () => {
-    const ids = (f: Partial<typeof EMPTY_FILTERS>) =>
-      applyFilters(people, { ...EMPTY_FILTERS, ...f }).map((p) => p.id);
-    expect(ids({ type: 'Alumni' })).toEqual(['a', 'b']);
-    expect(ids({ promotion: '2021' })).toEqual(['b']);
-    expect(ids({ className: 'gc' })).toEqual(['c']);
-    expect(ids({ employedOnly: true })).toEqual(['a', 'b', 'd']);
-    expect(ids({ type: 'Student', employedOnly: true })).toEqual(['d']);
+  it('builds list scope params', () => {
+    expect(scopeParams({ kind: 'all' })).toEqual({});
+    expect(scopeParams({ kind: 'cell', lat: 36.8, lng: 10.2, label: 'Tunis', count: 3 })).toEqual({ cell: '36.8,10.2' });
+    expect(scopeParams({ kind: 'area', bounds: { south: 30.123, west: 7.456, north: 38.987, east: 12.001 } })).toEqual({
+      bbox: '30.12,7.46,38.99,12',
+    });
   });
 
-  it('builds de-duplicated options, newest promotion first', () => {
-    const options = getFilterOptions(people);
-    expect(options.promotions).toEqual(['2024', '2021', '2019']);
-    expect(options.classes).toEqual(['GC', 'GI']);
-  });
-
-  it('checks bounds, including across the antimeridian', () => {
-    const tunisia = { north: 38, south: 30, east: 12, west: 7 };
-    expect(isWithinBounds(people[3], tunisia)).toBe(true);
-    expect(isWithinBounds(people[0], tunisia)).toBe(false);
-    const pacific = { north: 10, south: -10, east: -170, west: 170 };
-    expect(isWithinBounds(person({ lat: 0, lng: 175 }), pacific)).toBe(true);
-    expect(isWithinBounds(person({ lat: 0, lng: 0 }), pacific)).toBe(false);
+  it('clamps and wraps bbox values Leaflet can report', () => {
+    expect(toBboxParam({ south: -95, north: 95, west: -200, east: 200 })).toBe('-90,-180,90,180');
+    expect(toBboxParam({ south: 0, north: 10, west: 190, east: 200 })).toBe('0,-170,10,-160');
   });
 });
 
-describe('student map stats', () => {
-  it('counts people, countries, top cities and employers', () => {
-    const stats = computeStats(people);
-    expect(stats.total).toBe(4);
-    expect(stats.countries).toBe(2);
-    expect(stats.topCities[0]).toEqual({ label: 'Tunis', count: 2 });
-    expect(stats.topEmployers[0]).toEqual({ label: 'Acme', count: 2 });
-    expect(stats.topEmployers).toHaveLength(2);
+describe('cells helpers', () => {
+  it('counts people in view from cells', () => {
+    const cells = [cell(36.8, 10.2, 120), cell(34.7, 10.8, 30), cell(48.9, 2.4, 9)];
+    expect(countInBounds(cells, { south: 30, west: 7, north: 38, east: 12 })).toBe(150);
   });
 
-  it('handles an empty list', () => {
-    expect(computeStats([])).toEqual({ total: 0, countries: 0, topCities: [], topEmployers: [] });
+  it('handles bounds across the antimeridian', () => {
+    const pacific = { north: 10, south: -10, east: -170, west: 170 };
+    expect(isWithinBounds(0, 175, pacific)).toBe(true);
+    expect(isWithinBounds(0, 0, pacific)).toBe(false);
+  });
+
+  it('keys cells by their snapped coordinates', () => {
+    expect(cellKey(36.8, 10.2)).toBe('36.8,10.2');
+    expect(cellKey(36.80000001, 10.2)).toBe('36.8,10.2');
+  });
+
+  it('formats large counts compactly', () => {
+    expect(formatCount(950)).toBe('950');
+    expect(formatCount(1200)).toBe('1.2k');
+    expect(formatCount(12_345)).toBe('12k');
+    expect(formatCount(1_000)).toBe('1k');
+    expect(formatCount(1_250_000)).toBe('1.3M');
   });
 });

@@ -6,6 +6,15 @@ import type { Student } from '@/entities/student/types';
 import { Button } from '@/shared/ui/Button';
 import { Alert } from '@/shared/ui/Alert';
 import { Dialog, DialogFooter } from '@/shared/ui/Dialog';
+import { resolvePictureSrc } from '@/shared/lib/media';
+
+// Must match the backend default page size for /api/student/filter.
+const FILTER_PAGE_SIZE = 50;
+
+type FilterParams = { country?: string; city?: string; promotion?: string; class?: string };
+
+const normalizeStudents = (rows: (Student & { id?: string })[]): Student[] =>
+  rows.map((student) => ({ ...student, _id: student._id ?? student.id ?? '' }));
 
 export function SearchPage() {
   const { t } = useTranslation();
@@ -17,6 +26,10 @@ export function SearchPage() {
   const [results, setResults] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  // Filter searches are paged; name search returns the top matches only.
+  const [filterParams, setFilterParams] = useState<FilterParams | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [requestStudent, setRequestStudent] = useState<Student | null>(null);
   const [requestForm, setRequestForm] = useState({ title: '', message: '', dueDate: '' });
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -40,29 +53,45 @@ export function SearchPage() {
 
     setLoading(true);
     setSearched(true);
+    const params: FilterParams | null = hasFilters
+      ? {
+          country: country.trim() || undefined,
+          city: city.trim() || undefined,
+          promotion: promotion.trim() || undefined,
+          class: studentClass.trim() || undefined,
+        }
+      : null;
+    setFilterParams(params);
     try {
-      const response = hasFilters
-        ? await httpClient.get('/api/student/filter', {
-          params: {
-            country: country.trim() || undefined,
-            city: city.trim() || undefined,
-            promotion: promotion.trim() || undefined,
-            class: studentClass.trim() || undefined,
-          },
-        })
-        : await httpClient.get('/api/student/find', {
-          params: { q: query },
-        });
-      const normalized = response.data.map((student: Student & { id?: string }) => ({
-        ...student,
-        _id: student._id ?? student.id ?? ''
-      }));
-      setResults(normalized);
+      const response = params
+        ? await httpClient.get('/api/student/filter', { params: { ...params, limit: FILTER_PAGE_SIZE, offset: 0 } })
+        : await httpClient.get('/api/student/find', { params: { q: query } });
+      const page = normalizeStudents(response.data);
+      setResults(page);
+      setHasMore(!!params && page.length === FILTER_PAGE_SIZE);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (!filterParams) return;
+    setLoadingMore(true);
+    try {
+      const response = await httpClient.get('/api/student/filter', {
+        params: { ...filterParams, limit: FILTER_PAGE_SIZE, offset: results.length },
+      });
+      const page = normalizeStudents(response.data);
+      setResults((prev) => [...prev, ...page]);
+      setHasMore(page.length === FILTER_PAGE_SIZE);
+    } catch (err) {
+      console.error('Load more failed:', err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -205,9 +234,9 @@ export function SearchPage() {
               {results.map((student) => (
                 <div key={student._id} className="card p-6">
                   <div className="flex items-center gap-4 mb-4">
-                    {student.picture ? (
+                    {resolvePictureSrc(student.picture) ? (
                       <img
-                        src={student.picture}
+                        src={resolvePictureSrc(student.picture) as string}
                         alt={`${student.firstname} ${student.lastname}`}
                         className="w-12 h-12 rounded-full object-cover"
                       />
@@ -236,7 +265,7 @@ export function SearchPage() {
                     {student.promotion && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        Promotion {student.promotion}
+                        {t('search.promoLabel', { value: student.promotion })}
                       </div>
                     )}
                   </div>
@@ -251,6 +280,13 @@ export function SearchPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {!loading && hasMore && (
+            <div className="mt-6 flex justify-center">
+              <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? t('search.searching') : t('search.loadMore')}
+              </Button>
             </div>
           )}
         </div>

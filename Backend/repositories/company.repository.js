@@ -1,4 +1,9 @@
 const db = require("../db");
+const { escapeLike } = require("../utils/sql");
+
+// List/search columns: never password, confirmation codes or `extra`.
+const LIST_COLUMNS = `id, name, email, status, country, city, address, phone, website, logo, about,
+  latitude, longitude, created_at`;
 const toJson = (value, fallback) =>
   JSON.stringify(value !== undefined ? value : fallback);
 
@@ -58,8 +63,26 @@ const findByConfirmationCode = async (code) => {
   return result.rows[0] || null;
 };
 
-const listAll = async () => {
-  const result = await db.query("SELECT * FROM companies ORDER BY created_at DESC NULLS LAST");
+const listPage = async ({ limit = 200, offset = 0, activeOnly = false } = {}) => {
+  const result = await db.query(
+    `SELECT ${LIST_COLUMNS} FROM companies ${activeOnly ? "WHERE status = 'Active'" : ""}
+     ORDER BY created_at DESC NULLS LAST LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  );
+  return result.rows;
+};
+
+/** Fuzzy company-name search via pg_trgm (companies_name_trgm_idx). */
+const searchByName = async (query, { limit = 20, activeOnly = true } = {}) => {
+  const q = String(query).trim();
+  const result = await db.query(
+    `SELECT ${LIST_COLUMNS}
+     FROM companies
+     WHERE (name % $1 OR name ILIKE $2) ${activeOnly ? "AND status = 'Active'" : ""}
+     ORDER BY similarity(name, $1) DESC, id
+     LIMIT $3`,
+    [q, `%${escapeLike(q)}%`, limit]
+  );
   return result.rows;
 };
 
@@ -98,10 +121,14 @@ const listIds = async () => {
   return result.rows.map((row) => row.id);
 };
 
-const searchByKey = async (column, key) => {
+// `column` must come from a caller-side allowlist (pickAllowed).
+const searchByKey = async (column, key, { limit = 50, offset = 0, activeOnly = false } = {}) => {
   const result = await db.query(
-    `SELECT * FROM companies WHERE ${column} ILIKE $1 ORDER BY created_at DESC NULLS LAST`,
-    [`${key}%`]
+    `SELECT ${LIST_COLUMNS} FROM companies
+     WHERE ${column} ILIKE $1 ${activeOnly ? "AND status = 'Active'" : ""}
+     ORDER BY created_at DESC NULLS LAST
+     LIMIT $2 OFFSET $3`,
+    [`${escapeLike(key)}%`, limit, offset]
   );
   return result.rows;
 };
@@ -224,10 +251,11 @@ module.exports = {
   findById,
   findByName,
   findByConfirmationCode,
-  listAll,
+  listPage,
   listForStudentBrowse,
   listIds,
   searchByKey,
+  searchByName,
   updateCompany,
   updateConfirmationCodeByEmail,
   incrementVerificationAttempts,

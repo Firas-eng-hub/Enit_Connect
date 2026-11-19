@@ -1,4 +1,5 @@
 const { serverError } = require("../utils/http");
+const { broadcastInBackground } = require("../helpers/broadcast-notify");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateVerificationCode, getVerificationExpiry } = require("../utils/verification");
@@ -14,10 +15,10 @@ const {
   documentRepository,
   messageRepository,
   newsRepository,
-  notificationRepository,
   refreshTokenRepository,
 } = require("../repositories");
 const { isUuid, pickAllowed } = require("../utils/validation");
+const { parseLimit, parseOffset } = require("../utils/pagination");
 
 const mapStudentRow = (row) => ({
   firstname: row.firstname,
@@ -148,38 +149,11 @@ exports.addNews = async (req, res) => {
     });
 
     if (statusValue === "published") {
-      try {
-        const notifications = [];
-        if (audienceValue.includes("student")) {
-          const students = await studentRepository.listIds();
-          students.forEach((studentId) => {
-            notifications.push({
-              recipientType: "student",
-              recipientId: studentId,
-              title: "News Published",
-              message: `"${news.title}" is now available.`,
-              type: "info",
-            });
-          });
-        }
-        if (audienceValue.includes("company")) {
-          const companies = await companyRepository.listIds();
-          companies.forEach((companyId) => {
-            notifications.push({
-              recipientType: "company",
-              recipientId: companyId,
-              title: "News Published",
-              message: `"${news.title}" is now available.`,
-              type: "info",
-            });
-          });
-        }
-        if (notifications.length > 0) {
-          await notificationRepository.createMany(notifications);
-        }
-      } catch (notifyError) {
-        console.warn("News notifications failed:", notifyError.message || notifyError);
-      }
+      broadcastInBackground(
+        ["student", "company"].filter((audience) => audienceValue.includes(audience)),
+        { title: "News Published", message: `"${news.title}" is now available.`, type: "info" },
+        "News published"
+      );
     }
 
     res.status(201).send({ message: "News was added successfully!" });
@@ -219,38 +193,11 @@ exports.updateNews = async (req, res) => {
     const isPublished = statusValue === "published";
 
     if (!wasPublished && isPublished) {
-      try {
-        const notifications = [];
-        if (audienceValue.includes("student")) {
-          const students = await studentRepository.listIds();
-          students.forEach((studentId) => {
-            notifications.push({
-              recipientType: "student",
-              recipientId: studentId,
-              title: "News Published",
-              message: `"${updated.title}" is now available.`,
-              type: "info",
-            });
-          });
-        }
-        if (audienceValue.includes("company")) {
-          const companies = await companyRepository.listIds();
-          companies.forEach((companyId) => {
-            notifications.push({
-              recipientType: "company",
-              recipientId: companyId,
-              title: "News Published",
-              message: `"${updated.title}" is now available.`,
-              type: "info",
-            });
-          });
-        }
-        if (notifications.length > 0) {
-          await notificationRepository.createMany(notifications);
-        }
-      } catch (notifyError) {
-        console.warn("News notifications failed:", notifyError.message || notifyError);
-      }
+      broadcastInBackground(
+        ["student", "company"].filter((audience) => audienceValue.includes(audience)),
+        { title: "News Published", message: `"${updated.title}" is now available.`, type: "info" },
+        "News published"
+      );
     }
 
     res.status(200).send({ message: "News was updated successfully!" });
@@ -487,7 +434,10 @@ exports.signin = async (req, res) => {
 
 exports.getAllStudents = async (req, res) => {
   try {
-    const docs = await studentRepository.listAll();
+    const docs = await studentRepository.listPage({
+      limit: parseLimit(req.query.limit, 200, 500),
+      offset: parseOffset(req.query.offset),
+    });
     res.status(200).send(docs.map(mapStudentRow));
   } catch (err) {
     serverError(res, err);
@@ -496,7 +446,10 @@ exports.getAllStudents = async (req, res) => {
 
 exports.getAllCompanies = async (req, res) => {
   try {
-    const docs = await companyRepository.listAll();
+    const docs = await companyRepository.listPage({
+      limit: parseLimit(req.query.limit, 200, 500),
+      offset: parseOffset(req.query.offset),
+    });
     res.status(200).send(docs.map(mapCompanyRow));
   } catch (err) {
     serverError(res, err);
@@ -566,7 +519,10 @@ exports.getStudentsByKey = async (req, res) => {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
   try {
-    const docs = await studentRepository.searchByKey(column, req.query.key);
+    const docs = await studentRepository.searchByKey(column, req.query.key, {
+      limit: parseLimit(req.query.limit, 100, 200),
+      offset: parseOffset(req.query.offset),
+    });
     res.status(200).send(docs.map(mapStudentRow));
   } catch (err) {
     serverError(res, err);
@@ -588,7 +544,10 @@ exports.getCompaniesByKey = async (req, res) => {
     return res.status(400).send({ message: "Invalid search parameters." });
   }
   try {
-    const docs = await companyRepository.searchByKey(column, req.query.key);
+    const docs = await companyRepository.searchByKey(column, req.query.key, {
+      limit: parseLimit(req.query.limit, 100, 200),
+      offset: parseOffset(req.query.offset),
+    });
     res.status(200).send(docs.map(mapCompanyRow));
   } catch (err) {
     serverError(res, err);

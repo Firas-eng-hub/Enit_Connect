@@ -148,6 +148,7 @@ describe("A01:2021 Broken Access Control", () => {
     const authed = await auth(request(app).get("/api/student/all"), studentToken());
     expect(authed.status).not.toBe(200);
     expect(spies.listAll).not.toHaveBeenCalled();
+    expect(spies.listPage).not.toHaveBeenCalled();
   });
 
   it("another user's student profile never exposes contact or geolocation PII (finding #3)", async () => {
@@ -605,7 +606,7 @@ describe("A05:2021 Security Misconfiguration", () => {
 
   // Finding #11 — no raw driver errors
   it("does not leak internal error details on a 500 (finding #11)", async () => {
-    spies.listAll.mockRejectedValueOnce(
+    spies.searchByName.mockRejectedValueOnce(
       new Error('relation "students" does not exist at character 15')
     );
 
@@ -827,7 +828,7 @@ describe("A09:2021 Security Logging and Monitoring Failures", () => {
 
   it("server-side error logging still happens while the client sees a generic message", async () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    spies.listAll.mockRejectedValueOnce(new Error("pg: connection terminated"));
+    spies.searchByName.mockRejectedValueOnce(new Error("pg: connection terminated"));
 
     const res = await auth(request(app).get("/api/student/find?q=Test"), companyToken());
 

@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import type {} from 'leaflet.markercluster';
+import { formatCount } from '../model/filters';
 
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -41,14 +42,26 @@ export function createPersonIcon(name: string, pictureSrc: string | null, active
   });
 }
 
-/** Brand cluster bubble; size step depends on how many people it holds. */
-export function createClusterIcon(cluster: L.MarkerCluster): L.DivIcon {
-  const count = cluster.getChildCount();
-  const size = count < 10 ? 'sm' : count < 50 ? 'md' : 'lg';
+/** Brand count bubble (multi-person cells and clusters); size steps with the count. */
+export function createCountIcon(count: number, active = false): L.DivIcon {
+  const size = count < 10 ? 'sm' : count < 1000 ? 'md' : 'lg';
   const px = { sm: 38, md: 46, lg: 56 }[size];
   return L.divIcon({
-    className: `student-map-cluster student-map-cluster--${size}`,
-    html: `<span>${count}</span>`,
+    className: `student-map-cluster student-map-cluster--${size}${active ? ' is-active' : ''}`,
+    html: `<span>${formatCount(count)}</span>`,
     iconSize: [px, px],
   });
+}
+
+/**
+ * People per cell marker. Markers stand for whole cells, so a cluster must sum
+ * its children's people instead of counting markers.
+ */
+export const markerPeople = new WeakMap<L.Layer, number>();
+
+export function createClusterIcon(cluster: L.MarkerCluster): L.DivIcon {
+  const total = cluster
+    .getAllChildMarkers()
+    .reduce((sum, marker) => sum + (markerPeople.get(marker) ?? 1), 0);
+  return createCountIcon(total);
 }

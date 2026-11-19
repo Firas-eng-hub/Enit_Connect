@@ -22,7 +22,7 @@ function RankedList({ items, empty }: { items: RankedItem[]; empty: string }) {
       {items.map((item, i) => (
         <span key={item.label}>
           {i > 0 && <span className="text-neutral-400"> · </span>}
-          {item.label} <span className="text-muted-foreground">({item.count})</span>
+          {item.label} <span className="text-muted-foreground">({item.count.toLocaleString()})</span>
         </span>
       ))}
     </p>
@@ -34,10 +34,10 @@ export function MapStatsStrip({ stats }: { stats: MapStats }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatTile icon={<Users className="h-5 w-5" />} label={t('studentMap.statsPeople')}>
-        <p className="text-xl font-semibold tabular-nums">{stats.total}</p>
+        <p className="text-xl font-semibold tabular-nums">{stats.total.toLocaleString()}</p>
       </StatTile>
       <StatTile icon={<Globe2 className="h-5 w-5" />} label={t('studentMap.statsCountries')}>
-        <p className="text-xl font-semibold tabular-nums">{stats.countries}</p>
+        <p className="text-xl font-semibold tabular-nums">{stats.countries.toLocaleString()}</p>
       </StatTile>
       <StatTile icon={<MapPin className="h-5 w-5" />} label={t('studentMap.topCities')}>
         <RankedList items={stats.topCities} empty={t('studentMap.noneYet')} />

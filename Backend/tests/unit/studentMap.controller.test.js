@@ -1,134 +1,141 @@
 /**
- * Student network map: privacy of GET /api/student/location.
- * Coordinates come from home addresses, so the endpoint must only expose
- * city-level positions of active students and directory-safe fields.
+ * Student network map endpoints (/api/student/map/*): validation, keyset
+ * cursors, caching and privacy of the payloads.
  */
 const express = require('express');
 const request = require('supertest');
 
-const mockStudentRepository = {
-  listAll: jest.fn(),
-  searchByKey: jest.fn(),
+const mockMapRepository = {
+  listCells: jest.fn(),
+  listPeople: jest.fn(),
+  getStats: jest.fn(),
+  getFilterOptions: jest.fn(),
 };
 
-jest.mock('../../repositories', () => ({ studentRepository: mockStudentRepository }));
+jest.mock('../../repositories', () => ({ studentMapRepository: mockMapRepository }));
 
+const validation = require('../../middlewares/validation');
 const controller = require('../../controllers/studentMap.controller');
-const { snapCoord, isValidLatLng } = require('../../utils/geo');
 
-const row = (overrides = {}) => ({
-  id: '11111111-1111-4111-8111-111111111111',
-  firstname: 'Amira',
-  lastname: 'Ben Ali',
-  email: 'amira@example.com',
-  phone: '+216 00 000 000',
-  address: '12 Rue Secrète, Tunis',
-  password: 'hash',
-  status: 'Active',
-  type: 'Alumni',
-  promotion: '2021',
-  class: 'GI',
-  work_at: 'Acme',
-  city: 'Tunis',
-  country: 'Tunisia',
-  picture: '/uploads/a.png',
-  latitude: '36.80649',
-  longitude: '10.18153',
-  ...overrides,
-});
+const { encodeCursor, decodeCursor, parseBbox, statsCache } = controller._internals;
+const ID = '11111111-1111-4111-8111-111111111111';
 
 const buildApp = () => {
   const app = express();
-  app.get('/api/student/location', controller.getStudentLocations);
+  const guard = validation.validate(validation.schemas.studentMapQuery, 'query');
+  app.get('/cells', guard, controller.getCells);
+  app.get('/people', guard, controller.getPeople);
+  app.get('/stats', guard, controller.getStats);
   return app;
 };
 
-describe('utils/geo', () => {
-  it('snaps coordinates to one decimal place', () => {
-    expect(snapCoord('36.80649')).toBe(36.8);
-    expect(snapCoord(10.18153)).toBe(10.2);
-    expect(snapCoord(-33.86)).toBe(-33.9);
+beforeEach(() => {
+  jest.clearAllMocks();
+  statsCache.clear();
+});
+
+describe('cursor and bbox parsing', () => {
+  it('round-trips a keyset cursor', () => {
+    const next = { lastname: 'ben ali', firstname: 'amira', id: ID };
+    expect(decodeCursor(encodeCursor(next))).toEqual(next);
+    expect(encodeCursor(null)).toBeNull();
   });
 
-  it('rejects missing or non-numeric values', () => {
-    expect(snapCoord(null)).toBeNull();
-    expect(snapCoord('')).toBeNull();
-    expect(snapCoord('abc')).toBeNull();
+  it('rejects tampered cursors', () => {
+    const b64 = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
+    expect(decodeCursor(b64([1, 2, 3]))).toBeUndefined();
+    expect(decodeCursor(b64(['a', 'b', 'not-a-uuid']))).toBeUndefined();
+    expect(decodeCursor(b64(['a'.repeat(201), 'b', ID]))).toBeUndefined();
+    expect(decodeCursor('%%%')).toBeUndefined();
   });
 
-  it('validates lat/lng ranges', () => {
-    expect(isValidLatLng(36.8, 10.2)).toBe(true);
-    expect(isValidLatLng(null, 10.2)).toBe(false);
-    expect(isValidLatLng(91, 10)).toBe(false);
+  it('validates bbox ranges', () => {
+    expect(parseBbox('30,7,38,12')).toEqual({ south: 30, west: 7, north: 38, east: 12 });
+    expect(parseBbox('38,7,30,12')).toBeUndefined(); // south > north
+    expect(parseBbox('30,7,95,12')).toBeUndefined();
+    expect(parseBbox(undefined)).toBeNull();
   });
 });
 
-describe('GET /api/student/location', () => {
-  beforeEach(() => jest.clearAllMocks());
+describe('GET cells', () => {
+  it('passes validated filters to the repository', async () => {
+    mockMapRepository.listCells.mockResolvedValue([{ lat: 36.8, lng: 10.2, count: 3, person: null }]);
 
-  it('returns city-level coordinates and directory-safe fields only', async () => {
-    mockStudentRepository.listAll.mockResolvedValue([row()]);
-
-    const res = await request(buildApp()).get('/api/student/location?property=firstname&key=');
+    const res = await request(buildApp()).get('/cells?property=city&key=Tunis&type=Alumni&employed=true');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      {
-        id: '11111111-1111-4111-8111-111111111111',
-        name: 'Amira Ben Ali',
-        picture: '/uploads/a.png',
-        type: 'Alumni',
-        promotion: '2021',
-        class: 'GI',
-        workAt: 'Acme',
-        city: 'Tunis',
-        country: 'Tunisia',
-        lat: 36.8,
-        lng: 10.2,
-      },
-    ]);
-    const serialized = JSON.stringify(res.body);
-    ['amira@example.com', '+216', 'Rue Secrète', '36.80649', 'hash'].forEach((secret) => {
-      expect(serialized).not.toContain(secret);
-    });
+    expect(res.body).toHaveLength(1);
+    expect(mockMapRepository.listCells).toHaveBeenCalledWith(
+      expect.objectContaining({ property: 'city', key: 'Tunis', type: 'Alumni', employed: true })
+    );
   });
 
-  it('excludes non-active students and rows without usable coordinates', async () => {
-    mockStudentRepository.listAll.mockResolvedValue([
-      row({ id: 'a', status: 'Pending' }),
-      row({ id: 'b', latitude: null }),
-      row({ id: 'c', longitude: 'not-a-number' }),
-      row({ id: 'd' }),
-    ]);
-
-    const res = await request(buildApp()).get('/api/student/location?property=firstname');
-
-    expect(res.status).toBe(200);
-    expect(res.body.map((p) => p.id)).toEqual(['d']);
-  });
-
-  it('searches by an allowlisted column when a key is given', async () => {
-    mockStudentRepository.searchByKey.mockResolvedValue([row()]);
-
-    const res = await request(buildApp()).get('/api/student/location?property=class&key=GI');
-
-    expect(res.status).toBe(200);
-    expect(mockStudentRepository.searchByKey).toHaveBeenCalledWith('"class"', 'GI');
-  });
-
-  it('rejects non-allowlisted properties', async () => {
-    const res = await request(buildApp()).get('/api/student/location?property=email&key=x');
-
-    expect(res.status).toBe(400);
-    expect(mockStudentRepository.searchByKey).not.toHaveBeenCalled();
+  it('rejects non-allowlisted search properties and bad types', async () => {
+    expect((await request(buildApp()).get('/cells?property=email&key=x')).status).toBe(400);
+    expect((await request(buildApp()).get('/cells?type=Admin')).status).toBe(400);
+    expect(mockMapRepository.listCells).not.toHaveBeenCalled();
   });
 
   it('hides database errors behind a generic 500', async () => {
-    mockStudentRepository.listAll.mockRejectedValue(new Error('db exploded: secret detail'));
-
-    const res = await request(buildApp()).get('/api/student/location?property=firstname');
-
+    mockMapRepository.listCells.mockRejectedValue(new Error('db exploded: secret detail'));
+    const res = await request(buildApp()).get('/cells');
     expect(res.status).toBe(500);
     expect(JSON.stringify(res.body)).not.toContain('secret detail');
+  });
+});
+
+describe('GET people', () => {
+  it('returns a page and an opaque next cursor', async () => {
+    mockMapRepository.listPeople.mockResolvedValue({
+      people: [{ id: ID, name: 'Amira Ben Ali' }],
+      next: { lastname: 'ben ali', firstname: 'amira', id: ID },
+    });
+
+    const res = await request(buildApp()).get('/people?bbox=30,7,38,12&limit=10');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(decodeCursor(res.body.nextCursor)).toEqual({ lastname: 'ben ali', firstname: 'amira', id: ID });
+    expect(mockMapRepository.listPeople).toHaveBeenCalledWith(expect.any(Object), {
+      bbox: { south: 30, west: 7, north: 38, east: 12 },
+      cell: null,
+      after: null,
+      limit: 10,
+    });
+  });
+
+  it('clamps the page size via validation', async () => {
+    const res = await request(buildApp()).get('/people?limit=500');
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects malformed bbox, cell and cursor values', async () => {
+    const badCursor = Buffer.from(JSON.stringify(['x', 'y', 'drop table'])).toString('base64url');
+    for (const qs of ['bbox=38,7,30,12', 'cell=95,10', `cursor=${badCursor}`, 'bbox=1,2;3']) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await request(buildApp()).get(`/people?${qs}`);
+      expect(res.status).toBe(400);
+    }
+    expect(mockMapRepository.listPeople).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET stats', () => {
+  it('caches stats and options per filter set', async () => {
+    mockMapRepository.getStats.mockResolvedValue({ total: 5, countries: 1, topCities: [], topEmployers: [] });
+    mockMapRepository.getFilterOptions.mockResolvedValue({ promotions: ['2024'], classes: ['GI'] });
+
+    const first = await request(buildApp()).get('/stats?type=Student');
+    const second = await request(buildApp()).get('/stats?type=Student');
+    await request(buildApp()).get('/stats?type=Alumni');
+
+    expect(first.body).toEqual({
+      stats: { total: 5, countries: 1, topCities: [], topEmployers: [] },
+      options: { promotions: ['2024'], classes: ['GI'] },
+    });
+    expect(second.body).toEqual(first.body);
+    // Stats: one call per distinct filter set; options only depend on the search.
+    expect(mockMapRepository.getStats).toHaveBeenCalledTimes(2);
+    expect(mockMapRepository.getFilterOptions).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,13 @@
 const db = require("../db");
+const { escapeLike } = require("../utils/sql");
+
+// Columns for list/search responses: everything the row mappers use, but never
+// password, confirmation codes or the internal `extra` blob.
+const LIST_COLUMNS = `id, firstname, lastname, email, status, country, city, address, phone, type,
+  work_at, "class", promotion, linkedin, picture, aboutme, latitude, longitude, created_at`;
+
+// Must match the expression of students_fullname_trgm_idx (migration 017).
+const FULL_NAME = "(coalesce(firstname, '') || ' ' || coalesce(lastname, ''))";
 const toJson = (value, fallback) =>
   JSON.stringify(value !== undefined ? value : fallback);
 
@@ -61,8 +70,11 @@ const findByConfirmationCode = async (code) => {
   return result.rows[0] || null;
 };
 
-const listAll = async () => {
-  const result = await db.query("SELECT * FROM students ORDER BY created_at DESC NULLS LAST");
+const listPage = async ({ limit = 200, offset = 0 } = {}) => {
+  const result = await db.query(
+    `SELECT ${LIST_COLUMNS} FROM students ORDER BY created_at DESC NULLS LAST LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  );
   return result.rows;
 };
 
@@ -71,45 +83,69 @@ const listIds = async () => {
   return result.rows.map((row) => row.id);
 };
 
-const searchByKey = async (column, key) => {
+// `column` must come from a caller-side allowlist (pickAllowed).
+const searchByKey = async (column, key, { limit = 50, offset = 0, activeOnly = false } = {}) => {
   const result = await db.query(
-    `SELECT * FROM students WHERE ${column} ILIKE $1 ORDER BY created_at DESC NULLS LAST`,
-    [`${key}%`]
+    `SELECT ${LIST_COLUMNS} FROM students
+     WHERE ${column} ILIKE $1 ${activeOnly ? "AND status = 'Active'" : ""}
+     ORDER BY created_at DESC NULLS LAST
+     LIMIT $2 OFFSET $3`,
+    [`${escapeLike(key)}%`, limit, offset]
   );
   return result.rows;
 };
 
-const searchByFilters = async ({ country, city, promotion, className }) => {
+/** Fuzzy full-name search via pg_trgm (replaces the in-memory string-similarity scan). */
+const searchByName = async (query, { limit = 20, activeOnly = true } = {}) => {
+  const q = String(query).trim();
+  const result = await db.query(
+    `SELECT ${LIST_COLUMNS}
+     FROM students
+     WHERE (${FULL_NAME} % $1 OR ${FULL_NAME} ILIKE $2) ${activeOnly ? "AND status = 'Active'" : ""}
+     ORDER BY similarity(${FULL_NAME}, $1) DESC, id
+     LIMIT $3`,
+    [q, `%${escapeLike(q)}%`, limit]
+  );
+  return result.rows;
+};
+
+const searchByFilters = async (
+  { country, city, promotion, className },
+  { limit = 50, offset = 0, activeOnly = false } = {}
+) => {
   const conditions = [];
   const params = [];
   let idx = 1;
 
   if (country) {
     conditions.push(`country ILIKE $${idx}`);
-    params.push(`%${country}%`);
+    params.push(`%${escapeLike(country)}%`);
     idx += 1;
   }
   if (city) {
     conditions.push(`city ILIKE $${idx}`);
-    params.push(`%${city}%`);
+    params.push(`%${escapeLike(city)}%`);
     idx += 1;
   }
   if (promotion) {
     conditions.push(`promotion ILIKE $${idx}`);
-    params.push(`%${promotion}%`);
+    params.push(`%${escapeLike(promotion)}%`);
     idx += 1;
   }
   if (className) {
     conditions.push(`\"class\" ILIKE $${idx}`);
-    params.push(`%${className}%`);
+    params.push(`%${escapeLike(className)}%`);
     idx += 1;
   }
 
   if (!conditions.length) return [];
+  if (activeOnly) conditions.push("status = 'Active'");
 
   const result = await db.query(
-    `SELECT * FROM students WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC NULLS LAST`,
-    params
+    `SELECT ${LIST_COLUMNS} FROM students WHERE ${conditions.join(" AND ")}
+     ORDER BY created_at DESC NULLS LAST
+     LIMIT $${idx} OFFSET $${idx + 1}`,
+    [...params, limit, offset]
   );
   return result.rows;
 };
@@ -236,9 +272,10 @@ module.exports = {
   findByEmail,
   findById,
   findByConfirmationCode,
-  listAll,
+  listPage,
   listIds,
   searchByKey,
+  searchByName,
   searchByFilters,
   updateStudent,
   updateConfirmationCodeByEmail,
