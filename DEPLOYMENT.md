@@ -391,25 +391,49 @@ docker compose up -d
 
 ### Backup Data
 
-```bash
-# Backup uploaded files
-sudo tar -czf enit-uploads-backup-$(date +%Y%m%d).tar.gz \
-  -C /var/lib/docker/volumes/tic-uploads/_data/ .
+`scripts/backup.sh` dumps the database (`pg_dump -Fc`, verified with `pg_restore --list`)
+and archives the `tic-uploads` volume into `/var/backups/enit-connect/<timestamp>/`
+with a `SHA256SUMS` file. Local copies older than 14 days are pruned.
 
-# Backup configuration
+```bash
+sudo mkdir -p /var/backups/enit-connect && sudo chown $USER /var/backups/enit-connect
+./scripts/backup.sh
+
+# Daily at 03:00
+crontab -e
+0 3 * * * /opt/enit-connect/scripts/backup.sh >> /var/log/enit-backup.log 2>&1
+```
+
+**Off-site copy (strongly recommended):** a backup on the same server is lost with the server.
+Install [rclone](https://rclone.org/), run `rclone config` to add a remote (e.g. Cloudflare R2
+or Backblaze B2, both have a free tier), then set in the crontab line:
+
+```bash
+0 3 * * * RCLONE_REMOTE=r2:enit-backups REMOTE_RETENTION=60d /opt/enit-connect/scripts/backup.sh >> /var/log/enit-backup.log 2>&1
+```
+
+Other variables (`BACKUP_DIR`, `RETENTION_DAYS`, `DB_CONTAINER`, `UPLOADS_VOLUME`, …) are
+documented at the top of the script. Dumps contain personal data: keep the bucket private.
+
+Also keep a copy of the configuration (it holds secrets — store it somewhere safe, not in git):
+
+```bash
 tar -czf enit-config-backup-$(date +%Y%m%d).tar.gz \
-  /opt/enit-connect/Backend/.env \
-  /opt/enit-connect/nginx/nginx.conf \
-  /opt/enit-connect/docker-compose.yml
+  /opt/enit-connect/Backend/.env /opt/enit-connect/.env \
+  /opt/enit-connect/nginx/nginx.conf /opt/enit-connect/docker-compose.yml
 ```
 
 ### Restore Data
 
 ```bash
-# Restore uploaded files
-sudo tar -xzf enit-uploads-backup-YYYYMMDD.tar.gz \
-  -C /var/lib/docker/volumes/tic-uploads/_data/
+cd /opt/enit-connect
+# From off-site, if needed: rclone copy r2:enit-backups/20261119-030000 /tmp/20261119-030000
+./scripts/restore.sh /var/backups/enit-connect/20261119-030000            # db + uploads
+./scripts/restore.sh /var/backups/enit-connect/20261119-030000 --db-only
 ```
+
+The restore checks the checksums, asks you to type `restore`, stops the backend, restores,
+then starts the backend again. Test a restore on a spare machine at least once.
 
 ---
 
