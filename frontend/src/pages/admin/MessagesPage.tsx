@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
@@ -44,11 +44,7 @@ export function MessagesPage() {
   const [dateTo, setDateTo] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -59,7 +55,12 @@ export function MessagesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
 
   const filteredMessages = useMemo(() => {
     return messages.filter((msg) => {

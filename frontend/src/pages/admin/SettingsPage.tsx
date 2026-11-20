@@ -1,5 +1,5 @@
 import { Shield, Bell, Lock, Globe, Eye, EyeOff } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import httpClient from '@/shared/api/httpClient';
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher';
@@ -17,7 +17,8 @@ export function SettingsPage() {
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsMessage, setPrefsMessage] = useState<string | null>(null);
 
-  const loadPreferences = async () => {
+
+  const loadPreferences = useCallback(async () => {
     setPrefsLoading(true);
     try {
       const response = await httpClient.get('/api/auth/preferences');
@@ -30,9 +31,9 @@ export function SettingsPage() {
     } finally {
       setPrefsLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { loadPreferences(); }, []);
+  useEffect(() => { loadPreferences(); }, [loadPreferences]);
 
   const savePreferences = async (patch: { emailNotifications?: boolean; pushNotifications?: boolean }) => {
     setPrefsSaving(true);

@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -71,12 +71,7 @@ export function HomePage() {
     },
   });
 
-  useEffect(() => {
-    fetchNews();
-    fetchMessages();
-  }, []);
-
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     try {
       const response = await httpClient.get('/api/admin/news');
       setNews(response.data);
@@ -85,9 +80,9 @@ export function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     setMessagesLoading(true);
     setMessagesError(null);
     try {
@@ -103,7 +98,14 @@ export function HomePage() {
     } finally {
       setMessagesLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchNews();
+    fetchMessages();
+  }, [fetchNews, fetchMessages]);
+
+
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
