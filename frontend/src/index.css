@@ -150,6 +150,12 @@
   @media (min-width: 1024px) {
     .dashboard-main {
       margin-inline-start: var(--sidebar-width);
+      transition: margin-inline-start 150ms ease;
+    }
+
+    /* Icon-only sidebar (toggled by Sidebar, persisted in localStorage). */
+    :root[data-sidebar='collapsed'] {
+      --sidebar-width: 68px;
     }
   }
 

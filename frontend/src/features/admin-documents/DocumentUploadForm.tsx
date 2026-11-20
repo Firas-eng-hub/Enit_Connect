@@ -10,6 +10,7 @@ const ALLOWED_EXT = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 type Props = {
   defaultCategory?: string;
   emplacement?: string;
+  onUploaded?: () => void;
 };
 
 const parseTags = (value: string) =>
@@ -18,7 +19,7 @@ const parseTags = (value: string) =>
     .map((t) => t.trim())
     .filter(Boolean);
 
-export function DocumentUploadForm({ defaultCategory, emplacement }: Props) {
+export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded }: Props) {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -59,6 +60,7 @@ export function DocumentUploadForm({ defaultCategory, emplacement }: Props) {
       setCategory(defaultCategory || '');
       setTags('');
       setShowDetails(false);
+      onUploaded?.();
     } catch (err) {
       setError(getApiErrorMessage(err, t('adminDocs.uploadFailed')));
     }
@@ -71,12 +73,7 @@ export function DocumentUploadForm({ defaultCategory, emplacement }: Props) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="bg-white rounded-2xl border border-gray-200 p-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Upload className="w-4 h-4 text-primary-600" />
-        <h3 className="text-sm font-semibold text-gray-900">{t('adminDocs.uploadTitle')}</h3>
-      </div>
+    <form onSubmit={onSubmit} className="mt-4">
 
       {error && (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -87,7 +84,7 @@ export function DocumentUploadForm({ defaultCategory, emplacement }: Props) {
       {/* File input area */}
       {!file ? (
         <label className="block cursor-pointer">
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-primary-300 hover:bg-primary-50/30 transition">
+          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-primary-300 hover:bg-primary-50/30 transition">
             <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
             <p className="text-sm text-gray-600 font-medium">{t('adminDocs.clickSelect')}</p>
             <p className="text-xs text-gray-400 mt-1">{fileHint}</p>

@@ -7,10 +7,13 @@ import { DocumentFilters } from '@/features/admin-documents/DocumentFilters';
 import { FolderTree } from '@/features/admin-documents/FolderTree';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, FolderOpen } from 'lucide-react';
+import { ChevronRight, FileText, FolderOpen, Upload } from 'lucide-react';
+import { Button } from '@/shared/ui/Button';
+import { Dialog } from '@/shared/ui/Dialog';
 
 export function DocumentsPage() {
   const { t } = useTranslation();
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [filters, setFilters] = useState<AdminDocumentListParams>({
     q: '',
     category: '',
@@ -49,84 +52,103 @@ export function DocumentsPage() {
       page: 1,
     }));
 
-  const currentFolderName = filters.emplacement === 'root' 
-    ? t('adminDocs.root') 
-    : filters.emplacement?.split('/').pop() || t('adminDocs.root');
+  const currentPath = filters.emplacement || 'root';
+  const crumbs = currentPath === 'root' ? [] : currentPath.split('/');
+  const currentFolderName = crumbs.length ? crumbs[crumbs.length - 1] : t('adminDocs.root');
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-6 pb-5 border-b border-line">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">{t('adminDocs.pageTitle')}</h1>
-            <p className="text-muted-foreground mt-1">{t('adminDocs.pageSubtitle')}</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="w-5 h-5" />
-              <span className="font-semibold text-ink">{totalDocuments}</span>
-              <span>{t('adminDocs.documents')}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <FolderOpen className="w-5 h-5" />
-              <span className="font-semibold text-ink">{folders.length}</span>
-              <span>{t('adminDocs.folders')}</span>
-            </div>
-          </div>
+      <header className="flex flex-col gap-4 pb-5 border-b border-line sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">{t('adminDocs.pageTitle')}</h1>
+          <p className="text-muted-foreground mt-1">{t('adminDocs.pageSubtitle')}</p>
+          <p className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <FileText className="w-4 h-4" aria-hidden="true" />
+              <span className="font-semibold text-ink tabular-nums">{totalDocuments}</span> {t('adminDocs.documents')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <FolderOpen className="w-4 h-4" aria-hidden="true" />
+              <span className="font-semibold text-ink tabular-nums">{folders.length}</span> {t('adminDocs.folders')}
+            </span>
+          </p>
         </div>
-      </div>
+        <Button onClick={() => setUploadOpen(true)} leftIcon={<Upload className="w-4 h-4" />}>
+          {t('adminDocs.upload')}
+        </Button>
+      </header>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {t('adminDocs.loadFailed')}
         </div>
       )}
 
-      {/* Main Layout - Sidebar + Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Sidebar - Folders & Upload */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Folder Navigation */}
-          <FolderTree 
-            folders={folders} 
-            currentPath={filters.emplacement || 'root'} 
-            onSelectPath={onSelectPath} 
-          />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-[calc(var(--topbar-height)+1.5rem)]">
+          <FolderTree folders={folders} currentPath={currentPath} onSelectPath={onSelectPath} />
+        </aside>
 
-          {/* Upload Section */}
-          <DocumentUploadForm emplacement={filters.emplacement || 'root'} />
-        </div>
-
-        {/* Main Content - Filters + Documents */}
-        <div className="lg:col-span-9 space-y-4">
-          {/* Current Location Indicator */}
-          <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <FolderOpen className="w-4 h-4 text-primary-600" />
-              <span className="text-gray-500">{t('adminDocs.currentFolder')}</span>
-              <span className="font-semibold text-gray-900">{currentFolderName}</span>
-              {filters.emplacement !== 'root' && (
-                <span className="text-xs text-gray-400 ml-2">({filters.emplacement})</span>
-              )}
+        <section className="min-w-0 space-y-4">
+          <div className="bg-surface rounded-xl border border-line">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-line">
+              <nav aria-label={t('adminDocs.breadcrumb')} className="min-w-0">
+                <ol className="flex flex-wrap items-center gap-1 text-sm">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => onSelectPath('root')}
+                      className={crumbs.length ? 'text-muted-foreground hover:text-ink' : 'font-semibold text-ink'}
+                    >
+                      {t('adminDocs.root')}
+                    </button>
+                  </li>
+                  {crumbs.map((name, i) => {
+                    const path = crumbs.slice(0, i + 1).join('/');
+                    const last = i === crumbs.length - 1;
+                    return (
+                      <li key={path} className="flex items-center gap-1 min-w-0">
+                        <ChevronRight className="w-4 h-4 text-neutral-400 rtl:rotate-180" aria-hidden="true" />
+                        <button
+                          type="button"
+                          onClick={() => onSelectPath(path)}
+                          aria-current={last ? 'page' : undefined}
+                          className={'truncate ' + (last ? 'font-semibold text-ink' : 'text-muted-foreground hover:text-ink')}
+                        >
+                          {name}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+              <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+                {t('adminDocs.itemsCount', { count: documents.length })}
+              </span>
             </div>
-            <span className="text-sm text-gray-500">
-              {documents.length} item{documents.length !== 1 ? 's' : ''}
-            </span>
+            <div className="p-4">
+              <DocumentFilters value={filters} onChange={setFilters} />
+            </div>
           </div>
 
-          {/* Filters */}
-          <DocumentFilters value={filters} onChange={setFilters} />
-
-          {/* Document List */}
           <DocumentList
             documents={documents}
             isLoading={isLoading}
             folderOptions={folderOptions}
             onOpenFolder={onSelectPath}
           />
-        </div>
+        </section>
       </div>
+
+      <Dialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        title={t('adminDocs.uploadTitle')}
+        description={t('adminDocs.uploadDesc', { folder: currentFolderName })}
+        size="lg"
+      >
+        <DocumentUploadForm emplacement={currentPath} onUploaded={() => setUploadOpen(false)} />
+      </Dialog>
     </div>
   );
 }

@@ -34,15 +34,15 @@ export function DocumentFilters({ value, onChange }: Props) {
   const hasActiveFilters = !!(value.q || value.category || value.tags?.length || value.type || value.from || value.to);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+    <div>
       {/* Main search row */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex-1 min-w-[12rem] relative">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             value={value.q || ''}
             onChange={(e) => set({ q: e.target.value, page: 1 })}
-            className="w-full rounded-xl border border-gray-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
+            className="w-full rounded-xl border border-gray-200 ps-10 pe-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
             placeholder={t('adminDocs.searchPlaceholder')}
           />
         </div>
@@ -50,7 +50,7 @@ export function DocumentFilters({ value, onChange }: Props) {
         <select
           value={value.type || ''}
           onChange={(e) => set({ type: (e.target.value || undefined) as AdminDocumentListParams['type'], page: 1 })}
-          className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
         >
           <option value="">{t('adminDocs.allTypes')}</option>
           <option value="file">{t('adminDocs.files')}</option>
@@ -67,7 +67,7 @@ export function DocumentFilters({ value, onChange }: Props) {
               page: 1,
             });
           }}
-          className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-200"
         >
           <option value="createdAt:desc">{t('adminDocs.newest')}</option>
           <option value="createdAt:asc">{t('adminDocs.oldest')}</option>
@@ -98,7 +98,7 @@ export function DocumentFilters({ value, onChange }: Props) {
 
       {/* Advanced filters - collapsible */}
       {showAdvanced && (
-        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="mt-3 pt-3 border-t border-line grid grid-cols-2 md:grid-cols-4 gap-3">
           <label className="block">
             <span className="text-xs font-medium text-gray-600">{t('adminDocs.category')}</span>
             <input

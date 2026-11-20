@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import type { AdminDocument } from '@/entities/document/types';
 import { useCreateAdminFolder, useDeleteAdminFolder, useRenameAdminFolder } from '@/entities/document/hooks';
 import { getApiErrorMessage } from '@/shared/lib/utils';
@@ -64,6 +64,7 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
   const del = useDeleteAdminFolder();
 
   const [newName, setNewName] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [renameOpen, setRenameOpen] = useState(false);
@@ -89,9 +90,16 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
     try {
       await create.mutateAsync({ title, parentPath: currentPath || 'root' });
       setNewName('');
+      setCreateOpen(false);
     } catch (err) {
       setActionError(getApiErrorMessage(err, t('adminDocs.createFolderFailed')));
     }
+  };
+
+  const openCreate = () => {
+    setNewName('');
+    setActionError(null);
+    setCreateOpen(true);
   };
 
   const openRename = () => {
@@ -136,64 +144,42 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
     }
   };
 
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4">
-      {/* Header with Rename/Delete actions */}
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <Folder className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold text-gray-900">{t('adminDocs.folders')}</h3>
-        </div>
+  const currentLabel = currentPath === 'root' ? t('adminDocs.root') : currentPath.split('/').pop() || currentPath;
+  const canEditCurrent = currentPath !== 'root' && folderByPath.has(currentPath);
+  const iconBtn = 'p-1.5 rounded-md text-neutral-500 hover:text-ink hover:bg-canvas transition disabled:opacity-50';
 
-        {currentPath !== 'root' && folderByPath.has(currentPath) && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={openRename}
-              disabled={isBusy}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition disabled:opacity-50"
-              title={t('adminDocs.renameFolder')}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={openDelete}
-              disabled={isBusy}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
-              title={t('adminDocs.deleteFolder')}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+  return (
+    <div className="bg-surface rounded-xl border border-line overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
+        <h2 className="text-sm font-semibold text-ink">{t('adminDocs.folders')}</h2>
+        <div className="flex items-center gap-0.5">
+          {canEditCurrent && (
+            <>
+              <button type="button" onClick={openRename} disabled={isBusy} className={iconBtn}
+                title={t('adminDocs.renameFolder')} aria-label={t('adminDocs.renameFolder')}>
+                <Pencil className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <button type="button" onClick={openDelete} disabled={isBusy}
+                className={iconBtn + ' hover:!text-red-600 hover:!bg-red-50'}
+                title={t('adminDocs.deleteFolder')} aria-label={t('adminDocs.deleteFolder')}>
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </>
+          )}
+          <button type="button" onClick={openCreate} disabled={isBusy} className={iconBtn}
+            title={t('adminDocs.addFolder')} aria-label={t('adminDocs.addFolder')}>
+            <FolderPlus className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
-      {actionError && (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+      {actionError && !renameOpen && !createOpen && (
+        <div className="mx-3 mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           {actionError}
         </div>
       )}
 
-      {/* Create new folder */}
-      <div className="flex items-center gap-2 mb-3">
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder={t('adminDocs.newFolder')}
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-          onKeyDown={(e) => e.key === 'Enter' && onCreate()}
-        />
-        <button
-          onClick={onCreate}
-          disabled={isBusy || !newName.trim()}
-          className="p-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50"
-          title={t('adminDocs.addFolder')}
-        >
-          <FolderPlus className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Folder tree */}
-      <div className="max-h-[280px] overflow-auto rounded-lg border border-gray-100">
+      <nav aria-label={t('adminDocs.folders')} className="max-h-[60vh] overflow-auto p-2">
         {rows.map(({ node, depth }) => {
           const active = node.path === currentPath;
           return (
@@ -201,18 +187,56 @@ export function FolderTree({ folders, currentPath, onSelectPath }: Props) {
               key={node.path}
               type="button"
               onClick={() => onSelectPath(node.path)}
+              aria-current={active ? 'true' : undefined}
               className={[
-                'w-full flex items-center gap-2 px-3 py-2 text-left text-sm border-b border-gray-50 last:border-b-0 transition',
-                active ? 'bg-primary-50 text-primary-700 font-medium' : 'hover:bg-gray-50 text-gray-700',
+                'w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-start text-sm transition',
+                active ? 'bg-primary-50 text-ink font-medium' : 'text-body hover:bg-canvas hover:text-ink',
               ].join(' ')}
             >
-              <span className="shrink-0" style={{ width: depth * 12 }} />
-              <Folder className={`w-4 h-4 shrink-0 ${active ? 'text-primary-600' : 'text-amber-500'}`} />
+              <span className="shrink-0" style={{ width: depth * 14 }} />
+              {active ? (
+                <FolderOpen className="w-4 h-4 shrink-0 text-primary-600" aria-hidden="true" />
+              ) : (
+                <Folder className="w-4 h-4 shrink-0 text-neutral-400" aria-hidden="true" />
+              )}
               <span className="truncate">{node.title}</span>
             </button>
           );
         })}
-      </div>
+      </nav>
+
+      <Dialog
+        open={createOpen}
+        onClose={() => {
+          if (isBusy) return;
+          setCreateOpen(false);
+        }}
+        title={t('adminDocs.newFolderTitle')}
+        description={t('adminDocs.newFolderDesc', { folder: currentLabel })}
+        size="md"
+      >
+        {actionError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div>
+        ) : null}
+        <label className="mt-4 block">
+          <span className="text-sm font-semibold text-gray-700">{t('adminDocs.folderName')}</span>
+          <input
+            autoFocus
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onCreate()}
+            className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </label>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={isBusy}>
+            {t('adminDocs.cancel')}
+          </Button>
+          <Button onClick={onCreate} isLoading={create.isPending} disabled={!newName.trim()}>
+            {t('adminDocs.create')}
+          </Button>
+        </DialogFooter>
+      </Dialog>
 
       <Dialog
         open={renameOpen}
