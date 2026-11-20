@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher';
 import enitLogo from '@/assets/img/ENIT.png';
@@ -24,7 +23,12 @@ export function VisitorLayout() {
       if (event.key === 'Escape') setMenuOpen(false);
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
   }, [menuOpen]);
 
   return (
@@ -36,9 +40,9 @@ export function VisitorLayout() {
         {t('visitor.nav.skip')}
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-line bg-surface">
-        <div className="max-w-[1200px] mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-8">
-          <Link to="/visitor/news" className="flex items-center gap-2.5 shrink-0">
+      <header className="pointer-events-none sticky top-0 z-40 px-4 pt-3 sm:px-6">
+        <div className="pointer-events-auto mx-auto flex h-16 max-w-[1200px] items-center gap-8 rounded-xl border border-line bg-surface/80 px-4 backdrop-blur-md sm:px-6">
+          <Link to="/visitor/news" className="flex items-center gap-2 shrink-0">
             <img src={enitLogo} alt="" className="h-9 w-9 object-contain" />
             <span className="font-semibold text-ink">ENIT Connect</span>
           </Link>
@@ -89,58 +93,62 @@ export function VisitorLayout() {
             aria-controls="visitor-mobile-menu"
             aria-label={menuOpen ? t('visitor.nav.closeMenu') : t('visitor.nav.openMenu')}
           >
-            {menuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+            {/* Two bars that rotate into an X. */}
+            <span className="relative block h-4 w-5" aria-hidden="true">
+              <span className={cn('menu-bar top-1', menuOpen && 'translate-y-[3px] rotate-45')} />
+              <span className={cn('menu-bar bottom-1', menuOpen && '-translate-y-[3px] -rotate-45')} />
+            </span>
           </button>
         </div>
-
-        {menuOpen && (
-          <div
-            id="visitor-mobile-menu"
-            className="md:hidden border-t border-line bg-surface"
-            onClick={(event) => {
-              // Close after following any link inside the menu.
-              if ((event.target as HTMLElement).closest('a')) setMenuOpen(false);
-            }}
-          >
-            <nav aria-label={t('visitor.nav.main')} className="px-4 py-3">
-              <ul className="space-y-1">
-                {navItems.map((item) => (
-                  <li key={item.path}>
-                    <NavLink
-                      to={item.path}
-                      className={({ isActive }) =>
-                        cn(
-                          'block rounded-md border-s-[3px] px-3 py-2.5 text-base font-medium',
-                          isActive ? 'border-gold bg-canvas text-ink' : 'border-transparent text-body'
-                        )
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
-                <Link
-                  to="/login"
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-neutral-300 text-sm font-medium text-ink"
-                >
-                  {t('visitor.nav.signIn')}
-                </Link>
-                <Link
-                  to="/register"
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-ink bg-ink text-sm font-medium text-white"
-                >
-                  {t('visitor.nav.createAccount')}
-                </Link>
-              </div>
-              <div className="mt-3">
-                <LanguageSwitcher className="w-full h-10" />
-              </div>
-            </nav>
-          </div>
-        )}
       </header>
+
+      {menuOpen && (
+        <div
+          id="visitor-mobile-menu"
+          className="fixed inset-0 z-30 overflow-y-auto bg-surface/95 px-4 pb-8 pt-24 backdrop-blur-xl md:hidden"
+          onClick={(event) => {
+            // Close after following any link inside the menu.
+            if ((event.target as HTMLElement).closest('a')) setMenuOpen(false);
+          }}
+        >
+          <nav aria-label={t('visitor.nav.main')}>
+            <ul className="space-y-2">
+              {navItems.map((item, i) => (
+                <li key={item.path} className="menu-item-in" style={{ animationDelay: `${i * 60}ms` }}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        'block rounded-md px-3 py-2 text-2xl font-semibold',
+                        isActive ? 'bg-canvas text-ink' : 'text-body'
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+            <div className="menu-item-in mt-6 grid grid-cols-2 gap-2 border-t border-line pt-6" style={{ animationDelay: `${navItems.length * 60}ms` }}>
+              <Link
+                to="/login"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-neutral-300 text-sm font-medium text-ink"
+              >
+                {t('visitor.nav.signIn')}
+              </Link>
+              <Link
+                to="/register"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-ink bg-ink text-sm font-medium text-white"
+              >
+                {t('visitor.nav.createAccount')}
+              </Link>
+            </div>
+            <div className="menu-item-in mt-3" style={{ animationDelay: `${(navItems.length + 1) * 60}ms` }}>
+              <LanguageSwitcher className="w-full h-10" />
+            </div>
+          </nav>
+        </div>
+      )}
 
       <main id="main" className="flex-1">
         <Outlet />

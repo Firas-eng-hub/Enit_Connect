@@ -329,6 +329,16 @@
     overflow: hidden;
   }
 
+  /* Visitor nav: menu icon bars and staggered mobile menu entrance. */
+  .menu-bar {
+    @apply absolute inset-x-0 h-0.5 rounded-full bg-current;
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .menu-item-in {
+    animation: menuItemIn 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -368,6 +378,17 @@
   height: 3rem;
   display: flex;
   align-items: center;
+}
+
+@keyframes menuItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

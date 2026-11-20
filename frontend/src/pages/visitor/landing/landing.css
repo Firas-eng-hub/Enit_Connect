@@ -1,0 +1,115 @@
+/* Landing page styles. Scoped under .landing so the app's compact type scale is untouched. */
+.landing {
+  --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lp-deep: 13 33 54; /* #0D2136 board surface */
+  --lp-rail: 31 63 99; /* #1F3F63 bar track on the board */
+}
+
+/* Text styles (Tailwind default scale values, named per the landing system). */
+.landing .heading-1 { font-size: 3.75rem; line-height: 1; font-weight: 600; letter-spacing: -0.02em; }
+.landing .heading-2 { font-size: 3rem; line-height: 1; font-weight: 600; letter-spacing: -0.02em; }
+.landing .heading-3 { font-size: 2.25rem; line-height: 2.5rem; font-weight: 600; letter-spacing: -0.015em; }
+.landing .heading-4 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; letter-spacing: -0.01em; }
+.landing .title-1 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 500; }
+.landing .title-2 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; }
+.landing .title-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; }
+.landing .body-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 400; }
+.landing .body-5 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+.landing .body-6 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; }
+.landing .body-7 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 400; }
+.landing .button-sm { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; }
+.landing .button-md { font-size: 1rem; line-height: 1.5rem; font-weight: 600; }
+.landing .caption-3 { font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+.landing .caption-4 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; }
+.landing .caption-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 400; }
+@media (min-width: 1024px) {
+  .landing .lg\:heading-1 { font-size: 3.75rem; line-height: 1; }
+  .landing .lg\:heading-2 { font-size: 3rem; line-height: 1; }
+  .landing .lg\:heading-3 { font-size: 2.25rem; line-height: 2.5rem; }
+}
+
+/* Hero heading: navy fading to muted, in reading direction. */
+.landing .lp-hero-title {
+  color: rgb(var(--ink));
+  background-image: linear-gradient(to right, rgb(var(--ink)), rgb(var(--muted)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[dir='rtl'] .landing .lp-hero-title { background-image: linear-gradient(to left, rgb(var(--ink)), rgb(var(--muted))); }
+
+/* Buttons */
+.landing .lp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 12px; border-radius: 6px;
+  transition: background-color 300ms var(--lp-ease), color 300ms var(--lp-ease), transform 500ms var(--lp-ease);
+}
+.landing .lp-btn:hover { transform: translateY(-1px); }
+.landing .lp-btn:active { transform: scale(0.98); }
+.landing .lp-btn--primary { background: rgb(var(--ink)); color: #fff; }
+.landing .lp-btn--primary:hover { background: #193655; }
+.landing .lp-btn--gold { background: rgb(var(--gold)); color: #0d2136; }
+.landing .lp-btn--gold:hover { background: #d4a84b; }
+.landing .lp-link { color: rgb(var(--ink)); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgb(var(--gold)); }
+
+/* Match board: a drafting grid in the logo navy. */
+.landing .lp-board {
+  background-color: rgb(var(--lp-deep));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M24 0H0V24' fill='none' stroke='%23ffffff' stroke-opacity='0.06'/%3E%3C/svg%3E");
+  color: #fff;
+}
+
+/* Audience switch */
+.landing .lp-switch-thumb { transition: transform 500ms var(--lp-ease); }
+.landing .lp-switch-option { transition: color 300ms var(--lp-ease); }
+.landing .lp-switch-option:active { transform: translateY(1px); }
+
+/* Content swap when the audience or stop changes */
+.landing .lp-swap { animation: lp-swap 500ms var(--lp-ease) both; }
+@keyframes lp-swap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Path map */
+.landing .lp-rail { background: rgb(var(--lp-rail)); transform-origin: 50% 0; animation: lp-draw-y 900ms var(--lp-ease) both; }
+.landing .lp-rail-fill { background: rgb(var(--gold)); transform-origin: 50% 0; transition: transform 700ms var(--lp-ease); }
+@keyframes lp-draw-y { from { transform: scaleY(0); } to { transform: none; } }
+.landing .lp-marker {
+  z-index: 2;
+  background: rgb(var(--lp-deep)); border: 2px solid rgb(var(--gold));
+  box-shadow: 0 0 0 4px rgb(var(--gold) / 0.2);
+  transition: transform 700ms var(--lp-ease);
+}
+.landing .lp-stop { animation: lp-stop-in 600ms var(--lp-ease) both; }
+@keyframes lp-stop-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.landing .lp-stop-btn { color: rgb(255 255 255 / 0.6); transition: color 300ms var(--lp-ease), background-color 300ms var(--lp-ease); }
+.landing .lp-stop-btn:hover { color: #fff; background: rgb(255 255 255 / 0.04); }
+.landing .lp-stop-btn.is-active { color: #fff; }
+.landing .lp-dot { background: rgb(var(--lp-deep)); border: 2px solid rgb(var(--lp-rail)); position: relative; z-index: 1; transition: background-color 300ms var(--lp-ease), border-color 300ms var(--lp-ease); }
+.landing .lp-dot.is-passed { background: rgb(var(--gold)); border-color: rgb(var(--gold)); }
+.landing .lp-detail { background: rgb(255 255 255 / 0.05); min-height: 136px; }
+
+/* Company flow */
+.landing .lp-flow-step { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--lp-ease), transform 600ms var(--lp-ease); }
+.landing .lp-flow-step.is-in { opacity: 1; transform: none; }
+
+/* Scroll reveal: rise 32px and fade, once. */
+.landing .lp-reveal { opacity: 0; transform: translateY(32px); transition: opacity 700ms var(--lp-ease), transform 700ms var(--lp-ease); }
+.landing .lp-reveal.is-in { opacity: 1; transform: none; }
+
+/* How it works track */
+.landing .lp-track-fill { transform-origin: 0 50%; transition: transform 300ms var(--lp-ease); }
+[dir='rtl'] .landing .lp-track-fill { transform-origin: 100% 50%; }
+.landing .lp-track-fill--v { transform-origin: 50% 0; }
+.landing .lp-node { transition: background-color 300ms var(--lp-ease), color 300ms var(--lp-ease), border-color 300ms var(--lp-ease), transform 500ms var(--lp-ease); }
+.landing .lp-node.is-on { background: rgb(var(--ink)); border-color: rgb(var(--ink)); color: #fff; transform: scale(1.08); }
+
+/* Tagline: words light up one after another. */
+.landing .lp-word { opacity: 0.28; transition: opacity 600ms var(--lp-ease); }
+.landing .lp-word.is-on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .lp-reveal { opacity: 1; transform: none; }
+  .landing .lp-word { opacity: 1; }
+  .landing .lp-btn:hover, .landing .lp-node.is-on { transform: none; }
+  .landing .lp-flow-step { opacity: 1; transform: none; }
+  .landing .lp-swap, .landing .lp-stop, .landing .lp-rail { animation: none; }
+}
