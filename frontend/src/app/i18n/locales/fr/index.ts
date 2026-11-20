@@ -30,6 +30,7 @@ import pagination from './pagination';
 import dashboard from './dashboard';
 import studentMap from './studentMap';
 import languageSwitcher from './languageSwitcher';
+import landing from './landing';
 
 const fr = {
     common,
@@ -62,6 +63,7 @@ const fr = {
     dashboard,
     studentMap,
     languageSwitcher,
+    landing,
 };
 
 export default fr;
