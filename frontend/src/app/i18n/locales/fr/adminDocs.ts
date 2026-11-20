@@ -135,6 +135,13 @@ const adminDocs = {
     itemsCount_one: "{{count}} élément",
     itemsCount_other: "{{count}} éléments",
     breadcrumb: "Chemin du dossier",
+    dropHere: "Glissez-déposez un fichier ici, ou",
+    browse: "parcourir",
+    fileHint: "{{types}} · jusqu'à {{max}} Mo",
+    titleLabel: "Titre",
+    descriptionLabel: "Description",
+    tagsHint: "Séparés par des virgules",
+    removeFile: "Retirer le fichier",
 };
 
 export default adminDocs;

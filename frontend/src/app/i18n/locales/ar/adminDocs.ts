@@ -135,6 +135,13 @@ const adminDocs = {
     itemsCount_one: "عنصر واحد",
     itemsCount_other: "{{count}} عناصر",
     breadcrumb: "مسار المجلد",
+    dropHere: "اسحب ملفًا وأفلته هنا، أو",
+    browse: "تصفّح",
+    fileHint: "{{types}} · حتى {{max}} ميغابايت",
+    titleLabel: "العنوان",
+    descriptionLabel: "الوصف",
+    tagsHint: "مفصولة بفواصل",
+    removeFile: "إزالة الملف",
 };
 
 export default adminDocs;

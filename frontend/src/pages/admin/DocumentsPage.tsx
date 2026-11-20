@@ -147,7 +147,11 @@ export function DocumentsPage() {
         description={t('adminDocs.uploadDesc', { folder: currentFolderName })}
         size="lg"
       >
-        <DocumentUploadForm emplacement={currentPath} onUploaded={() => setUploadOpen(false)} />
+        <DocumentUploadForm
+          emplacement={currentPath}
+          onUploaded={() => setUploadOpen(false)}
+          onCancel={() => setUploadOpen(false)}
+        />
       </Dialog>
     </div>
   );

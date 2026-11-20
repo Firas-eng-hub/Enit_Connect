@@ -1,16 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileText, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { UploadCloud, FileText, FileImage, X, ChevronDown } from 'lucide-react';
 import { useCreateAdminDocument } from '@/entities/document/hooks';
-import { getApiErrorMessage } from '@/shared/lib/utils';
+import { cn, getApiErrorMessage } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/Button';
+import { DialogFooter } from '@/shared/ui/Dialog';
 
 const MAX_MB = 10;
 const ALLOWED_EXT = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
+const IMAGE_EXT = ['png', 'jpg', 'jpeg'];
 
 type Props = {
   defaultCategory?: string;
   emplacement?: string;
   onUploaded?: () => void;
+  onCancel?: () => void;
 };
 
 const parseTags = (value: string) =>
@@ -19,8 +23,17 @@ const parseTags = (value: string) =>
     .map((t) => t.trim())
     .filter(Boolean);
 
-export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded }: Props) {
+const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '');
+
+const formatSize = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+const inputCls =
+  'mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400';
+
+export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded, onCancel }: Props) {
   const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -28,22 +41,39 @@ export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded }:
   const [tags, setTags] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const create = useCreateAdminDocument();
 
-  const fileHint = useMemo(() => `Max ${MAX_MB}MB. Allowed: ${ALLOWED_EXT.join(', ')}`, []);
+  const pickFile = (f: File | undefined) => {
+    if (!f) return;
+    setError(null);
+    if (f.size > MAX_MB * 1024 * 1024) return setError(t('adminDocs.tooLarge', { max: MAX_MB }));
+    if (!ALLOWED_EXT.includes(extOf(f.name))) {
+      return setError(t('adminDocs.unsupported', { types: ALLOWED_EXT.join(', ') }));
+    }
+    setFile(f);
+    setTitle(f.name.replace(/\.[^/.]+$/, ''));
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setTitle('');
+    setError(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const onDrop = (e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    pickFile(e.dataTransfer.files?.[0]);
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
     if (!file) return setError(t('adminDocs.chooseUpload'));
     if (!title.trim()) return setError(t('adminDocs.titleRequired'));
-    if (file.size > MAX_MB * 1024 * 1024) return setError(t('adminDocs.tooLarge', { max: MAX_MB }));
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    if (ext && !ALLOWED_EXT.includes(ext)) {
-      return setError(t('adminDocs.unsupported', { types: ALLOWED_EXT.join(', ') }));
-    }
 
     try {
       await create.mutateAsync({
@@ -54,8 +84,7 @@ export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded }:
         tags: parseTags(tags),
         emplacement: emplacement || 'root',
       });
-      setFile(null);
-      setTitle('');
+      clearFile();
       setDescription('');
       setCategory(defaultCategory || '');
       setTags('');
@@ -66,114 +95,126 @@ export function DocumentUploadForm({ defaultCategory, emplacement, onUploaded }:
     }
   };
 
-  const clearFile = () => {
-    setFile(null);
-    setTitle('');
-    setError(null);
-  };
+  const FileIcon = file && IMAGE_EXT.includes(extOf(file.name)) ? FileImage : FileText;
 
   return (
-    <form onSubmit={onSubmit} className="mt-4">
-
-      {error && (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* File input area */}
+    <form onSubmit={onSubmit} noValidate>
       {!file ? (
-        <label className="block cursor-pointer">
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-primary-300 hover:bg-primary-50/30 transition">
-            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-medium">{t('adminDocs.clickSelect')}</p>
-            <p className="text-xs text-gray-400 mt-1">{fileHint}</p>
-          </div>
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition',
+            'focus-within:ring-2 focus-within:ring-primary-200',
+            dragging ? 'border-primary-500 bg-primary-50' : 'border-line hover:border-primary-300 hover:bg-canvas'
+          )}
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+            <UploadCloud className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <span className="mt-3 text-sm text-ink">
+            {t('adminDocs.dropHere')}{' '}
+            <span className="font-semibold text-primary-700 underline-offset-2 hover:underline">{t('adminDocs.browse')}</span>
+          </span>
+          <span className="mt-1 text-xs text-muted-foreground">
+            {t('adminDocs.fileHint', { types: 'PDF, DOC, DOCX, PNG, JPG', max: MAX_MB })}
+          </span>
           <input
+            ref={inputRef}
             type="file"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) {
-                setFile(f);
-                setTitle(f.name.replace(/\.[^/.]+$/, ''));
-              }
-            }}
-            className="hidden"
+            className="sr-only"
             accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            onChange={(e) => pickFile(e.target.files?.[0])}
           />
         </label>
       ) : (
-        <div className="space-y-3">
-          {/* Selected file */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <FileText className="w-8 h-8 text-primary-500 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
-              <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 rounded-lg border border-line bg-canvas px-3 py-2.5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface text-primary-700 border border-line">
+              <FileIcon className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-ink">{file.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {extOf(file.name).toUpperCase()} · {formatSize(file.size)}
+              </p>
             </div>
             <button
               type="button"
               onClick={clearFile}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+              className="rounded-md p-1.5 text-neutral-500 hover:bg-surface hover:text-red-600"
+              aria-label={t('adminDocs.removeFile')}
+              title={t('adminDocs.removeFile')}
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
-          {/* Title - required */}
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-            placeholder={t('adminDocs.titlePlaceholder')}
-          />
+          <label className="block">
+            <span className="text-sm font-medium text-ink">
+              {t('adminDocs.titleLabel')} <span className="text-red-600">*</span>
+            </span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} required />
+          </label>
 
-          {/* Toggle additional fields */}
-          <button
-            type="button"
-            onClick={() => setShowDetails(!showDetails)}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600"
-          >
-            {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {showDetails ? t('adminDocs.hideDetails') : t('adminDocs.addDetails')}
-          </button>
-
-          {/* Additional fields - collapsible */}
-          {showDetails && (
-            <div className="space-y-2 pt-2 border-t border-gray-100">
-              <input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                placeholder={t('adminDocs.categoryOptional')}
-              />
-              <input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                placeholder={t('adminDocs.tagsOptional')}
-              />
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                rows={2}
-                placeholder={t('adminDocs.descriptionOptional')}
-              />
-            </div>
-          )}
-
-          {/* Upload button */}
-          <button
-            type="submit"
-            disabled={create.isPending || !title.trim()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 transition"
-          >
-            <Upload className="w-4 h-4" />
-            {create.isPending ? t('adminDocs.uploading') : t('adminDocs.uploadTitle')}
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              aria-expanded={showDetails}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-ink"
+            >
+              <ChevronDown className={cn('h-4 w-4 transition-transform', showDetails && 'rotate-180')} aria-hidden="true" />
+              {showDetails ? t('adminDocs.hideDetails') : t('adminDocs.addDetails')}
+            </button>
+            {showDetails && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-medium text-ink">{t('adminDocs.category')}</span>
+                  <input value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls} />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-ink">{t('adminDocs.tags')}</span>
+                  <input
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    className={inputCls}
+                    placeholder={t('adminDocs.tagsHint')}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-ink">{t('adminDocs.descriptionLabel')}</span>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className={inputCls}
+                    rows={3}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       )}
+
+      {error && (
+        <p role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={create.isPending}>
+          {t('adminDocs.cancel')}
+        </Button>
+        <Button type="submit" isLoading={create.isPending} disabled={!file || !title.trim()}>
+          {create.isPending ? t('adminDocs.uploading') : t('adminDocs.upload')}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }
