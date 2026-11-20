@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff } from 'lucide-react';
+import { PasswordInput } from '@/shared/ui/PasswordInput';
 import httpClient from '@/shared/api/httpClient';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
@@ -49,38 +49,24 @@ function PasswordField({
   error?: string;
   registration: React.InputHTMLAttributes<HTMLInputElement> & { ref: React.Ref<HTMLInputElement> };
 }) {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
   const describedBy = error ? `${id}-error` : `${id}-hint`;
   return (
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
         {label}
       </label>
-      <div className="relative">
-        <input
-          id={id}
-          type={visible ? 'text' : 'password'}
-          autoComplete="new-password"
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={describedBy}
-          className={cn(
-            'h-10 w-full rounded-md border bg-surface ps-3 pe-11 text-ink',
-            'focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40',
-            error ? 'border-danger-600' : 'border-neutral-400 hover:border-neutral-500'
-          )}
-          {...registration}
-        />
-        <button
-          type="button"
-          onClick={() => setVisible((value) => !value)}
-          className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-neutral-500 hover:text-ink"
-          aria-label={visible ? t('auth.hidePassword') : t('auth.showPassword')}
-          aria-pressed={visible}
-        >
-          {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-        </button>
-      </div>
+      <PasswordInput
+        id={id}
+        autoComplete="new-password"
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={describedBy}
+        className={cn(
+          'h-10 w-full rounded-md border bg-surface ps-3 text-ink',
+          'focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40',
+          error ? 'border-danger-600' : 'border-neutral-400 hover:border-neutral-500'
+        )}
+        {...registration}
+      />
       {error ? (
         <p id={`${id}-error`} className="mt-1.5 text-sm text-danger-600">{error}</p>
       ) : (

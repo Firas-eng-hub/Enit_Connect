@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff } from 'lucide-react';
+import { PasswordInput } from '@/shared/ui/PasswordInput';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/Button';
@@ -35,7 +35,6 @@ export function LoginPage() {
   const [selectedType, setSelectedType] = useState<UserType>(
     location.pathname.startsWith('/admin') ? 'admin' : 'student'
   );
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState('');
   const [pendingVerify, setPendingVerify] = useState(false);
@@ -141,30 +140,18 @@ export function LoginPage() {
           <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-ink">
             {t('auth.password')}
           </label>
-          <div className="relative">
-            <input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              aria-invalid={errors.password ? 'true' : 'false'}
-              aria-describedby={errors.password ? 'login-password-error' : undefined}
-              className={cn(
-                'h-10 w-full rounded-md border bg-surface ps-3 pe-11 text-ink',
-                'focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40',
-                errors.password ? 'border-danger-600' : 'border-neutral-400 hover:border-neutral-500'
-              )}
-              {...register('password')}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              className="absolute inset-y-0 end-0 flex w-10 items-center justify-center rounded-e-md text-neutral-500 hover:text-ink"
-              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-              aria-pressed={showPassword}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-            </button>
-          </div>
+          <PasswordInput
+            id="login-password"
+            autoComplete="current-password"
+            aria-invalid={errors.password ? 'true' : 'false'}
+            aria-describedby={errors.password ? 'login-password-error' : undefined}
+            className={cn(
+              'h-10 w-full rounded-md border bg-surface ps-3 text-ink',
+              'focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus:border-ink focus:ring-2 focus:ring-gold/40',
+              errors.password ? 'border-danger-600' : 'border-neutral-400 hover:border-neutral-500'
+            )}
+            {...register('password')}
+          />
           {errors.password && (
             <p id="login-password-error" className="mt-1.5 text-sm text-danger-600">
               {errors.password.message}

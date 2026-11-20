@@ -1,4 +1,5 @@
-import { Shield, Bell, Lock, Globe, Eye, EyeOff } from 'lucide-react';
+import { Shield, Bell, Lock, Globe } from 'lucide-react';
+import { PasswordInput } from '@/shared/ui/PasswordInput';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import httpClient from '@/shared/api/httpClient';
@@ -9,7 +10,6 @@ const PREFERENCES_UPDATED_EVENT = 'auth:preferences-updated';
 export function SettingsPage() {
   const { t } = useTranslation();
 
-  const [showPassword, setShowPassword] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
@@ -80,12 +80,7 @@ export function SettingsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">{t('settings.account.changePassword')}</label>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} placeholder={t('settings.account.passwordPlaceholder')} className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
+              <PasswordInput autoComplete="new-password" placeholder={t('settings.account.passwordPlaceholder')} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
             </div>
           </div>
         </div>

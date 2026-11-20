@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { PasswordInput } from '@/shared/ui/PasswordInput';
 import {
   Copy,
   Clock,
@@ -1499,7 +1500,7 @@ export function DocumentsPage() {
                   value={shareForm.studentRecipients}
                   onChange={(event) => setShareForm((prev) => ({ ...prev, studentRecipients: event.target.value }))}
                   placeholder="id1, id2"
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
                 />
               </div>
               <div>
@@ -1518,8 +1519,9 @@ export function DocumentsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm font-semibold text-gray-700">{t('documents.passwordOptional')}</label>
-                <input
-                  type="password"
+                <PasswordInput
+                  autoComplete="new-password"
+                  wrapperClassName="mt-2"
                   value={shareForm.password}
                   onChange={(event) => setShareForm((prev) => ({ ...prev, password: event.target.value }))}
                   className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"

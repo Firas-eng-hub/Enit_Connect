@@ -1,6 +1,8 @@
 // Core components
 export { Button, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
+export { PasswordInput, type PasswordInputProps } from './PasswordInput';
+export { AnimatedEye } from './AnimatedEye';
 export { Select, type SelectProps } from './Select';
 export { Textarea, type TextareaProps } from './Textarea';
 export { Checkbox, type CheckboxProps } from './Checkbox';

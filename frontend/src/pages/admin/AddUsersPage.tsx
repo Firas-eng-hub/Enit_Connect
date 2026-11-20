@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { UserPlus, User, Building2, CheckCircle } from 'lucide-react';
 import httpClient from '@/shared/api/httpClient';
 import { cn } from '@/shared/lib/utils';
+import { PasswordInput } from '@/shared/ui/PasswordInput';
 
 const buildUserSchema = (t: TFunction) =>
   z.object({
@@ -214,7 +215,7 @@ export function AddUsersPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t('addUsers.password')}</label>
-                <input {...userForm.register('password')} type="password" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
+                <PasswordInput {...userForm.register('password')} autoComplete="new-password" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
                 {userForm.formState.errors.password && (
                   <p className="mt-1 text-sm text-red-600">{userForm.formState.errors.password.message}</p>
                 )}
@@ -300,7 +301,7 @@ export function AddUsersPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t('addUsers.password')}</label>
-                <input {...companyForm.register('password')} type="password" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
+                <PasswordInput {...companyForm.register('password')} autoComplete="new-password" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" />
                 {companyForm.formState.errors.password && (
                   <p className="mt-1 text-sm text-red-600">{companyForm.formState.errors.password.message}</p>
                 )}
