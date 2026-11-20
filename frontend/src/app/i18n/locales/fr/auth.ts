@@ -1,0 +1,26 @@
+const auth = {
+    login: 'Connexion', logout: 'Se déconnecter', email: 'E-mail', password: 'Mot de passe',
+    forgotPassword: 'Mot de passe oublié ?', noAccount: "Vous n'avez pas de compte ?",
+    register: "S'inscrire",
+    welcomeBack: 'Se connecter',
+    signInContinue: "Utilisez l'adresse e-mail de votre inscription.",
+    iAmA: 'Type de compte',
+    student: 'Étudiant', company: 'Entreprise', admin: 'Admin',
+    emailAddress: 'Adresse e-mail',
+    signingIn: 'Connexion en cours...',
+    signIn: 'Se connecter',
+    newToEnitConnect: 'Pas encore de compte ?',
+    createAccount: 'Créer un compte',
+    backToHome: "Retour à l'accueil d'ENIT Connect",
+    verifyNow: 'Vérifier maintenant',
+    careerPlatform: 'Plateforme carrière',
+    gatewayTitle: 'Votre passerelle vers',
+    gatewayHighlight: 'le succès professionnel',
+    gatewayDesc: 'Connectez-vous aux meilleurs talents d\'ingénierie de Tunisie et aux entreprises leaders. Construisez votre avenir avec la première plateforme carrière de l\'ENIT.',
+    students: 'Étudiants', companies: 'Entreprises', opportunities: 'Opportunités',
+    showPassword: 'Afficher le mot de passe', hidePassword: 'Masquer le mot de passe',
+    invalidEmail: 'Saisissez une adresse e-mail valide.', passwordRequired: 'Saisissez votre mot de passe.',
+    loginFailed: "Échec de la connexion. Vérifiez votre e-mail, votre mot de passe et le type de compte.",
+};
+
+export default auth;

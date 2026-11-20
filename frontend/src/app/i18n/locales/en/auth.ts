@@ -1,0 +1,26 @@
+const auth = {
+    login: 'Sign in', logout: 'Sign out', email: 'Email', password: 'Password',
+    forgotPassword: 'Forgot password?', noAccount: "Don't have an account?",
+    register: 'Register',
+    welcomeBack: 'Sign in',
+    signInContinue: 'Use the email address you registered with.',
+    iAmA: 'Account type',
+    student: 'Student', company: 'Company', admin: 'Admin',
+    emailAddress: 'Email address',
+    signingIn: 'Signing in...',
+    signIn: 'Sign in',
+    newToEnitConnect: 'No account yet?',
+    createAccount: 'Create an account',
+    backToHome: 'Back to ENIT Connect home',
+    verifyNow: 'Verify now',
+    careerPlatform: 'Career platform',
+    gatewayTitle: 'Your gateway to',
+    gatewayHighlight: 'career success',
+    gatewayDesc: "Connect with Tunisia's top engineering talent and leading companies. Build your future with ENIT's premier career platform.",
+    students: 'Students', companies: 'Companies', opportunities: 'Opportunities',
+    showPassword: 'Show password', hidePassword: 'Hide password',
+    invalidEmail: 'Enter a valid email address.', passwordRequired: 'Enter your password.',
+    loginFailed: "Sign-in failed. Check your email address, password and account type.",
+};
+
+export default auth;

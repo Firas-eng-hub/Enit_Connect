@@ -1,0 +1,26 @@
+const auth = {
+    login: 'تسجيل الدخول', logout: 'تسجيل الخروج', email: 'البريد الإلكتروني',
+    password: 'كلمة المرور', forgotPassword: 'نسيت كلمة المرور؟',
+    noAccount: 'ليس لديك حساب؟', register: 'إنشاء حساب',
+    welcomeBack: 'تسجيل الدخول',
+    signInContinue: 'استخدم البريد الإلكتروني الذي سجّلت به.',
+    iAmA: 'نوع الحساب',
+    student: 'طالب', company: 'شركة', admin: 'مسؤول',
+    emailAddress: 'عنوان البريد الإلكتروني',
+    signingIn: 'جارٍ تسجيل الدخول...',
+    signIn: 'تسجيل الدخول',
+    newToEnitConnect: 'ليس لديك حساب بعد؟',
+    createAccount: 'إنشاء حساب',
+    backToHome: 'العودة إلى الصفحة الرئيسية',
+    verifyNow: 'تحقق الآن',
+    careerPlatform: 'منصة التوظيف',
+    gatewayTitle: 'بوابتك نحو',
+    gatewayHighlight: 'النجاح المهني',
+    gatewayDesc: 'تواصل مع أفضل المواهب الهندسية في تونس والشركات الرائدة. ابنِ مستقبلك مع منصة ENIT الرائدة للتوظيف.',
+    students: 'طلاب', companies: 'شركات', opportunities: 'فرص',
+    showPassword: 'إظهار كلمة المرور', hidePassword: 'إخفاء كلمة المرور',
+    invalidEmail: 'أدخل بريدًا إلكترونيًا صالحًا.', passwordRequired: 'أدخل كلمة المرور.',
+    loginFailed: 'تعذّر تسجيل الدخول. تحقّق من البريد الإلكتروني وكلمة المرور ونوع الحساب.',
+};
+
+export default auth;
